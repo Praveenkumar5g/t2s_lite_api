@@ -1,0 +1,1286 @@
+<?php
+/**
+ * Created by PhpStorm.
+ * User: Roja
+ * Date: 28-12-2022
+ * Time: 10:00
+ * Validate inputs ,created DB for individual school and registed user details in config and school DB
+ */
+namespace App\Http\Controllers;
+
+use App\Http\Controllers\Controller;
+use App\Models\AcademicClassConfiguration;
+use App\Models\CommunicationDistribution;
+use App\Models\CommunicationAttachments;
+use App\Models\CommunicationRecipients;
+use App\Models\UserStudentsMapping;
+use App\Models\UserGroupsMapping;
+use App\Models\NotificationLogs;
+use App\Models\AcademicSections;
+use App\Models\AcademicSubjects;
+use App\Models\AcademicClasses;
+use App\Models\UserManagements;
+use App\Models\ApprovalSetting;
+use App\Models\Communications;
+use App\Models\UserCategories;
+use App\Models\UserManagement;
+use App\Models\SchoolProfile;
+use App\Models\UserStudents;
+use App\Models\Smstemplates;
+use Illuminate\Http\Request;
+use App\Models\UserParents;
+use App\Models\SchoolUsers;
+use App\Models\UserStaffs;
+use App\Models\UserGroups;
+use App\Models\UserAdmin;
+use App\Models\Appusers;
+use App\Models\UserAll;
+use App\Models\Smslogs;
+use Carbon\Carbon;
+use Validator;
+use Config;
+use File;
+use URL;
+use DB;
+
+class APICommunicationController extends Controller
+{
+    // Approval process for messages
+    public function save_approval_flow(Request $request)
+    {
+        // Add rules to the approval process
+        $validator = Validator::make($request->all(), [
+            'approval' => 'required', //1- yes,2-no
+        ]);
+        // Validate approval
+        if ($validator->fails()) {
+            return response()->json($validator->errors());
+        }
+
+        // Get authorizated user details
+        $user = auth()->user();
+
+        if($user->user_role == Config::get('app.Admin_role'))//check role and get current user id
+            $user_table_id = UserAdmin::where(['user_id'=>$user->user_id])->pluck('id')->first();
+        else if($user->user_role == Config::get('app.Management_role'))
+            $user_table_id = UserManagements::where(['user_id'=>$user->user_id])->pluck('id')->first();
+        else if($user->user_role == Config::get('app.Staff_role'))
+            $user_table_id = UserStaffs::where(['user_id'=>$user->user_id])->pluck('id')->first();
+        else if($user->user_role == Config::get('app.Parent_role'))
+            $user_table_id = UserParents::where(['user_id'=>$user->user_id])->pluck('id')->first();//fetch id from user all table to store notification triggered user
+        $userall_id = UserAll::where(['user_table_id'=>$user_table_id,'user_role'=>$user->user_role])->pluck('id')->first();
+
+        // store approval process settings
+        $approvalsettings = new ApprovalSetting;
+        $approvalsettings->approval=$request->approval; //0-No,1-Yes
+        $approvalsettings->user_role=$request->user_role; //1-admin,2-staff,3-parent,4-student,5-management
+        $approvalsettings->user_id=$request->user_id;
+        $approvalsettings->status=1;//1-Active,2-Inactive,3-delete
+        $approvalsettings->created_by=$userall_id;
+        $approvalsettings->created_time=Carbon::now()->timezone('Asia/Kolkata');
+        $approvalsettings->save();
+        return response()->json('Settings Updated Successfully!...');
+    }
+
+    // Store Message input
+    public function store_message(Request $request)
+    {
+        // Add rules to the Store Message form
+        $validator = Validator::make($request->all(), [
+            'distribution_type' => 'required', //1- Everyone,2-Staff,3-Parent
+            'message_category' => 'required', //1-Text,2-Image with caption
+        ]);
+        // Validate form
+        if ($validator->fails()) {
+            return response()->json($validator->errors());
+        }
+
+        // Get authorizated user details
+        $user = auth()->user();
+
+        if($user->user_role == Config::get('app.Admin_role'))//check role and get current user id
+            $user_table_id = UserAdmin::where(['user_id'=>$user->user_id])->pluck('id')->first();
+        else if($user->user_role == Config::get('app.Management_role'))
+            $user_table_id = UserManagements::where(['user_id'=>$user->user_id])->pluck('id')->first();
+        else if($user->user_role == Config::get('app.Staff_role'))
+            $user_table_id = UserStaffs::where(['user_id'=>$user->user_id])->pluck('id')->first();
+        else if($user->user_role == Config::get('app.Parent_role'))
+            $user_table_id = UserParents::where(['user_id'=>$user->user_id])->pluck('id')->first();//fetch id from user all table to store notification triggered user
+        $userall_id = UserAll::where(['user_table_id'=>$user_table_id,'user_role'=>$user->user_role])->pluck('id')->first();
+
+        // Insert communication message in notification log tables(School DB)
+        $communications = new Communications;
+        $communications->chat_message=$request->chat_message;
+        if(isset($request->title))
+            $communications->title=$request->title;
+        if(isset($request->important))
+            $communications->important=$request->important;
+        $communications->distribution_type=$request->distribution_type; //1-Class,2-Group,3-Everyone,4-Staff,5-Parent
+        $communications->message_category=$request->message_category; //1-Text,2-Image with caption,3-Image Only,4-Document,5-Audio,6-Video,7-Quotes,8-Management Speaks,9-Circular,10-Study Material;
+        $communications->actioned_by=$userall_id;
+        $communications->created_by=$userall_id;
+        $communications->actioned_time=Carbon::now()->timezone('Asia/Kolkata');
+        $communications->created_time=Carbon::now()->timezone('Asia/Kolkata');
+        $communications->group_id=$request->group_id;
+        $communications->communication_type=1;
+        $communications->attachments='N'; // Default attachment no
+        if(count($_FILES)>0)
+            $communications->attachments='Y'; 
+
+        if($user->user_role != 3 && $user->user_role != 2)
+            $communications->approval_status=1;//1-Approval,2-Denied
+
+        if(isset($request->caption_message)) 
+            $communications->caption_message=$request->caption_message; //Notification Message or video link
+        $communications->save();
+        $notification_id = $communications->id;
+        if(count($_FILES)>0)
+        {
+            $schoolcode = $school_profile = SchoolProfile::where(['id'=>$user['school_profile_id']])->get()->first();//get school code from school profile
+            $path = public_path('uploads/'.$school_profile['school_code']);//
+
+            if(!File::isDirectory($path)){ //check path already exists
+                File::makeDirectory($path, 0777, true, true);
+            }
+
+            // Insert attachment details in attachment table
+            if($request->hasfile('attachment')) {
+                foreach($request->file('attachment') as $file)
+                {
+                    $attachment = new CommunicationAttachments;
+                    $attachment->communication_id = $notification_id;
+                    $name = explode('.',$file->getClientOriginalName());
+                    $filename = str_replace(' ', '_', $name[0]);
+                    $names = $filename.time().'.'.$name[1];
+                    $file->move(public_path().'/uploads/'.$school_profile['school_code'], $names);
+                    $attachment->attachment_name = $names;
+                    $attachment->attachment_type = $request->attachment_type;  //1-image,2-audio,3-document
+                    $attachment->attachment_location = url('/').'/uploads/'.$school_profile['school_code'].'/';
+                    $attachment->save();
+                }
+            }
+
+        }
+
+        if($user->user_role != 3) //check user role and 3-parent goes under approval process if approval flow 'yes'
+        {
+            $group_id = $request->group_id;
+            // check message_category and fetch users based on category
+            $user_role = explode(',',$request->distribution_type);
+            $user_list= $user_ids = [];
+            foreach ($user_role as $key => $value) {
+                $class_config = UserGroups::where('id',$group_id)->pluck('class_config')->first();
+
+                $communicationdistribution = new CommunicationDistribution;
+                $communicationdistribution->communication_id = $notification_id;
+                $communicationdistribution->class_config_id = $class_config;
+                $communicationdistribution->user_group_id = $group_id;
+                $communicationdistribution->save();
+
+                if( $value == 3) // Everyone
+                {
+                    $user_ids =UserGroupsMapping::where('group_id',$group_id);
+
+                    if($user->user_role == 2)
+                    {
+                        $user_ids = $user_ids->whereIn('user_role',([Config::get('app.Admin_role'),Config::get('app.Management_role')]));
+                        $user_list = UserGroupsMapping::where(['group_id'=>$group_id,'user_table_id'=>$user_table_id,'user_role'=>$user->user_role])->get()->toArray();
+                    }
+                    
+                    $user_ids = $user_ids->get()->toArray();
+                    $user_list = array_merge($user_list,$user_ids);
+                }
+                else if($value == 4 || $value == 5)
+                {    
+                    if($user->user_role != 2 && ($user_role != 5 || $user_role != 4 ) )
+                    {
+                        // 5-Parent(Mother and Father) //4-staff(Teaching and non-teaching)
+                        $user_role = ($value == 4)?([Config::get('app.Staff_role'),Config::get('app.Admin_role'),Config::get('app.Management_role')]):([Config::get('app.Parent_role'),Config::get('app.Admin_role'),Config::get('app.Management_role')]);
+                        $user_ids =UserGroupsMapping::where('group_id',$group_id)->whereIn('user_role',$user_role)->get()->toArray();
+                    }
+
+                    $user_list = UserGroupsMapping::where(['group_id'=>$group_id,'user_table_id'=>$user_table_id,'user_role'=>$user->user_role])->get()->toArray();
+
+                    $user_list = array_merge($user_list,$user_ids);
+                }
+            }
+        }
+        if(!empty($user_list))
+            $this->insert_receipt_log($user_list,$notification_id,$user_table_id);
+
+        return response()->json(['message'=>'Notification inserted Successfully!...']);
+    } 
+
+    public function insert_receipt_log($user_list,$notification_id='',$user_table_id='')
+    {
+        // Get authorizated user details
+        $user = auth()->user();
+
+        Communications::where('id',$notification_id)->update(['delivered_users'=>count($user_list)]);
+        $existing_userids = $communication_details= $player_ids = [];
+        $message = Communications::where('id',$notification_id)->get()->first();
+        // Insert communication message in notification log receipt tables(School DB)
+        foreach ($user_list as $key => $value) {
+
+            $unique_userid = UserAll::where('user_table_id',$value['user_table_id'])->where('user_role',$value['user_role'])->pluck('id')->first();
+
+            if(!in_array($unique_userid, $existing_userids)) //check the duplicate user details is exists 
+            {
+                $player_id = Appusers::where('loginid',$unique_userid)->pluck('player_id')->first(); //get player id for the users
+                $data[] = ([
+                    'communication_id'=>$notification_id,
+                    'user_table_id'=>$value['user_table_id'],
+                    'user_role'=>$value['user_role'],
+                    'message_status'=>1,
+                    'view_type'=>($value['user_table_id'] == $user_table_id && $value['user_role'] == $user->user_role)?1:2,
+                    'actioned_time'=>Carbon::now()->timezone('Asia/Kolkata'),
+                    'player_id'=>$player_id
+                ]); //form array to store notification details
+
+                if($player_id!='') //check player id is not empty
+                {
+                    $player_ids[$value['user_role']] =$player_id;
+                    if($message->group_id ==1) //check managment group and sent notification msg
+                    {
+                        $school_name = SchoolProfile::where('id',$user->school_profile_id)->pluck('school_name')->first();
+                        $user->user_table_id = $user_table_id;
+                        $details = $this->user_details($user);
+                        if($message->message_category == 1 || $message->message_category == 2 || $message->message_category == 3|| $message->message_category == 7 || $message->message_category == 10)
+                            $chat_message = $school_name." A new communication is available in Management Group";
+                        else if($message->message_category == 4)
+                            $chat_message = $details['user_details']->first_name." has sent a document in management group";
+                        else if($message->message_category == 5)
+                            $chat_message = $details['user_details']->first_name." has sent an audio message";
+                        else if($message->message_category == 6)
+                            $chat_message = $details['user_details']->first_name." has sent a video link";
+                        else if($message->message_category == 8)
+                            $chat_message = $details['user_details']->first_name." has talked about something";
+                        else if($message->message_category == 9)
+                            $chat_message = "A new circular is initiated by ". $details['user_details']->first_name;
+                    }
+                    else if($message->group_id ==2) //check managment group and sent notification msg
+                    {
+                        $school_name = SchoolProfile::where('id',$user->school_profile_id)->pluck('school_name')->first();
+                        $user->user_table_id = $user_table_id;
+                        $details = $this->user_details($user);
+                        if($message->message_category == 1)
+                            $chat_message = $details['user_details']->first_name." has sent a text message";
+                        else if($message->message_category == 2 || $message->message_category == 3)
+                            $chat_message = $details['user_details']->first_name." has sent a images";
+                        else if($message->message_category == 7 )
+                            $chat_message = $details['user_details']->first_name." has sent a quotes";
+                        else if($message->message_category == 10)
+                            $chat_message = $details['user_details']->first_name." has sent a study material";
+                        else if($message->message_category == 4)
+                            $chat_message = $details['user_details']->first_name." has sent a document";
+                        else if($message->message_category == 5)
+                            $chat_message = $details['user_details']->first_name." has sent an audio message";
+                        else if($message->message_category == 6)
+                            $chat_message = $details['user_details']->first_name." has sent a video link";
+                        else if($message->message_category == 8)
+                            $chat_message = $details['user_details']->first_name." has talked about something";
+                        else if($message->message_category == 9)
+                            $chat_message = "A new circular is initiated by ". $details['user_details']->first_name;
+                    }
+                    else if($message->group_id>=3) //if staff and class group notification message
+                    {
+                        $group_name = UserGroups::where('id',$message->group_id)->pluck('group_name')->first();
+                        $user->user_table_id = $user_table_id;
+                        $details = $this->user_details($user);
+                        $chat_message = "A new message from ".$details['user_details']->first_name." in ".$group_name;
+                    }
+                    else
+                        $chat_message = 'A new message is avaliable';
+                }
+                array_push($existing_userids,$unique_userid);
+            }
+        }
+        CommunicationRecipients::insert($data); //inserted into log
+
+        $delivery_details = APIPushNotificationController::SendNotification($chat_message,$player_ids); //trigger pushnotification function
+
+        if($message->approval_status == '' || $message->approval_status == null) //check message for approval process and trigger notification 
+        {
+            $userids = UserAll::select('user_role','id')->where('user_table_id',$value['user_table_id'])->whereIn('user_role',[Config::get('app.Admin_role'),Config::get('app.Management_role')])->get()->toArray();
+            if(!empty($userids))
+            {
+                $group_name = UserGroups::where('id',$message->group_id)->pluck('group_name')->first();
+                $chat_message = "A new message is waiting for your approval in ".$group_name;
+                $delivery_details = APIPushNotificationController::SendNotification($chat_message,$userids);
+            }
+        }
+
+    }
+    // Message Visible count
+    public function message_visible_count(Request $request)
+    {
+        $group_id = $request->group_id;
+        // Get authorizated user details
+        $user = auth()->user();
+        $user_list = [];
+        $category='';
+        $user_list = UserGroupsMapping::where('group_id',$group_id)->get()->toArray();
+        if(!empty($user_list)) 
+        {
+            foreach ($user_list as $key => $value) {
+                if($value['user_role'] == Config::get('app.Admin_role'))//check role and get current user id
+                {
+                    $user_table_id = UserAdmin::where(['id'=>$value['user_table_id']])->first();
+                    $category = 'Admin';
+                    $keyvalue='admin';
+                }
+                else if($value['user_role'] == Config::get('app.Management_role'))
+                {
+                    $user_table_id = UserManagements::where(['id'=>$value['user_table_id']])->first();
+                    $category = 'Management';
+                    $keyvalue='management';
+                }
+                else if($value['user_role'] == Config::get('app.Staff_role'))
+                {
+                    $user_table_id = UserStaffs::where(['id'=>$value['user_table_id']])->first();
+                    if(!empty($user_table_id))
+                        $category = UserCategories::where(['id'=>$user_table_id->user_category])->pluck('category_name')->first();
+                    $keyvalue='staff';
+                }
+                else if($value['user_role'] == Config::get('app.Parent_role'))
+                {
+                    $user_table_id = UserParents::where(['id'=>$value['user_table_id']])->first();//fetch id from user all table to store notification triggered user
+                    if(!empty($user_table_id))
+                    {
+                        $config_id = UserGroups::where('id',$group_id)->pluck('class_config')->first();
+                        $user_category = UserCategories::where(['id'=>$user_table_id->user_category])->pluck('category_name')->first();
+                        $user_category = (strtolower($user_category) == 'father')?'F/O':((strtolower($user_category) == 'mother')?'M/O':'G/O');
+                        $student_id = UserStudentsMapping::where(['parent'=>$user_table_id->id])->pluck('student')->toArray();
+                        $student_name = UserStudents::whereIn('id',$student_id)->where('class_config',$config_id)->pluck('first_name')->first();
+
+                        $category = $user_category.' '.$student_name;
+                    }
+                    $keyvalue='parent';
+                }
+
+                $user_details[$keyvalue][]=([
+                    'name'=>$user_table_id->first_name,
+                    'mobile_number'=>$user_table_id->mobile_number,
+                    'category'=>$category,
+                    'id'=>$user_table_id->id,
+                ]);
+            }
+            
+        }
+        return response()->json($user_details);
+        exit();
+    }
+
+    // View Message
+    public function view_messages(Request $request)
+    {
+        // Get authorizated user details
+        $user = auth()->user();
+        $userid = '';
+        $group_id = [];
+        $user->last_login = Carbon::now()->timezone('Asia/Kolkata');
+        $user->save();
+
+        if($user->user_role == Config::get('app.Management_role'))
+        {
+            $userdetails = UserManagements::where(['user_id'=>$user->user_id])->get()->first();
+            $group_type = UserGroups::where(['id'=>$request->group_id])->pluck('group_type')->first();
+            $group_id = ([$request->group_id]);
+            if($group_type == 2)
+            {
+                $whole_school_group = ([2]);
+                $group_id = array_merge($group_id,$whole_school_group);
+            }
+        }
+        else if($user->user_role == Config::get('app.Staff_role'))
+        {
+            $group_id = ([$request->group_id]);
+            $userdetails = UserStaffs::where(['user_id'=>$user->user_id])->get()->first();
+        }
+        else if($user->user_role == Config::get('app.Admin_role'))
+        {
+            $userdetails = UserAdmin::where(['user_id'=>$user->user_id])->get()->first();
+            $group_type = UserGroups::where(['id'=>$request->group_id])->pluck('group_type')->first();
+            $group_id = ([$request->group_id]);
+            if($group_type == 2)
+            {
+                $whole_school_group = ([2]);
+                $group_id = array_merge($group_id,$whole_school_group);
+            }
+        }
+        else if($user->user_role == Config::get('app.Parent_role'))
+        {
+            $userdetails = UserParents::where(['user_id'=>$user->user_id])->get()->first();
+            $group_id = ([2,$request->group_id]);
+        }
+
+        $messages=$user_details= [];
+        $unreadmessages = 0;
+        if(!empty($userdetails) && !empty($group_id))
+        {
+            $user_details = ([
+                'name'=>$userdetails->first_name,
+                'last_seen'=>$user->last_login
+            ]);
+            $communication_id_list = Communications::whereIn('group_id',$group_id);
+            if($user->user_role == Config::get('app.Parent_role'))
+                $communication_id_list =$communication_id_list->whereNull('message_status')->orWhere('message_status',2);
+
+            $communication_id_list =$communication_id_list->pluck('id')->toArray();
+
+            $notification_ids = CommunicationRecipients::where(['user_table_id'=>$userdetails->id,'user_role'=>$user->user_role])->whereIn('communication_id',$communication_id_list)->orderBy('actioned_time')->get()->toArray(); //Fetch applicable notification ids from table for logged in user.
+            $read_count = CommunicationRecipients::select(DB::raw('count(*) as count'),'communication_id')->where(['message_status'=>Config::get('app.Read')])->groupBy('communication_id')->get()->toArray(); //get read count based on notification id.
+            $readcount_data = array_column($read_count,'count','communication_id');
+            if(!empty($notification_ids))
+            {
+                $management_categories = array_column(UserCategories::select('id','category_name')->where('user_role',Config::get('app.Management_role'))->get()->toArray(),'category_name','id');
+
+                $staff_categories = array_column(UserCategories::select('id','category_name')->where('user_role',Config::get('app.Staff_role'))->get()->toArray(),'category_name','id');
+                $unreadmessages = 0;
+                foreach ($notification_ids as $key => $value) {
+                    $fetch_sender_id = CommunicationRecipients::select('user_table_id','user_role')->where(['view_type'=>1,'communication_id'=>$value['communication_id']])->get()->first();
+                    $message_details = Communications::select('*')->where(['id'=>$value['communication_id']])->get()->first();
+                    if($value['message_status'] == 1)
+                        $unreadmessages++;
+                    $sender_details =[];
+                    $designation=$user=$message_category=$message=$caption=$important='';
+                    if(!empty($fetch_sender_id))
+                        $sender_details = $fetch_sender_id->userDetails();
+                    if($message_details->communication_type == 2)
+                    {
+                        $user = '';
+                        $designation = 'Home Work of the day '.date('d-M-Y',strtotime($message_details->actioned_time));
+                    }
+                    else if($fetch_sender_id->user_role == Config::get('app.Management_role'))
+                    {
+                        $user = isset($management_categories[$sender_details['user_category']])?ucfirst($sender_details['first_name'])." ".$management_categories[$sender_details['user_category']]:ucfirst($sender_details['first_name']);
+                        $designation = 'Management';
+                    }
+                    else if($fetch_sender_id->user_role == Config::get('app.Staff_role'))
+                    {
+                        $user = ucfirst($sender_details['first_name']);
+                        $designation = $staff_categories[$sender_details['user_category']];
+                    }
+                    else if($fetch_sender_id->user_role == Config::get('app.Admin_role'))
+                    {
+                        $user = ucfirst($sender_details['first_name']);
+                        $designation = 'Admin';
+                    }
+                    else if($fetch_sender_id->user_role == Config::get('app.Parent_role'))
+                    {
+                        $user = ucfirst($sender_details['first_name']);
+                        $designation = 'F/O Test';
+                    }
+
+                    if($message_details->distribution_type==3)
+                        $visibility = 'Visible to Everyone';
+                    else if($message_details->distribution_type==4)
+                        $visibility = 'Visible to Staffs';
+                    else if($message_details->distribution_type==5)
+                        $visibility = 'Visible to Parents';                  
+
+                    $message_category='';                 
+                    if($message_details->message_category == 1)
+                        $message_category = 'Text';
+                    else if($message_details->message_category == 2)
+                        $message_category = 'ImageWithCaption';
+                    else if($message_details->message_category == 3)
+                        $message_category = 'Images';
+                    else if($message_details->message_category == 4)
+                        $message_category = 'Document';
+                    else if($message_details->message_category == 5)
+                        $message_category = 'Audio';
+                    else if($message_details->message_category == 6)
+                        $message_category = 'Video';
+                    else if($message_details->message_category == 7)
+                        $message_category = 'Quotes';
+                    else if($message_details->message_category == 8)
+                        $message_category = 'ManagementSpeaks';
+                    else if($message_details->message_category == 9)
+                        $message_category = 'Circular';
+                    else if($message_details->message_category == 10)
+                        $message_category = 'StudyMaterial';
+
+                    if($message_details->communication_type == 2)
+                        $message_category = 'Homework';
+
+                    $messages[$key] = ([
+                        'notification_id'=>$value['communication_id'],
+                        'user'=>$user,
+                        'designation'=>$designation,
+                        'view_type'=>$value['view_type'],//1-sender,2-Receiver
+                        'message_category'=>$message_category,
+                        'message_status'=>($message_details->message_status != null)?$message_details->message_status:3,//1-Deleted,2-Edited,3-active
+                        'date_time'=>($message_details->approved_time ==null)?$message_details->actioned_time:$message_details->approved_time,
+                        'visiblity'=>$visibility,
+                        'important'=>$message_details->important,//0-no,1-yes
+                        'communication_type'=>$message_details->communication_type,//1-chat,2-homework
+                        'caption'=>$message_details->caption_message,
+
+                        'approval_status'=>($message_details->approval_status == null)?0:$message_details->approval_status,//0-waiting for approval,1-approval,2-denied
+                        'read_count'=>array_key_exists($value['communication_id'],$readcount_data)?$readcount_data[$value['communication_id']]:0,
+                    ]);
+                    if($message_details->message_category == 6 && $message_details->communication_type == 1)
+                        $messages[$key]['message']=''; 
+                    else
+                        $messages[$key]['message']=$message_details->chat_message; 
+                    if($message_details->communication_type == 2)
+                    {
+                        if(!empty($message_details))
+                        {
+                            $subject_details = AcademicSubjects::where('id',$message_details->subject_id)->get()->first();
+                            $messages[$key]['subject_id'] = isset($message_details->subject_id)?$message_details->subject_id:0;
+                            $messages[$key]['subject_name'] =isset($subject_details->subject_name)?$subject_details->subject_name:'';
+                            $messages[$key]['short_name'] = isset( $subject_details->short_name)?$subject_details->short_name:'';
+                        }
+
+                    }
+
+                    if($value['view_type'] == 1)
+                    {
+                        $watched = CommunicationRecipients::select('id')->where(['message_status'=>2,'communication_id'=>$value['communication_id']])->get()->count();
+                        $messages[$key]['delivered_users'] = $message_details['delivered_users'];
+                        $messages[$key]['watched'] = $watched;
+                    }
+                    if($message_details->message_category == 7 )
+                        $messages[$key]['sub_title'] = 'Quotes';
+                    if($message_details->message_category == 8 )
+                        $messages[$key]['sub_title'] = 'Management Speaks';
+                    if($message_details->message_category == 9 )
+                        $messages[$key]['sub_title'] = 'Circular';
+
+                    if($message_details->message_category == 3 || $message_details->message_category == 2 || $message_details->message_category == 4 || $message_details->message_category == 10 || $message_details->message_category == 5 )
+                    {
+                        $images = [];
+                        $images_list = CommunicationAttachments::where(['communication_id'=>$value['communication_id']])->get()->toArray();
+                        if(!empty($images_list))
+                        {
+                            foreach ($images_list as $image_key => $image_value) {
+                                $images[]= $image_value['attachment_location'].''.$image_value['attachment_name'];
+                            }
+                            
+                            $messages[$key]['images'] = $images;
+                        }
+                    }
+                    else if($message_details->message_category == 6 && $message_details->communication_type == 1)
+                        $messages[$key]['images']=explode(',',$message_details->chat_message); 
+                      
+                }
+            }
+            echo json_encode(['message'=>$messages,'user_details'=>$user_details,'unreadmessages'=>$unreadmessages]);exit();        
+        }
+        return response()->json('No Messages');
+    }
+
+    // Delete Message
+    public function delete_messages(Request $request)
+    {
+        $user = auth()->user();
+        if($request->group_id=='')
+            return response()->json(['error'=>'Group id is missing']);
+        else
+        {
+            if($user->user_role == Config::get('app.Admin_role'))//check role and get current user id
+                $user_data = UserAdmin::where(['user_id'=>$user->user_id])->get()->first();
+            else if($user->user_role == Config::get('app.Management_role'))
+                $user_data = UserManagements::where(['user_id'=>$user->user_id])->get()->first();
+            else if($user->user_role == Config::get('app.Staff_role'))
+                $user_data = UserStaffs::where(['user_id'=>$user->user_id])->get()->first();
+            $user_table_id = $user_data->id;
+            $userall_id = UserAll::where(['user_table_id'=>$user_table_id,'user_role'=>$user->user_role])->pluck('id')->first();
+            $notification_id = $request->notification_id;
+            $communication_data = Communications::where(['group_id'=>$request->group_id,'id'=>$notification_id])->get()->first();
+            // foreach ($notification_id as $key => $value) {
+            $delete_status = Communications::where(['group_id'=>$request->group_id,'id'=>$notification_id])->update(['message_status'=>Config::get('app.Deleted'),'deleted_by'=>$userall_id,'deleted_time'=>Carbon::now()->timezone('Asia/Kolkata')]);
+
+            // }
+            $chat_message ='';
+            $group_name = UserGroups::where('id',$request->group_id)->pluck('group_name')->first();
+            if($user->user_role == Config::get('app.Management_role'))
+                $chat_message = $user_data->first_name." has deleted a communication in ".$group_name;
+            if($user->user_role == Config::get('app.Admin_role'))
+                $chat_message = "Admin has deleted a communication in ".$group_name;
+            $player_ids[] = Appusers::where('loginid',$communication_data->created_by)->pluck('player_id')->first();
+            if(!empty($player_ids) && $chat_message!='')
+                $delivery_details = APIPushNotificationController::SendNotification($chat_message,$player_ids); //trigger pushnotification function
+            return response()->json(['success'=>'Deleted Successfully!...']);
+        }
+    }
+
+    // Approval Status
+    public function message_approval(Request $request)
+    {
+        // Add rules to the Store Message form
+        $validator = Validator::make($request->all(), [
+            'approval_status' => 'required', //1- approval,2-denied
+        ]);
+        // Validate form
+        if ($validator->fails()) {
+            return response()->json($validator->errors());
+        }
+
+        // Get authorizated user details
+        $user = auth()->user();
+
+        if($user->user_role == Config::get('app.Admin_role'))//check role and get current user id
+            $user_data = UserAdmin::where(['user_id'=>$user->user_id])->get()->first();
+        else if($user->user_role == Config::get('app.Management_role'))
+            $user_data = UserManagements::where(['user_id'=>$user->user_id])->get()->first();
+        else if($user->user_role == Config::get('app.Staff_role'))
+            $user_data = UserStaffs::where(['user_id'=>$user->user_id])->get()->first();
+        else if($user->user_role == Config::get('app.Parent_role'))
+            $user_data = UserParents::where(['user_id'=>$user->user_id])->get()->first();//fetch id from user all table to store notification triggered user
+        $user_table_id = $user_data->id;
+        $userall_id = UserAll::where(['user_table_id'=>$user_table_id,'user_role'=>$user->user_role])->pluck('id')->first();
+
+        // foreach ($request->notification_id as $key => $value) {
+            $communication_data = Communications::where(['id'=>$request->notification_id])->get()->first();
+            $player_ids[] = Appusers::where('loginid',$communication_data->created_by)->pluck('player_id')->first();
+            if($request->approval_status == 1)
+            {
+                $notification_triggered_user = UserAll::select('user_role','user_table_id')->where(['id'=>$communication_data->created_by])->first();
+                if($communication_data->distribution_type == 3) // Everyone
+                {
+                    $user_ids = UserGroupsMapping::where('group_id',$communication_data->group_id)->whereIn('user_role',([Config::get('app.Staff_role'),Config::get('app.Parent_role')]))->get()->toArray();
+                }
+                else if($communication_data->distribution_type == 4 || $communication_data->distribution_type == 5)
+                {    
+                    $user_role = ($communication_data->distribution_type == 4)?2:3;
+                    $user_ids =UserGroupsMapping::where('group_id',$communication_data->group_id)->where('user_role',$user_role)->get()->toArray();                    
+                }
+
+                foreach ($user_ids as $user_key => $user_value) {
+                   if($user_value['user_role'] != $notification_triggered_user->user_role || $user_value['user_table_id'] != $notification_triggered_user->user_table_id)
+                        $user_list[] = $user_value;
+                }
+                Communications::where('id',$request->notification_id)->update(['approval_status'=>$request->approval_status,'delivered_users'=>count($user_list)+$communication_data->delivered_users,'approved_by'=>$userall_id,'approved_time'=>Carbon::now()->timezone('Asia/Kolkata')]);
+
+                if(count($user_list)>0)
+                    $this->insert_receipt_log($user_list,$communication_data->id,$user_table_id);
+                if($user->user_role == Config::get('app.Management_role'))
+                    $chat_message = $user_data->first_name." has approved your ".Config::get('app.MessageCategories.'.$communication_data->message_category);
+                if($user->user_role == Config::get('app.Admin_role'))
+                    $chat_message = "Admin has approved your ".Config::get('app.MessageCategories.'.$communication_data->message_category);
+
+                
+                $delivery_details = APIPushNotificationController::SendNotification($chat_message,$player_ids); //trigger pushnotification function
+
+                return response()->json(['message'=>'Approved Successfully!...']);
+
+            }
+            else
+            {
+                Communications::where('id',$request->notification_id)->update(['approval_status'=>$request->approval_status,'approved_by'=>$userall_id,'approved_time'=>Carbon::now()->timezone('Asia/Kolkata')]);
+
+                if($user->user_role == Config::get('app.Management_role'))
+                    $chat_message = $user_data->first_name." has denied your ".Config::get('app.MessageCategories.'.$communication_data->message_category);
+                if($user->user_role == Config::get('app.Admin_role'))
+                    $chat_message = "Admin has denied your ".Config::get('app.MessageCategories.'.$communication_data->message_category);
+
+                
+                $delivery_details = APIPushNotificationController::SendNotification($chat_message,$player_ids); //trigger pushnotification function
+
+                return response()->json(['message'=>'Denied Successfully!...']);
+            }
+        // }
+
+    }
+
+    // Read count api
+    public function message_read(Request $request)
+    {
+        // Get authorizated user details
+        $user = auth()->user();
+
+        if($user->user_role == Config::get('app.Admin_role'))//check role and get current user id
+            $user_table_id = UserAdmin::where(['user_id'=>$user->user_id])->pluck('id')->first();
+        else if($user->user_role == Config::get('app.Management_role'))
+            $user_table_id = UserManagements::where(['user_id'=>$user->user_id])->pluck('id')->first();
+        else if($user->user_role == Config::get('app.Staff_role'))
+            $user_table_id = UserStaffs::where(['user_id'=>$user->user_id])->pluck('id')->first();
+        else if($user->user_role == Config::get('app.Parent_role'))
+            $user_table_id = UserParents::where(['user_id'=>$user->user_id])->pluck('id')->first();//fetch id from user all table to store notification triggered user
+        $userall_id = UserAll::where(['user_table_id'=>$user_table_id,'user_role'=>$user->user_role])->pluck('id')->first();
+        if($request->message_status == 2)
+            CommunicationRecipients::where(['user_table_id'=>$user_table_id,'user_role'=>$user->user_role,'message_status'=>1])->where('communication_id','<=',$request->notification_id)->update(['message_status'=>$request->message_status,'updated_time'=>Carbon::now()->timezone('Asia/Kolkata')]);
+        else
+            CommunicationRecipients::where(['communication_id'=>$request->notification_id,'user_table_id'=>$user_table_id,'user_role'=>$user->user_role])->update(['message_status'=>$request->message_status,'updated_time'=>Carbon::now()->timezone('Asia/Kolkata')]);
+        return response()->json(['message'=>'inserted Successfully!...']);
+    }   
+
+    // Message Info
+    Public function message_info(Request $request)
+    {
+        // Add rules to the Store Message form
+        $validator = Validator::make($request->all(), [
+            'group_id' => 'required', 
+            'notification_id' => 'required', 
+        ]);
+        // Validate form
+        if ($validator->fails()) {
+            return response()->json($validator->errors());
+        }
+
+        // Get authorizated user details
+        $user = auth()->user();
+
+        $message_details = Communications::where(['id'=>$request->notification_id])->get()->first();
+        if(!empty($message_details))
+        {
+            $initated_user_details = UserAll::where(['id'=>$message_details->created_by])->get()->first();
+            if(!empty($initated_user_details))
+            {
+                $initated_users = $this->user_details($initated_user_details);
+                $approver_user_details=[];
+                if($message_details->approved_by!='' && $message_details->approved_by!= null)
+                {
+                    $approver_users = UserAll::where(['id'=>$message_details->approved_by])->get()->first();
+                    $approver_user_details = $this->user_details($approver_users);
+                }
+                if($message_details->message_status==Config::get('app.Deleted') && $message_details->deleted_by!='' && $message_details->deleted_by!=null)
+                {
+                    $deleted_users = UserAll::where(['id'=>$message_details->deleted_by])->get()->first();
+                    $deleted_user_details = $this->user_details($deleted_users);
+                }
+               
+                $message_info = ([
+                    'initated_by'=>$initated_users['user_details']->first_name,
+                    'initated_user_category'=>$initated_users['user_category'],
+                    'initated_on'=>$message_details->created_time,
+                    'approved_by'=>(count($approver_user_details)>0)?$approver_user_details['user_details']->first_name:'',
+                    'approver_user_category'=>(count($approver_user_details)>0)?$approver_user_details['user_category']:'',
+                    'area'=>'N/A',
+                    'approved_at'=>(count($approver_user_details)>0)?$message_details->approved_time:null,
+                    'deleted_by'=>(!empty($deleted_user_details))?$deleted_user_details['user_details']->first_name:'',
+                    'deleted_on'=>($message_details->deleted_time!=null)?$message_details->deleted_time:null
+                ]);
+                echo json_encode(["message_info"=>$message_info]);exit();  
+            }      
+        }
+        return response()->json('No Messages');
+    }
+
+    public function user_details($userdetails)
+    {
+        if($userdetails->user_role == Config::get('app.Management_role'))
+        {
+            $management_categories = array_column(UserCategories::select('id','category_name')->where('user_role',Config::get('app.Management_role'))->get()->toArray(),'category_name','id');
+            $user_details = UserManagements::where(['id'=>$userdetails->user_table_id])->get()->first();
+            $user_category = $management_categories[$user_details->user_category];
+        }
+        else if($userdetails->user_role == Config::get('app.Admin_role'))//check role and get current user id
+        {
+            $user_details = UserAdmin::where(['id'=>$userdetails->user_table_id])->get()->first();
+            $user_category = 'Admin';
+        }
+        else if($userdetails->user_role == Config::get('app.Staff_role'))
+        {
+            $staff_categories = array_column(UserCategories::select('id','category_name')->where('user_role',Config::get('app.Staff_role'))->get()->toArray(),'category_name','id');
+            $user_details = UserStaffs::where(['id'=>$userdetails->user_table_id])->get()->first();
+            $user_category = $staff_categories[$user_details->user_category];
+        }
+        else if($userdetails->user_role == Config::get('app.Parent_role'))
+        {
+            $user_category = 'Parent';
+            $user_details = UserParents::where(['id'=>$userdetails->user_table_id])->get()->first();//fetch id from user all table to store notification triggered user
+        }
+        return (['user_details'=>$user_details,'user_category'=>$user_category]);
+    }
+
+    public function message_delivery_details(Request $request)
+    {
+        // Add rules to the Store Message form
+        $validator = Validator::make($request->all(), [
+            'group_id' => 'required', 
+            'notification_id' => 'required', 
+        ]);
+        // Validate form
+        if ($validator->fails()) {
+            return response()->json($validator->errors());
+        }
+
+        // Get authorizated user details
+        $user = auth()->user();
+        $message_details = Communications::where(['id'=>$request->notification_id])->get()->first();
+        if(!empty($message_details))
+        {
+            $delivery_details=CommunicationRecipients::where(['communication_id'=>$request->notification_id])->get();
+            if(!empty($delivery_details))
+            {
+                $delivered_users=[];
+                foreach ($delivery_details as $key => $value) {
+                    $data= $this->user_details($value);
+                    if($value['user_role'] == Config::get('app.Admin_role'))//check role and get current user id
+                        $category = 'Admin';
+                    else if($value['user_role'] == Config::get('app.Management_role'))
+                        $category = 'Management';
+                    else if($value['user_role'] == Config::get('app.Staff_role'))
+                    {
+                        $user_table_id = UserStaffs::where(['id'=>$value['user_table_id']])->first();
+                        if(!empty($user_table_id))
+                            $category = UserCategories::where(['id'=>$user_table_id->user_category])->pluck('category_name')->first();
+                    }
+                    else if($value['user_role'] == Config::get('app.Parent_role'))
+                    {
+                        $user_table_id = UserParents::where(['user_id'=>$data['user_details']->user_id])->first();//fetch id from user all table to store notification triggered user
+                        if(!empty($user_table_id))
+                        {
+                            $config_id = UserGroups::where('id',$request->group_id)->pluck('class_config')->first();
+                            $user_category = UserCategories::where(['id'=>$user_table_id->user_category])->pluck('category_name')->first();
+                            $user_category = (strtolower($user_category) == 'father')?'F/O':((strtolower($user_category) == 'mother')?'M/O':'G/O');
+                            $student_id = UserStudentsMapping::where(['parent'=>$user_table_id->id])->pluck('student')->toArray();
+                            $student_name = UserStudents::whereIn('id',$student_id)->pluck('first_name')->first();
+
+                            $category = $user_category.' '.$student_name;
+                        }
+                    }
+                    $delivered_users[$key]=([
+                        'name'=>$data['user_details']->first_name,
+                        'designation'=>$category,
+                        'mobile_no'=>$data['user_details']->mobile_number,
+                        'message_status'=>$value['message_status'],//1-delivered,2-Read,3-Actioned,
+                        'view_time'=>$value['actioned_time'],
+                    ]);
+                }
+                echo json_encode(["delivered_users"=>$delivered_users]);exit();  
+            }
+            return response()->json('No Recipients');exit();
+        }
+        return response()->json('No Messages');
+    }
+
+    public function view_profile(Request $request)
+    {
+        // Get authorizated user details
+        $user = $userdata = auth()->user();
+        $user->last_login = Carbon::now()->timezone('Asia/Kolkata');
+        $user->save();
+        if($request->user_role!='' && $request->id!='')
+        {
+            if($request->user_role == Config::get('app.Staff_role'))
+                $data = UserStaffs::where(['id'=>$request->id])->get()->first();
+            else if($request->user_role == Config::get('app.Parent_role'))
+                $data = UserParents::where(['id'=>$request->id])->get()->first();
+             $role= $request->user_role;
+
+            $userdata = SchoolUsers::where(['user_id'=>$data->user_id,'user_role'=>$request->user_role])->get()->first();
+        }
+        else
+        {
+            $role= $user->user_role;
+            if($user->user_role == Config::get('app.Management_role'))
+                $data = UserManagements::where(['user_id'=>$user->user_id])->get()->first();
+            else if($user->user_role == Config::get('app.Admin_role'))//check role and get current user id
+                $data = UserAdmin::where(['user_id'=>$user->user_id])->get()->first();
+            else if($user->user_role == Config::get('app.Staff_role'))
+                $data = UserStaffs::where(['user_id'=>$user->user_id])->get()->first();
+            else if($user->user_role == Config::get('app.Parent_role'))
+                $data = UserParents::where(['user_id'=>$user->user_id])->get()->first();
+        }
+
+        if(!empty($data))
+        {
+            $user_details=([
+                'name'=>$data->first_name,
+                'mobile_no'=>$data->mobile_number,
+                'profile'=>$data->profile_image,
+                "last_login"=>($userdata->last_login!=null)?$userdata->last_login:null,
+            ]);
+
+            if( $role== Config::get('app.Management_role') || $role == Config::get('app.Admin_role') || $role == Config::get('app.Staff_role'))
+                $user_details['designation'] = $data['user_category'];
+            else if($role == Config::get('app.Parent_role'))
+            {
+                $class_name =$section_name ='';
+                $category = ($data['user_category']==1)?'F/O':($data['user_category']==2?'M/O':'G/O');
+                $student_id = UserStudentsMapping::where(['parent'=>$data->id])->pluck('student')->first();
+                $student_details = UserStudents::select('first_name','class_config')->where(['id'=>$student_id])->get()->first();
+                $user_details['name'] = $data->first_name." ".$category." ".$student_details['first_name'];
+                $class_section_details = AcademicClassConfiguration::where(['id'=>$student_details['class_config']])->get()->first();
+                if(isset($class_section_details['class_id']) && $class_section_details['class_id']!='')
+                    $class_name = AcademicClasses::where('id',$class_section_details['class_id'])->pluck('class_name')->first();
+                if(isset($class_section_details['section_id']) && $class_section_details['section_id'])
+                    $section_name = AcademicSections::where('id',$class_section_details['section_id'])->pluck('section_name')->first();
+                if($class_name != '' && $section_name!='')
+                    $user_details['designation'] = $class_name." ".$section_name;
+                else
+                    $user_details['designation'] = null;
+            }
+        }
+        else
+        {
+             $user_details=([
+                'name'=>null,
+                'mobile_no'=>null,
+                'profile'=>null,
+                "designation"=> null,
+                "last_login"=>null,
+            ]);
+        }
+        
+        echo json_encode($user_details);exit();
+    }
+
+    public function save_profile(Request $request)
+    {
+        // Get authorizated user details
+        $user = auth()->user();
+        $user->last_login = Carbon::now()->timezone('Asia/Kolkata');
+        $user->save();
+        $profile_image='';
+        if($request->hasfile('profile_image')) {
+
+            $schoolcode = $school_profile = SchoolProfile::where(['id'=>$user['school_profile_id']])->get()->first();//get school code from school profile
+            $path = public_path('uploads/'.$school_profile['school_code'].'/profile_images');//
+
+            if(!File::isDirectory($path)){ //check path already exists
+                File::makeDirectory($path, 0777, true, true);
+            }
+
+            $name = explode('.',$request->file('profile_image')->getClientOriginalName());
+            $names = $name[0].time().'.'.$name[1];
+            $request->file('profile_image')->move(public_path().'/uploads/'.$school_profile['school_code'].'/profile_images/', $names);  
+            $profile_image= url('/').'/uploads/'.$school_profile['school_code'].'/profile_images/'.$names;
+        }
+
+        $user_details = ([
+            'first_name'=>$request->first_name,
+            'profile_image'=>$profile_image,
+        ]);
+        if($user->user_role == Config::get('app.Management_role'))
+            UserManagements::where('user_id',$user->user_id)->update($user_details);
+        else if($user->user_role == Config::get('app.Admin_role'))//check role and get current user id
+            UserAdmin::where('user_id',$user->user_id)->update($user_details);
+        else if($user->user_role == Config::get('app.Staff_role'))
+            UserStaffs::where('user_id',$user->user_id)->update($user_details);
+        else if($user->user_role == Config::get('app.Parent_role'))
+            UserParents::where('user_id',$user->user_id)->update($user_details);
+
+        return response()->json('Profile Updated Successfully!..');exit();
+    }
+    // approval pending list of data
+    public function approval_action_required(Request $request)
+    {
+        // Get authorizated user details
+        $user = auth()->user();
+        $approval_message = $approval_data = [];
+        $designation ='';
+        if($user->user_role == Config::get('app.Management_role') || $user->user_role == Config::get('app.Admin_role'))
+            $approval_data = Communications::whereNull('approval_status')->where('communication_type',1)->whereNull('deleted_by')->get()->toArray();
+
+        if(!empty($approval_data))
+        {
+            foreach ($approval_data as $key => $value) {
+                $fetch_sender_id = CommunicationRecipients::select('user_table_id','user_role')->where(['view_type'=>1,'communication_id'=>$value['id']])->get()->first();
+                if(!empty($fetch_sender_id))
+                {
+                    $sender_details = $fetch_sender_id->userDetails();
+                    $group_details = UserGroups::select('class_config','group_name')->where('id',$value['group_id'])->get()->first();
+                    if($fetch_sender_id->user_role == Config::get('app.Management_role'))
+                    {
+                        $user = isset($management_categories[$sender_details['user_category']])?ucfirst($sender_details['first_name'])." ".$management_categories[$sender_details['user_category']]:ucfirst($sender_details['first_name']);
+                        $designation = 'Management';
+                    }
+                    else if($fetch_sender_id->user_role == Config::get('app.Staff_role'))
+                    {
+                        $user = ucfirst($sender_details['first_name']);
+                        $designation='Staff';
+                    }
+                    else if($fetch_sender_id->user_role == Config::get('app.Admin_role'))
+                    {
+                        $user = ucfirst($sender_details['first_name']);
+                        $designation = 'Admin';
+                    }
+                    else if($fetch_sender_id->user_role == Config::get('app.Parent_role'))
+                    {
+                        $user = ucfirst($sender_details['first_name']);
+                        $user_table_id = UserParents::where(['user_id'=>$sender_details['user_details']->user_id])->first();//fetch id from user all table to store notification triggered user
+                        if(!empty($user_table_id))
+                        {
+                            $user_category = UserCategories::where(['id'=>$user_table_id->user_category])->pluck('category_name')->first();
+                            $user_category = (strtolower($user_category) == 'father')?'F/O':((strtolower($user_category) == 'mother')?'M/O':'G/O');
+                            $student_id = UserStudentsMapping::where(['parent'=>$user_table_id->id])->pluck('student')->toArray();
+                            $student_name = UserStudents::whereIn('id',$student_id)->pluck('first_name')->first();
+
+                            $designation = $user_category.' '.$student_name;
+                        }
+                    }
+
+                    $message_category='';                 
+                    if($value['message_category'] == 1)
+                        $message_category = 'Text';
+                    else if($value['message_category'] == 2)
+                        $message_category = 'ImageWithCaption';
+                    else if($value['message_category'] == 3)
+                        $message_category = 'Images';
+                    else if($value['message_category'] == 4)
+                        $message_category = 'Document';
+                    else if($value['message_category'] == 5)
+                        $message_category = 'Audio';
+                    else if($value['message_category'] == 6)
+                        $message_category = 'Video';
+                    else if($value['message_category'] == 7)
+                        $message_category = 'Quotes';
+                    else if($value['message_category'] == 8)
+                        $message_category = 'ManagementSpeaks';
+                    else if($value['message_category'] == 9)
+                        $message_category = 'Circular';
+                    else if($value['message_category'] == 10)
+                        $message_category = 'StudyMaterial';
+
+                    $approval_message[$key] = ([
+                        'notification_id'=>$value['id'],
+                        'user'=>$user,
+                        'designation'=>$designation,
+                        'message_category'=>$message_category,
+                        'message'=>$value['chat_message'],
+                        'group_name'=>$group_details['group_name'], 
+                        'date_time'=>$value['actioned_time'],
+                        'caption'=>$value['caption_message'],
+                    ]);
+
+                    if($value['message_category'] == 3 || $value['message_category'] == 2 || $value['message_category'] == 2 || $value['message_category'] == 4 || $value['message_category'] == 10 || $value['message_category'] == 5)
+                    {
+                        $images = [];
+                        $images_list = CommunicationAttachments::where(['communication_id'=>$value['id']])->get()->toArray();
+                        if(!empty($images_list))
+                        {
+                            foreach ($images_list as $image_key => $image_value) {
+                                $images[]= $image_value['attachment_location'].''.$image_value['attachment_name'];
+                            }
+                            
+                            $approval_message[$key]['images'] = $images;
+                        }
+                    }
+                }
+            }
+        }
+        echo json_encode($approval_message);exit();
+    }
+
+    // get group participants list
+    public function group_participants(Request $request)
+    {
+        $members_list = []; //declare empty array
+        // Get authorizated user details
+        $user = auth()->user();
+        $player_details = array_column(Appusers::get()->toArray(),'player_id','loginid');
+        $group_users = UserGroupsMapping::where('group_id',$request->group_id); //fetch group members
+
+        if(isset($request->search) && $request->search!='')
+        {
+            // $staff_list = $staff_list->where('first_name', 'like', '%' . $request->search . '%')->orWhere('mobile_number', 'like', '%' . $request->search . '%');
+        }
+        else
+            $group_users =$group_users->get();
+        if(!empty($group_users))
+        {
+            foreach ($group_users as $key => $value) {
+                $category = $app_status = '';
+                $list = $this->user_details($value); //fetch individual user details
+
+                if($value->user_role == Config::get('app.Parent_role')) //for parent fetch student details
+                {
+                    $user_category = UserCategories::where(['id'=>$list['user_details']->user_category])->pluck('category_name')->first(); //fetch parent category and student name
+                    $user_category = (strtolower($user_category) == 'father')?'F/O':((strtolower($user_category) == 'mother')?'M/O':'G/O');
+                    $student_id = UserStudentsMapping::where(['parent'=>$list['user_details']->id])->pluck('student')->toArray();
+                    $student_name = UserStudents::whereIn('id',$student_id)->pluck('first_name')->first();
+                    $category = $user_category.' '.$student_name; //combine category and name
+                }
+
+                //fetch id from user all table to store notification triggered user
+                $userall_id = UserAll::where(['user_table_id'=>$list['user_details']->id,'user_role'=>$user->user_role])->pluck('id')->first();
+                $app_status = isset($player_details[$userall_id])?'Installed':'Not Installed';
+                // user details
+                $members_list[]=([
+                    'id'=>$list['user_details']->id,
+                    'name' => $list['user_details']->first_name,
+                    'mobile_number' => $list['user_details']->mobile_number,
+                    'designation' => ($value->user_role == Config::get('app.Parent_role') &&$category!='')?$category:$list['user_category'],
+                    'last_login'=>SchoolUsers::where('user_id',$list['user_details']->user_id)->pluck('last_login')->first(),
+                    'app_status'=>$app_status,
+                    'user_role'=>$value->user_role
+                ]);
+            }
+        }
+        return response()->json($members_list);exit();
+    }
+
+    // Fetch all the images in group
+    public function image_list(Request $request)
+    {
+        $images_communication = Communications::select('id')->whereIn('group_id',[$request->group_id])->where('attachments','Y')->whereIn('message_category',[3,2])->get()->toArray();//fetch communication list for images
+        $imageslist = []; //declare empty array
+        if(!empty($images_communication)) //check communication is empty or not
+        {
+            $images_ids = array_column($images_communication,'id'); // apply array fun to filter id 
+            foreach ($images_ids as $key => $value) { //set loop to get images
+                $images = [];
+                $images_list = CommunicationAttachments::where(['communication_id'=>$value])->get()->toArray();
+                if(!empty($images_list))
+                {
+                    foreach ($images_list as $image_key => $image_value) {
+                        $images= $image_value['attachment_location'].''.$image_value['attachment_name'];//set images with url
+                        $imageslist[] = ([ //form array
+                            'id'=>$image_value['communication_id'],
+                            'image'=>$images,
+                        ]);
+                    }
+                }
+            }
+        }
+        echo json_encode($imageslist);exit();
+                        
+    }
+
+    //resend the welcome messaage to not installed parents
+    public function send_not_installed_user_welcome_message()
+    {
+        // Get authorizated user details
+        $user = auth()->user();
+
+        $default_password_type=SchoolProfile::where('id',$user->school_profile_id)->pluck('default_password_type')->first();//get default password type
+
+        // fetch all users mobile number under role staff,parent and management
+        $userslist = SchoolUsers::whereIn('user_role',[Config::get('app.Parent_role'),Config::get('app.Management_role'),Config::get('app.Staff_role')])->where('school_profile_id',$user->school_profile_id)->whereNull('last_login')->get()->toArray();
+        // echo '<pre>';print_r($userslist);exit();
+        // fetch welcome template
+        $templates = Smstemplates::whereRaw('LOWER(`label_name`) LIKE ? ',['%'.trim(strtolower("welcome_message")).'%'])->where('status',1)->first();
+
+        if($user->user_role == Config::get('app.Admin_role'))//check role and get current user id
+            $user_table_id = UserAdmin::where(['user_id'=>$user->user_id])->first();
+        else if($user->user_role == Config::get('app.Management_role'))
+            $user_table_id = UserManagements::where(['user_id'=>$user->user_id])->first();
+        else if($user->user_role == Config::get('app.Staff_role'))
+            $user_table_id = UserStaffs::where(['user_id'=>$user->user_id])->first();
+        else if($user->user_role == Config::get('app.Parent_role'))
+            $user_table_id = UserParents::where(['user_id'=>$user->user_id])->first();//fetch id from user all table to store notification triggered user
+        $userall_id = UserAll::where(['user_table_id'=>$user_table_id->id,'user_role'=>$user->user_role])->pluck('id')->first();
+
+        if(!empty($templates) && !empty($userslist)) //check empty condition
+        {
+            // run the loop and trigger the sms to all users one by one.
+            foreach ($userslist as $key => $value) {
+                if($value['user_role'] == 3)
+                {
+                    if($default_password_type== '')
+                        $default_password_type = 'mobile_number';
+                    if($default_password_type == 'admission_number' || $default_password_type == 'dob')
+                    {
+                        $mapped_student = UserStudentsMapping::where('parent',$user_table_id->id)->pluck('student')->first();
+                        $student_details = UserStudents::where('id',$mapped_student)->get()->first();
+                    }
+
+                    if($default_password_type == 'mobile_number')
+                        $password = $value['user_mobile_number'];
+                    else if($default_password_type == 'admission_number')
+                        $password = $student_details->admission_number;
+                    else if($default_password_type == 'dob')
+                        $password = $student_details->dob;
+                }
+                else
+                    $password = $value['user_mobile_number'];
+
+                    // replace the mobile and password with corresponding value
+                $message = str_replace("*mobileno*",$value['user_mobile_number'],$templates->message);
+                $message = str_replace("*password*",$password,$message);
+
+                // call send sms function
+                $delivery_details = APISmsController::SendSMS($value['user_mobile_number'],$message,$templates->dlt_template_id);
+                $status = 0;
+                if(!empty($delivery_details) && isset($delivery_details['status']) && $delivery_details['status'] == 1)
+                    $status = 1;
+                // store log in db.
+                $smslogs[] = ([
+                    'sms_description'=>$message,
+                    'sms_count'=>1,
+                    'mobile_number'=>$value['user_mobile_number'],
+                    'sent_by'=>$userall_id,
+                    'status'=>$status
+                ]);
+                
+            }
+            if(!empty($smslogs))
+                Smslogs::insert($smslogs); // store log in db.
+
+            return (['status'=>true,'message'=>'Successfully Sent Welcome message!...']);
+        }
+        else
+            return (['status'=>false,'message'=>'Successfully Sent Welcome message!...']);
+    }
+
+    // Reset password and send
+    public function reset_send_sms(Request $request)
+    {
+        // Get authorizated user details
+        $user = auth()->user();
+
+        $default_password_type=SchoolProfile::where('id',$user->school_profile_id)->pluck('default_password_type')->first();//get default password type
+
+        // fetch welcome template
+        $templates = Smstemplates::whereRaw('LOWER(`label_name`) LIKE ? ',['%'.trim(strtolower("welcome_message")).'%'])->where('status',1)->first();
+
+        if($request->user_role == Config::get('app.Admin_role'))//check role and get current user id
+            $user_table_id = UserAdmin::where(['id'=>$request->id])->first();
+        else if($request->user_role == Config::get('app.Management_role'))
+            $user_table_id = UserManagements::where(['id'=>$request->id])->first();
+        else if($request->user_role == Config::get('app.Staff_role'))
+            $user_table_id = UserStaffs::where(['id'=>$request->id])->first();
+        else if($request->user_role == Config::get('app.Parent_role'))
+            $user_table_id = UserParents::where(['id'=>$request->id])->first();//fetch id from user all table to store notification triggered user
+
+        $userall_id = UserAll::where(['user_table_id'=>$user_table_id->id,'user_role'=>$request->user_role])->pluck('id')->first();
+
+        if(!empty($templates)) //check empty condition
+        {
+            $schooluser = SchoolUsers::where('user_id',$user_table_id->user_id)->get()->first();
+            // run the loop and trigger the sms to all users one by one.
+            if($request->user_role == 3)
+            {
+                if($default_password_type== '')
+                    $default_password_type = 'mobile_number';
+                if($default_password_type == 'admission_number' || $default_password_type == 'dob')
+                {
+                    $mapped_student = UserStudentsMapping::where('parent',$user_table_id->id)->pluck('student')->first();
+                    $student_details = UserStudents::where('id',$mapped_student)->get()->first();
+                }
+
+                if($default_password_type == 'mobile_number')
+                    $password = $user_table_id->mobile_number;
+                else if($default_password_type == 'admission_number')
+                    $password = $student_details->admission_number;
+                else if($default_password_type == 'dob')
+                    $password = $student_details->dob;
+            }
+            else
+                $password = $user_table_id->mobile_number;
+
+            $schooluser->user_password=bcrypt($password);
+            $schooluser->save();
+            // replace the mobile and password with corresponding value
+            $message = str_replace("*mobileno*",$user_table_id->mobile_number,$templates->message);
+            $message = str_replace("*password*",$password,$message);
+
+            // call send sms function
+            $delivery_details = APISmsController::SendSMS($user_table_id->mobile_number,$message,$templates->dlt_template_id);
+            $status = 0;
+            if(!empty($delivery_details) && isset($delivery_details['status']) && $delivery_details['status'] == 1)
+                $status = 1;
+            // store log in db.
+            $smslogs = ([
+                'sms_description'=>$message,
+                'sms_count'=>1,
+                'mobile_number'=>$user_table_id->mobile_number,
+                'sent_by'=>$userall_id,
+                'status'=>$status
+            ]);
+
+            if(!empty($smslogs))
+                Smslogs::insert($smslogs); // store log in db.
+
+            return (['status'=>true,'message'=>'Successfully Sent Welcome message!...']);
+        }
+        else
+            return (['status'=>false,'message'=>'Successfully Sent Welcome message!...']);
+    }
+}

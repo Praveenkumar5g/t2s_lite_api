@@ -1,0 +1,206 @@
+        endDrawer: Drawer(
+          child: Container(
+            decoration: BoxDecoration(
+                color: Colors.blue.shade50,
+                image: DecorationImage(
+                  colorFilter: ColorFilter.mode(
+                      Colors.blue.withOpacity(0.2), BlendMode.dstATop),
+                  image: const NetworkImage(
+                      "https://i.pinimg.com/736x/8c/98/99/8c98994518b575bfd8c949e91d20548b.jpg"),
+                  fit: BoxFit.fill,
+                ),
+                borderRadius: const BorderRadius.only(
+                    topRight: Radius.circular(25), topLeft: Radius.circular(25))),
+            child: Column(
+              children: [
+                SizedBox(
+                  height: 120,
+                  child: DrawerHeader(
+                      decoration: BoxDecoration(
+                        color: Colors.blue.shade300,
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        children: [
+                          Container(
+                              height: 55,
+                              width: 55,
+                              decoration: BoxDecoration(
+                                color: Colors.transparent,
+                                border: Border.all(color: Colors.blue.shade800),
+                                shape: BoxShape.circle,
+                                image: const DecorationImage(
+                                    image: NetworkImage(
+                                        "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTpCKq1XnPYYDaUIlwlsvmLPZ-9-rdK28RToA&usqp=CAU")),
+                              )),
+                          const SizedBox(
+                            width: 20,
+                          ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const SizedBox(
+                                height: 5,
+                              ),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.start,
+                                children: const [
+                                  Text(
+                                    "Prakash",
+                                    style: TextStyle(
+                                        color: Colors.black,
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.bold),
+                                  ),
+                                  SizedBox(
+                                    width: 2,
+                                  ),
+                                  Text(
+                                    "F/O Lintiest",
+                                    softWrap: true,
+                                    style: TextStyle(
+                                      color: Colors.black,
+                                      fontSize: 15,
+                                    ),
+                                  )
+                                ],
+                              ),
+                              const Text(
+                                "xyz@gmail.com",
+                                softWrap: true,
+                                style: TextStyle(
+                                    color: Colors.black,
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w300),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(
+                            width: 10,
+                          ),
+                        ],
+                      )),
+                ),
+                Container(
+                  padding: const EdgeInsets.only(
+                    left: 10,
+                  ),
+                  child: Wrap(
+                    children: [
+                      ListTile(
+                        leading: Image.network(
+                          "https://cdn-icons-png.flaticon.com/512/863/863864.png",
+                          height: 25,
+                          width: 25,
+                        ),
+                        title: const Text("Add Student"),
+                      ),
+                      role == "admin"
+                          ? ListTile(
+                              leading: Image.network(
+                                "https://cdn-icons-png.flaticon.com/512/900/900797.png",
+                                height: 25,
+                                width: 25,
+                              ),
+                              title: InkWell(
+                                  child: const Text(
+                                    "Configuration",
+                                    style: TextStyle(color: Colors.black),
+                                  ),
+                                  onTap: () async {
+                                    SessionManager pref = SessionManager();
+                                    var respon = await pref.getRes();
+                                    Navigator.pushReplacement(
+                                        context,
+                                        MaterialPageRoute(
+                                            builder: (context) => OnBoarding(
+                                                  data: widget.res,
+                                                )));
+                                  }),
+                            )
+                          : Container(),
+                      ListTile(
+                        leading: Image.network(
+                          "https://cdn-icons-png.flaticon.com/512/3107/3107363.png",
+                          height: 25,
+                          width: 25,
+                        ),
+                        title: InkWell(
+                          child: const Text("Change Password"),
+                          onTap: () async {
+                            Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) =>
+                                        const Changepassword()));
+                          },
+                        ),
+                      ),
+                      ListTile(
+                        leading: Image.network(
+                          "https://cdn-icons-png.flaticon.com/512/6741/6741153.png",
+                          height: 25,
+                          width: 25,
+                        ),
+                        title: const Text("Forget Password"),
+                      ),
+                      ListTile(
+                        leading: Image.network(
+                          "https://cdn-icons-png.flaticon.com/512/182/182448.png",
+                          height: 25,
+                          width: 25,
+                        ),
+                        title: PopupMenuItem(
+                            child: InkWell(
+                          child: const Text("Logout"),
+                          onTap: () async {
+                            return showDialog(
+                              context: context,
+                              builder: (ctx) => AlertDialog(
+                                title: Text(
+                                  "Sign out Confirmation",
+                                  style: TextStyle(
+                                      fontSize: 2.5 * SizeConfig.textMultiplier,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.grey[700]),
+                                ),
+                                content: Text(
+                                  "Are you sure you want to sign out?",
+                                  style: TextStyle(
+                                      fontSize: 2.2 * SizeConfig.textMultiplier,
+                                      color: Colors.grey[700]),
+                                ),
+                                actions: <Widget>[
+                                  TextButton(
+                                    onPressed: () async {
+                                      SharedPreferences preferences =
+                                          await SharedPreferences.getInstance();
+                                      await preferences.clear();
+                                      Navigator.of(ctx).pop();
+                                      Navigator.pushReplacement(
+                                          context,
+                                          MaterialPageRoute(
+                                              builder: (context) =>
+                                                  const LoginPage()));
+                                    },
+                                    child: const Text("Yes"),
+                                  ),
+                                  TextButton(
+                                    onPressed: () {
+                                      Navigator.of(ctx).pop();
+                                    },
+                                    child: const Text("No"),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        )),
+                      ),
+                    ],
+                  ),
+                )
+              ],
+            ),
+          ),
+        ),

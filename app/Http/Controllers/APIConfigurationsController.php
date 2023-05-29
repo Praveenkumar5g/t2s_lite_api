@@ -2310,9 +2310,9 @@ class APIConfigurationsController extends Controller
             $student_details->user_id = $userstudent_id;
             $student_details->save();
 
-            if($default_password_type == 'admission_number')
+            if($profile_details->default_password_type == 'admission_number')
 				$password = bcrypt($request->admission_no);
-			else if($default_password_type == 'dob')
+			else if($profile_details->default_password_type == 'dob')
 				$password = date('Ymd',strtotime($request->dob));
 
             // insert father details

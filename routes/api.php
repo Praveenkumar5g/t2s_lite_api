@@ -57,6 +57,7 @@ Route::post('/user/register' , [APIRegistrationController::class,'register']);
 
 Route::post('/user/login' , [APILoginController::class,'login']);
 Route::post('/user/otplogin',[APILoginController::class,'OTPlogin']);
+Route::post('/user/get_school',[APILoginController::class,'get_school']);//get school for single management user
 
 Route::post('/user/forgot_password' , [APILoginController::class,'forgot_password']);
 Route::post('/user/resetPassword' , [APILoginController::class,'resetPassword']);
@@ -70,15 +71,18 @@ Route::group(['middleware' => 'auth.connect','prefix' => 'user'], function ($rou
     Route::post('/onesignal_store_device_details',[APIConfigurationsController::class,'onesignal_store_device_details']);//fetch onesignal details
     Route::post('/change_mobile_number',[APIConfigurationsController::class,'change_mobile_number']);//change mobile number for parent
     Route::post('/send_welcome_message',[APIConfigurationsController::class,'send_welcome_message']);//send welcome message to all users.
-	Route::get('/configuration_list',[APIConfigurationsController::class,'configuration_list']); //list configuration to check what are the configuration steps completed along with sample.
+    Route::get('/configuration_list',[APIConfigurationsController::class,'configuration_list']); //list configuration to check what are the configuration steps completed along with sample.
     Route::get('/configuration_tags',[APIConfigurationsController::class,'configuration_tags']);//list configuration to check what are the configuration steps completed
-	Route::post('/import_configuration',[APIConfigurationsController::class,'import_configuration']);//import manual upload data into DB.
+    Route::post('/import_configuration',[APIConfigurationsController::class,'import_configuration']);//import manual upload data into DB.
     Route::post('/upload_configuration',[APIConfigurationsController::class,'upload_configuration']);//import configuration data through excel.
+    Route::post('/user_status_change',[APILoginController::class,'user_status_change']);//change the user status
+    
     Route::get('/send_not_installed_user_welcome_message',[APICommunicationController::class,'send_not_installed_user_welcome_message']);//resend the welcome messaage to not installed parents
     Route::post('/reset_send_sms',[APICommunicationController::class,'reset_send_sms']);//Reset and send sms
     Route::post('/importdob',[APIConfigurationsController::class,'importdob']);
+    Route::get('/users_count',[APIConfigurationsController::class,'users_count']); // users count list
     
-	Route::get('/get_classes_sections_subjects_list',[APIConfigurationsController::class,'get_classes_sections_subjects_list']);
+    Route::get('/get_classes_sections_subjects_list',[APIConfigurationsController::class,'get_classes_sections_subjects_list']);
     Route::get('/get_staff_category_class',[APIConfigurationsController::class,'get_staff_category_class']);
     Route::get('/get_management_designation',[APIConfigurationsController::class,'get_management_designation']);
     Route::post('/get_classes_list',[APIConfigurationsController::class,'get_edit_classes_list']);
@@ -102,6 +106,7 @@ Route::group(['middleware' => 'auth.connect','prefix' => 'user'], function ($rou
     Route::post('/get_edit_subjects',[APIConfigurationsController::class,'get_edit_subjects']);
     Route::post('/all_staff_list',[APIConfigurationsController::class,'all_staff_list']);
     Route::post('/all_parent_list',[APIConfigurationsController::class,'all_parent_list']);
+    Route::post('/all_student_list',[APIConfigurationsController::class,'all_student_list']);
     Route::post('/class_subjects_list',[APIConfigurationsController::class,'class_subjects_list']);
     Route::get('/onboarding_staff_list',[APIConfigurationsController::class,'onboarding_staff_list']);
     Route::post('/onboarding_fetch_single_staff',[APIConfigurationsController::class,'onboarding_fetch_single_staff']);
@@ -159,5 +164,6 @@ Route::group(['middleware' => 'auth.connect','prefix' => 'user'], function ($rou
     Route::post('/view_individual_news_events',[APINewsEventsController::class,'view_individual_news_events']);
     Route::get('/mainscreen_view_allevents',[APINewsEventsController::class,'mainscreen_view_allevents']);
     Route::post('/event_accept_decline',[APINewsEventsController::class,'event_accept_decline']);
+    Route::post('/store_liked_news',[APINewsEventsController::class,'store_liked_news']);//store liked data in db
     /*News and Events -- Ends*/
 });

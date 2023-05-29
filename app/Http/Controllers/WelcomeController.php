@@ -13,6 +13,6 @@ class WelcomeController extends Controller
 {    
     public function welcome()
     {
-        echo 'Welcome';exit();  
+        return view('login');
     }
 }

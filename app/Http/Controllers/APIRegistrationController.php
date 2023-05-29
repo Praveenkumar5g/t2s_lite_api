@@ -147,7 +147,7 @@ class APIRegistrationController extends Controller
             // $output = exec($command);
             $config_model=new SchoolDatabase;
             $config_model->school_id=$data['school_profile_id'];
-            $config_model->school_db_host='t2slive-rds.c2j0o56fpven.ap-south-1.rds.amazonaws.com';
+            $config_model->school_db_host= 'localhost';//'t2slive-rds.c2j0o56fpven.ap-south-1.rds.amazonaws.com';
 
             // Copy empty tables from empty DB to newly created DB
             if($_SERVER['HTTP_HOST'] == 'localhost')// For local
@@ -161,7 +161,7 @@ class APIRegistrationController extends Controller
 
                 $config_model->school_db_user='t2sliteeditor';
                 $config_model->school_db_pass='T2S#2023@editxxLMADES##';
-                $command = 'mysqldump -h t2slive-rds.c2j0o56fpven.ap-south-1.rds.amazonaws.com -P 3306 --skip-triggers --set-gtid-purged=OFF --no-tablespaces -u t2sliteeditor -pT2S#2023@editxxLMADES## lite_t2s_empty | mysql -h t2slive-rds.c2j0o56fpven.ap-south-1.rds.amazonaws.com -P 3306 -u t2sliteeditor -pT2S#2023@editxxLMADES## '.$db_name;
+                $command = 'mysqldump -h localhost -P 3306 --skip-triggers --set-gtid-purged=OFF --no-tablespaces -u t2sliteeditor -pT2S#2023@editxxLMADES## lite_t2s_empty | mysql -h localhost -P 3306 -u t2sliteeditor -pT2S#2023@editxxLMADES## '.$db_name;
                 // $command = 'mysqldump -h t2slive-rds.c2j0o56fpven.ap-south-1.rds.amazonaws.com -P 3306 -u t2sliteeditor -pT2S#2023@editxxLMADES## lite_t2s_empty | mysql -h t2slive-rds.c2j0o56fpven.ap-south-1.rds.amazonaws.com -P 3306 -u t2sliteeditor -pT2S#2023@editxxLMADES## '.$db_name;
             }
 

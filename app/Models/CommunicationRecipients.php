@@ -20,41 +20,16 @@ class CommunicationRecipients extends Model
 
     public function userDetails()
     {
+        $user_details =[];
         if($this->user_role == Config::get('app.Management_role'))
-        {
-            $user_details =UserManagements::where(['id'=>$this->user_table_id])->first()->toArray();
-            if(count($user_details) > 0) {
-                    return $user_details;
-            } else {
-                    return "";
-            }
-        }
+            $user_details =UserManagements::where(['id'=>$this->user_table_id])->first();
         else if($this->user_role == Config::get('app.Staff_role'))
-        {
-            $user_details =UserStaffs::where(['id'=>$this->user_table_id])->first()->toArray();
-            if(count($user_details) > 0) {
-                    return $user_details;
-            } else {
-                    return "";
-            }
-        }
+            $user_details =UserStaffs::where(['id'=>$this->user_table_id])->first();
         else if($this->user_role == Config::get('app.Parent_role'))
-        {
-            $user_details =UserParents::where(['id'=>$this->user_table_id])->first()->toArray();
-            if(count($user_details) > 0) {
-                    return $user_details;
-            } else {
-                    return "";
-            }
-        }
+            $user_details =UserParents::where(['id'=>$this->user_table_id])->first();
         else if($this->user_role == Config::get('app.Admin_role'))
-        {
-            $user_details =UserAdmin::where(['id'=>$this->user_table_id])->first()->toArray();
-            if(count($user_details) > 0) {
-                    return $user_details;
-            } else {
-                    return "";
-            }
-        }
+            $user_details =UserAdmin::where(['id'=>$this->user_table_id])->first();
+        if(!empty($user_details))
+            return $user_details->toArray();
     }
 }

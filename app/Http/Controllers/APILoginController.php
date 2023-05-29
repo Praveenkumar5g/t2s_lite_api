@@ -20,6 +20,7 @@ use App\Models\Configurations;
 use Config;
 use App\Models\UserParents;
 use App\Models\UserStudentsMapping;
+use App\Models\UserGroupsMapping;
 use App\Models\SchoolProfile;
 use App\Models\SchoolDatabase;
 use App\Models\UserStudents;
@@ -97,14 +98,14 @@ class APILoginController extends Controller
         
         // Check current password matches with our record
         if (!Hash::check($current_password, $user->user_password)) {
-            return response()->json(['error' => 'Invalid Currect Password'], 401);
+            return response()->json(['status'=>false,'error' => 'Invalid Currect Password']);
         }
         else{
             // Save new password in DB
             $user->user_password = bcrypt($new_password);
             $user->save();
         }
-        return response()->json(['message'=>'Password Updated Successfully!...']);
+        return response()->json(['status'=>true,'message'=>'Password Updated Successfully!...']);
     }
 
     // Forgot password
@@ -386,5 +387,64 @@ class APILoginController extends Controller
             $this->saveOtpAsNull($user);
             return response()->json(['status'=>false,'message'=>'OTP Expired']);
         }
+    }
+
+    // Change the user status to active /deactive
+    public function user_status_change(Request $request)
+    {
+        // Get authorizated user details
+        $user = auth()->user();
+
+        $schoolusers = SchoolUsers::where('user_mobile_number',$request->mobile_number)->where('user_role',$request->user_role)->get()->first();
+        if($request->group_id == '')
+        {
+            // update the status
+            $schoolusers->user_status=$request->status;
+            $schoolusers->save();
+        }
+
+        // Connect School DB
+        $school_profile = SchoolProfile::where('id',$user->school_profile_id)->first(); //get school profile details from corresponding school
+        $academic_year = $school_profile->active_academic_year;
+        $config_school = SchoolDatabase::where('school_id', $user->school_profile_id)->where('academic_year',$academic_year)->get()->first();
+        Config::set('database.connections.school_db.host',$config_school->school_db_host);
+        Config::set('database.connections.school_db.username',$config_school->school_db_user);
+        Config::set('database.connections.school_db.password',$config_school->school_db_pass);
+        Config::set('database.connections.school_db.database',$config_school->school_db_name);
+        DB::reconnect('school_db');
+        $user_table_id = $this->get_user_table_id($schoolusers);
+        if($request->group_id == '')
+        {
+            
+            $user_table_id->user_status=$request->status;
+            $user_table_id->save();
+        }
+
+        // Update status to all the groups 
+        $groups = UserGroupsMapping::where(['user_table_id'=>$user_table_id->id,'user_role'=>$request->user_role]);
+
+        if($request->group_id != '')
+            $groups = $groups->where('group_id',$request->group_id);
+        $groups = $groups->update(['user_status'=>$request->status]);
+
+        if($request->group_id == '')
+            $message = ($request->status == 1)?'User account activated Successfully':'User account deactivated Successfully';
+        else
+            $message = ($request->status == 1)?'Group activated Successfully':'Group deactivated Successfully';
+
+        return response()->json(['status'=>true,'message'=>$message]);
+    }
+
+    public static function get_user_table_id($user)
+    {
+        if($user->user_role == Config::get('app.Admin_role'))//check role and get current user id
+            $user_table_id = UserAdmin::where(['user_id'=>$user->user_id])->get()->first();
+        else if($user->user_role == Config::get('app.Management_role'))
+            $user_table_id = UserManagements::where(['user_id'=>$user->user_id])->get()->first();
+        else if($user->user_role == Config::get('app.Staff_role'))
+            $user_table_id = UserStaffs::where(['user_id'=>$user->user_id])->get()->first();
+        else if($user->user_role == Config::get('app.Parent_role'))
+            $user_table_id = UserParents::where(['user_id'=>$user->user_id])->get()->first();//fetch id from user all table to store notification triggered user
+        return $user_table_id;
     }
 }

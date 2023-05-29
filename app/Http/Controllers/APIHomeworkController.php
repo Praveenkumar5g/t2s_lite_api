@@ -66,7 +66,7 @@ class APIHomeworkController extends Controller
                         $student_ids = $student_ids->where('student',$request->loginstudent_id);
                     // fetch student id for that parent
                     $student_ids = $student_ids->pluck('student')->first();
-
+                    $group_id = '';
                     if($student_ids !='') //get classs config and group id for parent
                     {
                         $class_config = UserStudents::where('id',$student_ids)->pluck('class_config')->first();
@@ -87,7 +87,22 @@ class APIHomeworkController extends Controller
                         $class_config_list = UserGroups::where(['group_type'=>2,'group_status'=>1,'id'=>$value['group_id']])->get()->first();
                         $teachingstaff = AcademicSubjectsMapping::where(['subject'=>$value['subject_id'],'class_config'=>$class_config_list->class_config])->pluck('staff')->first();
                         $staff_details = UserStaffs::select('id','first_name')->where('id',$teachingstaff)->get()->first();
-
+                        $images = [];
+                        if(!empty($value) && $value['attachments'] == 'Y')
+                        {
+                            $images_list = CommunicationAttachments::where(['communication_id'=>$value['id']])->get()->toArray();
+                            if(!empty($images_list))
+                            {
+                                foreach ($images_list as $image_key => $image_value) {
+                                    $images[]= ([
+                                        'image'=>$image_value['attachment_location'].''.$image_value['attachment_name'],
+                                        'id'=>$image_value['id']
+                                    ]);
+                                }
+                                
+                            }
+                        }
+                        $homework_status_response = HomeworkParentStatus::select('status','reason')->where(['notification_id'=>$value['id'],'parent'=>$user_table_id])->get()->first();
                         $homeworks[]=([
                             'notification_id'=>$value['id'],
                             'subject_id'=>$value['subject_id'],
@@ -101,7 +116,12 @@ class APIHomeworkController extends Controller
                             'homework_content'=>!empty($homework_details)?$value['chat_message']:'',
                             'approval_status'=>!empty($homework_details)?$value['approval_status']:0,
                             'is_pointed'=>($request->notification_id!='' && $value['id'] == $request->notification_id)?1:0,
+                            'image'=>$images,
+                            'homework_status'=>!empty($homework_status_response)?$homework_status_response->status:0,
+                            'homework_status_reason'=>!empty($homework_status_response)?$homework_status_response->reason:0,
+
                         ]);
+
                     }
                 }
 
@@ -234,6 +254,8 @@ class APIHomeworkController extends Controller
             $communications->actioned_by=$userall_id;
             $communications->actioned_time=Carbon::now()->timezone('Asia/Kolkata');
         }
+        if(isset($request->homework_date) && $request->homework_date !='')
+            $communications->actioned_time=$request->homework_date;
        
         $communications->chat_message=$request->message;
         if(isset($request->title))
@@ -299,9 +321,10 @@ class APIHomeworkController extends Controller
         $user_list= $user_ids = [];
         $user_ids =UserGroupsMapping::where('group_id',$group_id);
         $user_ids = $user_ids->whereIn('user_role',([Config::get('app.Admin_role'),Config::get('app.Management_role')]));
+
         if($class_teacher != $user_table_id)
         {
-            $user_list = UserGroupsMapping::where(['group_id'=>$group_id,'user_role'=>$user->user_role])->whereIn('user_table_id',([$class_teacher,$user_table_id]))->get()->toArray();
+            $user_list = UserGroupsMapping::where(['group_id'=>$group_id])->whereIn('user_table_id',([$class_teacher,$user_table_id]))->whereIn('user_role',[$user->user_role,Config::get('app.Staff_role')])->get()->toArray();
         }
         else
         {
@@ -341,23 +364,25 @@ class APIHomeworkController extends Controller
         foreach ($request->notification_id as $key => $value) {
             if($value>0)
             {
-            	$triggered_users = [];
+                $triggered_users = [];
                 $communication_data = Communications::where(['id'=>$value])->get()->first();
                 
                 $class_config = UserGroups::where('id',$communication_data->group_id)->pluck('class_config')->first();
+                $subject_teacher = AcademicSubjectsMapping::where('subject',$communication_data->subject_id)->where('class_config',$class_config)->pluck('staff')->first();
 
                 $class_teacher[] = AcademicClassConfiguration::where('id',$class_config)->pluck('class_teacher')->first();
                 $notification_triggered_user[] = UserAll::where('id',$communication_data->created_by)->where('user_role',Config::get('app.Staff_role'))->pluck('user_table_id')->first();
                 if(!empty($notification_triggered_user))
-                	$triggered_users = array_merge($class_teacher,$notification_triggered_user);
+                    $triggered_users = array_merge($class_teacher,$notification_triggered_user);
 
-                $user_ids = UserGroupsMapping::where('group_id',$communication_data->group_id)->whereIn('user_role',([Config::get('app.Staff_role'),Config::get('app.Parent_role')]))->get()->toArray();
-               
+                $user_ids = UserGroupsMapping::where('group_id',$communication_data->group_id)->whereIn('user_role',([Config::get('app.Parent_role')]))->get()->toArray();
                 foreach ($user_ids as $user_key => $user_value) {
                    if((!empty($triggered_users) && !in_array($user_value['user_table_id'],$triggered_users))|| empty($triggered_users))
                         $user_list[] = $user_value;
                 }
-
+                if(!empty($subject_teacher) && !in_array($subject_teacher,$notification_triggered_user)) //check notification already triggered for subject staff or not 
+                    array_push($user_list,["user_table_id"=>$subject_teacher,'user_role'=>Config::get('app.Staff_role')]);//if not, trigger notification to staff subject
+                
                 Communications::where('id',$value)->update(['approval_status'=>1,'delivered_users'=>count($user_list)+$communication_data->delivered_users,'approved_by'=>$userall_id,'approved_time'=>Carbon::now()->timezone('Asia/Kolkata')]);
 
                 if(count($user_list)>0)

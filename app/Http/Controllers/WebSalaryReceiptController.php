@@ -323,7 +323,7 @@ class WebSalaryReceiptController extends Controller
 
     public function sample_excel()
     {
-        $file_path = '/assets/sampleexcels/salary_calculation.xlsx';
+        $file_path = url('/assets/sampleexcels/salary_calculation.xlsx');
         return response()->download($file_path,'salary_calculation.xlsx');
     }
 

@@ -37,6 +37,10 @@
 					<div class="row">
 							<div class="col-md-12">
 								<div class="card card-primary">
+									<div class="callout callout-info">
+						              	<h5><i class="fas fa-info"></i> Note:</h5>
+						              	<a href="{{url('employee/sample_excel')}}">Click Here </a>to get the sample excel. 
+						            </div>
 								  	<div class="card-header">
 								    	<h3 class="card-title">Salary upload</h3>
 								  	</div>

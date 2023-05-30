@@ -26,5 +26,6 @@ Route::group(['middleware' => 'auth.webcheck'], function ($router) {
     Route::post('employee/getSalary_list', [WebSalaryReceiptController::class, 'getSalary_list']);
     Route::get('/employee/download_individual_payslip',[WebSalaryReceiptController::class,'download_individual_payslip']);
     Route::get('/employee/download_report',[WebSalaryReceiptController::class,'download_report']);
+    Route::get('employee/sample_excel',[WebSalaryReceiptController::class,'sample_excel']);
     Route::get('logout', [WebLoginController::class, 'logout']);
 });

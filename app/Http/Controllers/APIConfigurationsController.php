@@ -3212,7 +3212,8 @@ class APIConfigurationsController extends Controller
         	
         $student_list =$student_list->get()->toArray();
         foreach ($student_list as $key => $value) {
-        	$student_list[$key]['father_name'] = $student_list[$key]['father_mobile'] = $student_list[$key]['mother_name'] = $student_list[$key]['mother_mobile'] = $student_list[$key]['guardian_name'] = $student_list[$key]['guardian_mobile'] = '';
+        	$student_list[$key]['father_name'] =  $student_list[$key]['mother_name'] =  $student_list[$key]['guardian_name']  = '';
+        	$student_list[$key]['father_mobile'] = $student_list[$key]['mother_mobile'] = $student_list[$key]['guardian_mobile'] = 0;
         	$parent_id = UserStudentsMapping::where('student',$value['id'])->pluck('parent')->toArray();
         	foreach($parent_id as $parentid)
         	{

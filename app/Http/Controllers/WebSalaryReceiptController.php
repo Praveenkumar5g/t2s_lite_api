@@ -7,6 +7,9 @@
  * Validate inputs ,created DB for individual school and registed user details in config and school DB
  */
 namespace App\Http\Controllers;
+use Maatwebsite\Excel\Facades\Excel;
+
+use Maatwebsite\Excel\Excel as ExcelExcel;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Reader\Exception;
 use PhpOffice\PhpSpreadsheet\Writer\Xls;
@@ -316,6 +319,12 @@ class WebSalaryReceiptController extends Controller
         $pdf = PDF::loadView('SalaryReceipt.download_report', ['data'=>$data]);
 
         return $pdf->download('Salary Report.pdf');
+    }
+
+    public function sample_excel()
+    {
+        $file_path = '/assets/sampleexcels/salary_calculation.xlsx';
+        return response()->download($file_path,'salary_calculation.xlsx');
     }
 
 }

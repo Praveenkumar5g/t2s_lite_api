@@ -2304,12 +2304,12 @@ class APIConfigurationsController extends Controller
             $student_details->save();
 
    			$student_id = $student_details->id;
-
+   			$password = '';
    			// generate and update staff id in db 
             $userstudent_id = $profile_details['school_code'].substr($profile_details['active_academic_year'], -2).'S'.sprintf("%04s", $student_id);
             $student_details->user_id = $userstudent_id;
             $student_details->save();
-
+            
             if($profile_details->default_password_type == 'admission_number')
 				$password = bcrypt($request->admission_no);
 			else if($profile_details->default_password_type == 'dob')
@@ -2325,8 +2325,9 @@ class APIConfigurationsController extends Controller
 	        	$data['email_address'] = $request->father_email_address;
 	        	$data['user_category'] = 1;
 
-	        	if($profile_details->default_password_type == 'mobile_number')
+	        	if($profile_details->default_password_type == 'mobile_number' || $password == '')
 					$password = bcrypt($request->father_mobile_number);
+				
 
 	        	$this->insert_parent_details($data,$student_details->id,$userall_id,$group_id,$password);
 	        }
@@ -2340,7 +2341,7 @@ class APIConfigurationsController extends Controller
 	        	$data['email_address'] = $request->mother_email_address;
 	        	$data['user_category'] = 2;
 
-	        	if($profile_details->default_password_type == 'mobile_number')
+	        	if($profile_details->default_password_type == 'mobile_number' || $password == '')
 					$password = bcrypt($request->mother_mobile_number);
 
 	        	$this->insert_parent_details($data,$student_details->id,$userall_id,$group_id,$password);
@@ -2356,7 +2357,7 @@ class APIConfigurationsController extends Controller
 	        	$data['email_address'] = $request->guardian_email_address;
 	        	$data['user_category'] = 3;
 
-	        	if($profile_details->default_password_type == 'mobile_number')
+	        	if($profile_details->default_password_type == 'mobile_number' || $password == '')
 					$password = bcrypt($request->guardian_mobile_number);
 
 	        	$this->insert_parent_details($data,$student_details->id,$userall_id,$group_id,$password);
@@ -3206,7 +3207,7 @@ class APIConfigurationsController extends Controller
 		// Save last login in DB
         $user = auth()->user();
 
-        $student_list = UserStudents::select('first_name','id','user_status','profile_image');
+        $student_list = UserStudents::select('*');
         if(isset($request->search) && $request->search!='')
             $student_list = $student_list->where('first_name', 'like', '%' . $request->search . '%')->orWhere('mobile_number', 'like', '%' . $request->search . '%');
         	

@@ -9,15 +9,19 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Models\CommunicationRecipients;
 use App\Models\NewsEventsAttachments;
 use App\Models\NewsEventAcceptStatus;
 use App\Models\UserStudentsMapping;
+use App\Models\UserGroupsMapping;
 use App\Models\UserManagements;
 use App\Models\SchoolProfile;
 use Illuminate\Http\Request;
 use App\Models\UserStudents;
 use App\Models\UserParents;
 use App\Models\NewsEvents;
+use App\Models\UserStaffs;
+use App\Models\UserGroups;
 use App\Models\UserAdmin;
 use App\Models\Appusers;
 use App\Models\UserAll;
@@ -94,7 +98,7 @@ class APINewsEventsController extends Controller
 
         /*Move images to upload folder and store it in attachment table*/
         $attachment_id = $addone_attachement_id = [];
-        if(count($_FILES)>0)
+        if(!empty($_FILES) && count($_FILES)>0)
         {
             $schoolcode = $school_profile = SchoolProfile::where(['id'=>$user['school_profile_id']])->get()->first();//get school code from school profile
             $path = public_path('uploads/'.$school_profile['school_code']);//
@@ -164,7 +168,61 @@ class APINewsEventsController extends Controller
             }
         }
         
+        $group_ids = UserGroups::where('group_status',1);
+        if(!empty($request->visible_to) && $request->visible_to !='all')
+            $group_ids = $group_ids->whereIn('class_config',$request->visible_to);
+        
+        $group_ids = $group_ids->pluck('id')->toArray();
+        if(!empty($group_ids))
+        {
+            $user_list =UserGroupsMapping::whereIn('group_id',$group_ids)->where('user_status',Config::get('app.Group_Active'))->get()->toArray();
+            $this->insert_receipt_log($user_list,$newsevents_id,$user_table_id);
+        }
+
         return response()->json(['message'=>'Stored Successfully!...']);
+    }
+
+    public function insert_receipt_log($user_list,$notification_id='',$user_table_id='')
+    {
+        // Get authorizated user details
+        $user = auth()->user();
+
+        NewsEvents::where('id',$notification_id)->update(['delivered_users'=>count($user_list)]);
+        $existing_userids = $communication_details= $player_ids = [];
+        $message = NewsEvents::where('id',$notification_id)->get()->first();
+        // Insert communication message in notification log receipt tables(School DB)
+        foreach ($user_list as $key => $value) {
+
+            $unique_userid = UserAll::where('user_table_id',$value['user_table_id'])->where('user_role',$value['user_role'])->pluck('id')->first();
+
+            if(!in_array($unique_userid, $existing_userids)) //check the duplicate user details is exists 
+            {
+                $player_id = Appusers::where('loginid',$unique_userid)->pluck('player_id')->first(); //get player id for the users
+                $data[] = ([
+                    'communication_id'=>$notification_id,
+                    'communication_type'=>2,
+                    'user_table_id'=>$value['user_table_id'],
+                    'user_role'=>$value['user_role'],
+                    'message_status'=>1,
+                    'view_type'=>($value['user_table_id'] == $user_table_id && $value['user_role'] == $user->user_role)?1:2,
+                    'actioned_time'=>Carbon::now()->timezone('Asia/Kolkata'),
+                    'player_id'=>$player_id
+                ]); //form array to store notification details
+
+                if($player_id!='') //check player id is not empty
+                {
+                    $player_ids[$value['user_role']] =$player_id;
+                    if($message['module_type'] == 1)
+                        $chat_message = 'A new News is avaliable';
+                    else
+                        $chat_message = 'A new Event is avaliable';
+                }
+                array_push($existing_userids,$unique_userid);
+            }
+        }
+        CommunicationRecipients::insert($data); //inserted into log
+
+        $delivery_details = APIPushNotificationController::SendNotification($chat_message,$player_ids,$notification_id,'chat'); //trigger pushnotification function
     }
 
     //View Main screen news and events 

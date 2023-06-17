@@ -15,12 +15,13 @@ use JWTAuth;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use DB;
+use App\Models\AppLog;
 use App\Models\Onesignalkeys;
 
 class APIPushNotificationController extends Controller
 {
     
-    public static function SendNotification($chat_message,$player_ids)
+    public static function SendNotification($chat_message,$player_ids,$notification_id='',$type='')
     {
     	if(!empty($player_ids))
     	{
@@ -49,10 +50,17 @@ class APIPushNotificationController extends Controller
 		        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, FALSE);
 		        $response = curl_exec($ch);
 		        $json = json_decode($response,true);
-	    		
+		        
+		        $message_delivery_details[] = ([
+		        	'player_id' =>implode(',',$value),
+		        	'message'=> $chat_message,
+		        	'message_id'=>$notification_id,
+		        	'type'=>$type,
+		        	'message_status'=>(!empty($json))?'success':'error'
+		        ]);
 	    	}
-	    	 
-		        return $json;
+	    	AppLog::insert($message_delivery_details);
+	    	return $json;
 	        
 	    }
     }

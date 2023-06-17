@@ -31,6 +31,7 @@ use App\Models\Smslogs;
 use App\Models\UserAdmin;
 use App\Models\UserManagements;
 use App\Models\UserStaffs;
+use App\Models\UserGroups;
 
 class APILoginController extends Controller
 {
@@ -40,7 +41,7 @@ class APILoginController extends Controller
         $validator = Validator::make($request->all(), [
             'user_email_id' => 'required_without_all:user_mobile_number',
             'user_mobile_number' => 'required_without_all:user_email_id',
-            'password'=> 'required',
+            // 'password'=> 'required',
             'user_role'=>'required', //1-admin,2-staff,3-parent,4-student,5-management
         ]);
         // Validate login form
@@ -53,14 +54,55 @@ class APILoginController extends Controller
         else
             $credentials = $request->only('user_mobile_number', 'password','user_role');
 
-        try {
-            // Generate token if credentails are valid else thrown error message.
-            if (! $token = Auth::attempt($credentials)) {
-                return response()->json(['error' => 'Invalid credentials'], 401);
+        if($request->user_role == Config::get('app.Management_role') && $request->school_profile_id !='' && $request->password=='')
+        {
+            $user = SchoolUsers::where('user_role',$request->user_role)->where('user_mobile_number',$request->user_mobile_number)->where('school_profile_id',$request->school_profile_id)->where('user_status',1)->get()->first();
+            try {
+                // Generate token if credentails are valid else thrown error message.
+                if (! $token = Auth::login($user)) 
+                {
+                    if($user->user_status != '' && $user->user_status != 1)
+                        return response()->json(['status'=>false,'error' => 'Your is account deactived!..']);
+                    else
+                        return response()->json(['error' => 'Invalid credentials'], 401);
+                }
+            } catch (JWTException $e) {
+                return response()->json(['error' => 'Could not generate token'], 500);
             }
-        } catch (JWTException $e) {
-            return response()->json(['error' => 'Could not generate token'], 500);
+            
         }
+        else
+        {
+            if($request->user_role == Config::get('app.Management_role') && $request->school_profile_id !='' && $request->password!='')
+                $credentials['school_profile_id'] = $request->school_profile_id;
+            $user_status_all = SchoolUsers::where('user_role',$request->user_role)->where('user_mobile_number',$request->user_mobile_number)->get()->toArray();
+            $credentials['user_status'] = 1;
+            $flag=$user_status=0;
+            $token='';
+            foreach ($user_status_all as $key => $value) {
+                $credentials['user_id'] = $value['user_id'];
+                $user_status = $value['user_status'];
+                if (! $token = Auth::attempt($credentials))     
+                    $flag =0;
+                else
+                {
+                    $flag=1;
+                    break;
+                }
+            }
+            try {
+                // Generate token if credentails are valid else thrown error message.
+                if ($token == '' && $flag ==0) {
+                    if($user_status != '' && $user_status != 1)
+                        return response()->json(['status'=>false,'error' => 'Your is account deactived!..']);
+                    else
+                        return response()->json(['error' => 'Invalid credentials'], 401);
+                }
+            } catch (JWTException $e) {
+                return response()->json(['error' => 'Could not generate token'], 500);
+            }
+        }
+        
         // Save last login in DB
         $user = auth()->user();
         $user->last_login = Carbon::now()->timezone('Asia/Kolkata');
@@ -309,7 +351,9 @@ class APILoginController extends Controller
             if(!empty($siblingstudent_ids))
             {
                 foreach ($siblingstudent_ids as $key => $value) {
-                    $siblingstudent_details[] = UserStudents::select('id','first_name','gender','class_config')->where(['id'=>$value])->get()->first();
+                    $student_list = UserStudents::select('id','first_name','gender','class_config')->where(['id'=>$value])->where('user_status',1)->orwhere('user_status',3)->get()->first();
+                    if(!empty($student_list) && $student_list != null)
+                        $siblingstudent_details[] = $student_list;
                 }
             }
             $parent_details = ([
@@ -389,19 +433,35 @@ class APILoginController extends Controller
         }
     }
 
+    // swap profile and refresh the token
+    public function swap_profile(Request $request)
+    {
+        // Get authorizated user details
+        $user = auth()->user();
+        $userdetails = SchoolUsers::where('user_id',$request->user_id)->get()->first();
+        $token =  Auth::login($userdetails);
+        return response()->json(compact('token'));
+    }
+
+    // get all school for single management users
+    public function get_school(Request $request)
+    {
+        $school_names = [];
+
+        // get school profile id
+        $school_list = SchoolUsers::where('user_mobile_number',$request->mobile_number)->where('user_role',Config::get('app.Management_role'))->GroupBy('school_profile_id')->pluck('school_profile_id')->toArray();
+
+        if(!empty($school_list)) //check empty or not
+            $school_names = SchoolProfile::select('id','school_name')->whereIn('id',$school_list)->get()->toArray();//get all schools list
+
+        return response()->json($school_names);//return school details
+    }
+
     // Change the user status to active /deactive
     public function user_status_change(Request $request)
     {
         // Get authorizated user details
         $user = auth()->user();
-
-        $schoolusers = SchoolUsers::where('user_mobile_number',$request->mobile_number)->where('user_role',$request->user_role)->get()->first();
-        if($request->group_id == '')
-        {
-            // update the status
-            $schoolusers->user_status=$request->status;
-            $schoolusers->save();
-        }
 
         // Connect School DB
         $school_profile = SchoolProfile::where('id',$user->school_profile_id)->first(); //get school profile details from corresponding school
@@ -412,21 +472,80 @@ class APILoginController extends Controller
         Config::set('database.connections.school_db.password',$config_school->school_db_pass);
         Config::set('database.connections.school_db.database',$config_school->school_db_name);
         DB::reconnect('school_db');
-        $user_table_id = $this->get_user_table_id($schoolusers);
-        if($request->group_id == '')
+
+        if($request->mobile_number!='')
         {
-            
-            $user_table_id->user_status=$request->status;
-            $user_table_id->save();
+            $schoolusers = SchoolUsers::where('user_mobile_number',$request->mobile_number)->where('user_role',$request->user_role)->get()->first();
+            if($request->group_id == '' && (strtolower($request->app_deactivation)=='yes' || $request->status == 1))
+            {
+                // update the status
+                $schoolusers->user_status=$request->status;
+                $schoolusers->save();
+            }
+
+            $user_table_id = $this->get_user_table_id($schoolusers);
+            if($request->group_id == '' && (strtolower($request->app_deactivation)=='yes'  || $request->status == 1))
+            {
+                
+                $user_table_id->user_status=$request->status;
+                $user_table_id->save();
+            }
+
+            // Update status to all the groups 
+            $groups = UserGroupsMapping::where(['user_table_id'=>$user_table_id->id,'user_role'=>$request->user_role]);
+
+            if($request->group_id != '')
+                $groups = $groups->where('group_id',$request->group_id);
+            $groups = $groups->update(['user_status'=>$request->status]);
+
         }
+        else if($request->student_id !='' && $request->user_role == 4)
+        {
+            $parent_list = UserStudentsMapping::where('student',$request->student_id)->pluck('parent')->toArray();
+            if(!empty($parent_list))
+            {
+                $student_class = UserStudents::where('id',$request->student_id)->pluck('class_config')->first();
+                $student_group_id = UserGroups::where('class_config',$student_class)->pluck('id')->first();
+                $student_list = UserStudentsMapping::where('parent',$parent_list[0])->where('student','!=',$request->student_id)->pluck('student')->toArray();
+                if(strtolower($request->app_deactivation)=='no')
+                    UserStudents::where('id',$request->student_id)->update(['user_status'=>3]);
+                else if($request->status == 1 || strtolower($request->app_deactivation)=='yes')
+                    UserStudents::where('id',$request->student_id)->update(['user_status'=>$request->status]);
 
-        // Update status to all the groups 
-        $groups = UserGroupsMapping::where(['user_table_id'=>$user_table_id->id,'user_role'=>$request->user_role]);
+                foreach($parent_list as $parent_value)
+                {
+                    $parent_user_id = UserParents::where('id',$parent_value)->pluck('user_id')->first();
+                    $schoolusers = SchoolUsers::where('user_id',$parent_user_id)->where('user_role',Config::get('app.Parent_role'))->get()->first();
+                    $user_table_id = $this->get_user_table_id($schoolusers);
+                    if($request->group_id == '' && empty($student_list) && strtolower($request->app_deactivation)=='yes')
+                    {
+                        // update the status
+                        $schoolusers->user_status=$request->status;
+                        $schoolusers->save();
+                        $user_table_id->user_status=$request->status;
+                        $user_table_id->save();
+                    }
+                    else if($request->status == 1)
+                    {
+                        // update the status
+                        $schoolusers->user_status=$request->status;
+                        $schoolusers->save();
+                        $user_table_id->user_status=$request->status;
+                        $user_table_id->save();
+                    }
+                   
+                    // Update status to all the groups 
+                    $groups = UserGroupsMapping::where(['user_table_id'=>$user_table_id->id,'user_role'=>Config::get('app.Parent_role')]);
 
-        if($request->group_id != '')
-            $groups = $groups->where('group_id',$request->group_id);
-        $groups = $groups->update(['user_status'=>$request->status]);
-
+                    if($request->group_id != '' && $student_group_id!='')
+                        $groups = $groups->where('group_id',$request->group_id)->orWhere('group_id',$student_group_id);
+                    if($request->group_id == '' && $student_group_id!='')
+                        $groups = $groups->where('group_id',$student_group_id);
+                    $groups = $groups->update(['user_status'=>$request->status]);
+                }
+            } 
+        }
+        
         if($request->group_id == '')
             $message = ($request->status == 1)?'User account activated Successfully':'User account deactivated Successfully';
         else

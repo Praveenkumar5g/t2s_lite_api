@@ -14,6 +14,7 @@ use App\Models\CommunicationDistribution;
 use App\Models\CommunicationAttachments;
 use App\Models\CommunicationRecipients;
 use App\Models\AcademicSubjectsMapping;
+use App\Models\NewsEventsAttachments;
 use App\Models\UserStudentsMapping;
 use App\Models\UserGroupsMapping;
 use App\Models\NotificationLogs;
@@ -32,6 +33,7 @@ use Illuminate\Http\Request;
 use App\Models\UserParents;
 use App\Models\SchoolUsers;
 use App\Models\UserStaffs;
+use App\Models\NewsEvents;
 use App\Models\UserGroups;
 use App\Models\UserAdmin;
 use App\Models\Appusers;
@@ -185,7 +187,7 @@ class APICommunicationController extends Controller
                     if($user->user_role == 2)
                     {
                         $user_ids = $user_ids->whereIn('user_role',([Config::get('app.Admin_role'),Config::get('app.Management_role')]));
-                        $user_list = UserGroupsMapping::where(['group_id'=>$group_id,'user_table_id'=>$user_table_id->id,'user_role'=>$user->user_role,'user_status'=>Config::get('app.Group_Active')])->get()->toArray();
+                        $user_list = UserGroupsMapping::where(['group_id'=>$group_id,'user_table_id'=>$user_table_id,'user_role'=>$user->user_role,'user_status'=>Config::get('app.Group_Active')])->get()->toArray();
                     }
                     
                     $user_ids = $user_ids->get()->toArray();
@@ -200,7 +202,7 @@ class APICommunicationController extends Controller
                         $user_ids =UserGroupsMapping::where('group_id',$group_id)->where('user_status',Config::get('app.Group_Active'))->whereIn('user_role',$user_role)->get()->toArray();
                     }
 
-                    $user_list = UserGroupsMapping::where(['group_id'=>$group_id,'user_table_id'=>$user_table_id->id,'user_role'=>$user->user_role])->where('user_status',Config::get('app.Group_Active'))->get()->toArray();
+                    $user_list = UserGroupsMapping::where(['group_id'=>$group_id,'user_table_id'=>$user_table_id,'user_role'=>$user->user_role])->where('user_status',Config::get('app.Group_Active'))->get()->toArray();
 
                     $user_list = array_merge($user_list,$user_ids);
                 }
@@ -298,16 +300,18 @@ class APICommunicationController extends Controller
         }
         CommunicationRecipients::insert($data); //inserted into log
 
-        $delivery_details = APIPushNotificationController::SendNotification($chat_message,$player_ids); //trigger pushnotification function
+        if(!empty($player_ids))
+            $delivery_details = APIPushNotificationController::SendNotification($chat_message,$player_ids,$notification_id,'chat'); //trigger pushnotification function
 
         if($message->approval_status == '' || $message->approval_status == null) //check message for approval process and trigger notification 
         {
-            $userids = UserAll::select('user_role','id')->where('user_table_id',$value['user_table_id'])->whereIn('user_role',[Config::get('app.Admin_role'),Config::get('app.Management_role')])->get()->toArray();
+            $userids = UserAll::select('user_role','id')->where('user_table_id',$value['user_table_id'])->whereIn('user_role',[Config::get('app.Admin_role'),Config::get('app.Management_role')])->pluck('id')->toArray();
             if(!empty($userids))
             {
+                $player_id = Appusers::whereIn('loginid',$userids)->pluck('player_id')->toArray(); //get player id for the users
                 $group_name = UserGroups::where('id',$message->group_id)->pluck('group_name')->first();
                 $chat_message = "A new message is waiting for your approval in ".$group_name;
-                $delivery_details = APIPushNotificationController::SendNotification($chat_message,$userids);
+                $delivery_details = APIPushNotificationController::SendNotification($chat_message,$player_id,$notification_id,'chat');
             }
         }
 
@@ -351,8 +355,10 @@ class APICommunicationController extends Controller
                         $config_id = UserGroups::where('id',$group_id)->pluck('class_config')->first();
                         $user_category = UserCategories::where(['id'=>$user_table_id->user_category])->pluck('category_name')->first();
                         $user_category = (strtolower($user_category) == 'father')?'F/O':((strtolower($user_category) == 'mother')?'M/O':'G/O');
-                        $student_id = UserStudentsMapping::where(['parent'=>$user_table_id->id])->pluck('student')->toArray();
-                        $student_name = UserStudents::whereIn('id',$student_id)->where('class_config',$config_id)->pluck('first_name')->first();
+                        $student_ids_list = UserStudentsMapping::where(['parent'=>$user_table_id->id])->pluck('student')->toArray();
+                        $student_id = UserStudents::whereIn('id',$student_ids_list)->where('class_config',$config_id)->get()->toArray();
+                        $student_name = implode(array_column($student_id,'first_name'));
+                        $category = $user_category.' '.$student_name; //combine category and name
 
                         $category = $user_category.' '.$student_name;
                     }
@@ -412,7 +418,11 @@ class APICommunicationController extends Controller
         else if($user->user_role == Config::get('app.Parent_role'))
         {
             $userdetails = UserParents::where(['user_id'=>$user->user_id])->get()->first();
-            $group_id = ([2,$request->group_id]);
+            $group_status = UserGroupsMapping::where('user_table_id',$userdetails->id)->where('user_role',$user->user_role)->where('group_id',$request->group_id)->pluck('user_status')->first();
+            if($group_status == 1)
+                $group_id = ([2,$request->group_id]);
+            else
+                $group_id = ([$request->group_id]);
         }
 
         $messages=$user_details= [];
@@ -429,19 +439,39 @@ class APICommunicationController extends Controller
 
             $communication_id_list =$communication_id_list->pluck('id')->toArray();
 
-            $notification_ids = CommunicationRecipients::where(['user_table_id'=>$userdetails->id,'user_role'=>$user->user_role])->whereIn('communication_id',$communication_id_list)->orderBy('actioned_time')->get()->toArray(); //Fetch applicable notification ids from table for logged in user.
+            $get_class_config= UserGroups::where('id',$request->group_id)->pluck('class_config')->first();
+            $newsevents_id_list = NewsEvents::Where('visible_to', 'like', '%' .$get_class_config. '%')->orWhere('visible_to','all');
+            if($user->user_role == Config::get('app.Parent_role'))
+                $newsevents_id_list =$newsevents_id_list->where('status',1);
 
-            $read_count = CommunicationRecipients::select(DB::raw('count(*) as count'),'communication_id')->where(['message_status'=>Config::get('app.Read')])->groupBy('communication_id')->get()->toArray(); //get read count based on notification id.
-            $readcount_data = array_column($read_count,'count','communication_id');
+            $newsevents_id_list =$newsevents_id_list->pluck('id')->toArray();
+
+            // $notification_ids = CommunicationRecipients::where(['user_table_id'=>$userdetails->id,'user_role'=>$user->user_role])->whereIn('communication_id',$communication_id_list)->orderBy('actioned_time')->get()->toArray(); //Fetch applicable notification ids from table for logged in user.
+
+            // $read_count = CommunicationRecipients::select(DB::raw('count(*) as count'),'communication_id')->where(['message_status'=>Config::get('app.Read')])->groupBy('communication_id')->get()->toArray(); //get read count based on notification id.
+            // $readcount_data = array_column($read_count,'count','communication_id');
+            $notification_ids = CommunicationRecipients::where(function($query) use ($communication_id_list,$userdetails,$user) {
+                    $query->where(['user_table_id'=>$userdetails->id,'user_role'=>$user->user_role,'communication_type'=>1])->whereIn('communication_id',$communication_id_list);
+                })->orwhere(function($query) use ($userdetails,$user,$newsevents_id_list) {
+                    $query->where(['user_table_id'=>$userdetails->id,'user_role'=>$user->user_role,'communication_type'=>2])->whereIn('communication_id',$newsevents_id_list);
+                })->orderBy('actioned_time')->get()->toArray(); //Fetch applicable notification ids from table for logged in user.
+            $read_count = CommunicationRecipients::select(DB::raw('count(*) as count'),'communication_id','communication_type')->where(['message_status'=>Config::get('app.Read')])->groupBy('communication_id','communication_type')->get()->toArray(); //get read count based on notification id.
+            // $readcount_data = array_column($read_count,'count','communication_id');
+            foreach($read_count as $read_key => $read_value){
+                $readcount_data[$read_value['communication_type']][$read_value['communication_id']] = $read_value['count'];
+            }
             if(!empty($notification_ids))
             {
                 $management_categories = array_column(UserCategories::select('id','category_name')->where('user_role',Config::get('app.Management_role'))->get()->toArray(),'category_name','id');
 
                 $staff_categories = array_column(UserCategories::select('id','category_name')->where('user_role',Config::get('app.Staff_role'))->get()->toArray(),'category_name','id');
-                $unreadmessages = 0;
+                $unreadmessages = $index = 0;
                 foreach ($notification_ids as $key => $value) {
                     $fetch_sender_id = CommunicationRecipients::select('user_table_id','user_role')->where(['view_type'=>1,'communication_id'=>$value['communication_id']])->get()->first();
-                    $message_details = Communications::select('*')->where(['id'=>$value['communication_id']])->get()->first();
+                    if($value['communication_type'] == 1) //chat or homework
+                        $message_details = Communications::select('*')->where(['id'=>$value['communication_id']])->get()->first();
+                    else if($value['communication_type'] == 2) //news and events
+                        $message_details = NewsEvents::select('*')->where(['id'=>$value['communication_id']])->get()->first();
                     if($value['message_status'] == 1)
                         $unreadmessages++;
                     $sender_details =[];
@@ -449,7 +479,7 @@ class APICommunicationController extends Controller
                     if(!empty($fetch_sender_id))
                         $sender_details = $fetch_sender_id->userDetails();
                     $user = $designation ='';
-                    if($message_details->communication_type == 2)
+                    if($value['communication_type'] == 1 && $message_details->communication_type == 2)
                     {
                         $user = '';
                         $designation = 'Home Work of the day '.date('d-M-Y',strtotime($message_details->actioned_time));
@@ -475,98 +505,140 @@ class APICommunicationController extends Controller
                         $designation = 'F/O Test';
                     }
 
-                    if($message_details->distribution_type==3)
-                        $visibility = 'Visible to Everyone';
-                    else if($message_details->distribution_type==4)
-                        $visibility = 'Visible to Staffs';
-                    else if($message_details->distribution_type==5)
-                        $visibility = 'Visible to Parents';                  
+                    
+                    if($value['communication_type'] == 1)
+                    {
+                        if($message_details->distribution_type==3)
+                            $visibility = 'Visible to Everyone';
+                        else if($message_details->distribution_type==4)
+                            $visibility = 'Visible to Staffs';
+                        else if($message_details->distribution_type==5)
+                            $visibility = 'Visible to Parents';                  
 
-                    $message_category='';                 
-                    if($message_details->message_category == 1)
-                        $message_category = 'Text';
-                    else if($message_details->message_category == 2)
-                        $message_category = 'ImageWithCaption';
-                    else if($message_details->message_category == 3)
-                        $message_category = 'Images';
-                    else if($message_details->message_category == 4)
-                        $message_category = 'Document';
-                    else if($message_details->message_category == 5)
-                        $message_category = 'Audio';
-                    else if($message_details->message_category == 6)
-                        $message_category = 'Video';
-                    else if($message_details->message_category == 7)
-                        $message_category = 'Quotes';
-                    else if($message_details->message_category == 8)
-                        $message_category = 'ManagementSpeaks';
-                    else if($message_details->message_category == 9)
-                        $message_category = 'Circular';
-                    else if($message_details->message_category == 10)
-                        $message_category = 'StudyMaterial';
+                        $message_category='';                 
+                        if($message_details->message_category == 1)
+                            $message_category = 'Text';
+                        else if($message_details->message_category == 2)
+                            $message_category = 'ImageWithCaption';
+                        else if($message_details->message_category == 3)
+                            $message_category = 'Images';
+                        else if($message_details->message_category == 4)
+                            $message_category = 'Document';
+                        else if($message_details->message_category == 5)
+                            $message_category = 'Audio';
+                        else if($message_details->message_category == 6)
+                            $message_category = 'Video';
+                        else if($message_details->message_category == 7)
+                            $message_category = 'Quotes';
+                        else if($message_details->message_category == 8)
+                            $message_category = 'ManagementSpeaks';
+                        else if($message_details->message_category == 9)
+                            $message_category = 'Circular';
+                        else if($message_details->message_category == 10)
+                            $message_category = 'StudyMaterial';
 
-                    if($message_details->communication_type == 2)
-                        $message_category = 'Homework';
-
-                    $messages[$key] = ([
-                        'notification_id'=>$value['communication_id'],
-                        'user'=>$user,
-                        'designation'=>$designation,
-                        'view_type'=>$value['view_type'],//1-sender,2-Receiver
-                        'message_category'=>$message_category,
-                        'message_status'=>($message_details->message_status != null)?$message_details->message_status:3,//1-Deleted,2-Edited,3-active
-                        'date_time'=>($message_details->approved_time ==null)?$message_details->actioned_time:$message_details->approved_time,
-                        'visiblity'=>$visibility,
-                        'important'=>$message_details->important,//0-no,1-yes
-                        'communication_type'=>$message_details->communication_type,//1-chat,2-homework
-                        'caption'=>$message_details->caption_message,
-
-                        'approval_status'=>($message_details->approval_status == null)?0:$message_details->approval_status,//0-waiting for approval,1-approval,2-denied
-                        'read_count'=>array_key_exists($value['communication_id'],$readcount_data)?$readcount_data[$value['communication_id']]:0,
-                    ]);
-                    if($message_details->message_category == 6 && $message_details->communication_type == 1)
-                        $messages[$key]['message']=''; 
+                        if($message_details->communication_type == 2)
+                            $message_category = 'Homework';
+                    }
                     else
-                        $messages[$key]['message']=$message_details->chat_message; 
-                    if($message_details->communication_type == 2)
                     {
-                        if(!empty($message_details))
-                        {
-                            $subject_details = AcademicSubjects::where('id',$message_details->subject_id)->get()->first();
-                            $messages[$key]['subject_id'] = isset($message_details->subject_id)?$message_details->subject_id:0;
-                            $messages[$key]['subject_name'] =isset($subject_details->subject_name)?$subject_details->subject_name:'';
-                            $messages[$key]['short_name'] = isset( $subject_details->short_name)?$subject_details->short_name:'';
-                        }
-
+                        $visibility = 'Visible to Everyone';
+                        $message_category = 'News & Events';
                     }
+                    $exploded_config = explode(',',$message_details->visible_to);
+                    if($value['communication_type'] == 1 || ($value['communication_type'] == 2 && (in_array($get_class_config,$exploded_config) || $message_details->visible_to == 'all')))
+                    {    
+                        $messages[$index] = ([
+                            'notification_id'=>$value['communication_id'],
+                            'user'=>$user,
+                            'designation'=>$designation,
+                            'view_type'=>$value['view_type'],//1-sender,2-Receiver
+                            'message_category'=>$message_category,
+                            'message_status'=>($message_details->message_status != null)?$message_details->message_status:3,//1-Deleted,2-Edited,3-active
+                            'date_time'=>($message_details->approved_time ==null)?$message_details->actioned_time:$message_details->approved_time,
+                            'visiblity'=>$visibility,
+                            'important'=>$message_details->important,//0-no,1-yes
+                            'communication_type'=>($value['communication_type'] ==1)?$message_details->communication_type:3,//1-chat,2-homework,3-news and events
+                            'caption'=>$message_details->caption_message,
 
-                    if($value['view_type'] == 1)
-                    {
-                        $watched = CommunicationRecipients::select('id')->where(['message_status'=>2,'communication_id'=>$value['communication_id']])->get()->count();
-                        $messages[$key]['delivered_users'] = $message_details['delivered_users'];
-                        $messages[$key]['watched'] = $watched;
-                    }
-                    if($message_details->message_category == 7 )
-                        $messages[$key]['sub_title'] = 'Quotes';
-                    if($message_details->message_category == 8 )
-                        $messages[$key]['sub_title'] = 'Management Speaks';
-                    if($message_details->message_category == 9 )
-                        $messages[$key]['sub_title'] = 'Circular';
+                            'approval_status'=>($message_details->approval_status == null)?0:$message_details->approval_status,//0-waiting for approval,1-approval,2-denied
+                            'read_count'=>(isset($readcount_data[$value['communication_type']]) && isset($readcount_data[$value['communication_type']][$value['communication_id']]))?$readcount_data[$value['communication_type']][$value['communication_id']]:0,
 
-                    if($message_details->message_category == 3 || $message_details->message_category == 2 || $message_details->message_category == 4 || $message_details->message_category == 10 || $message_details->message_category == 5 )
-                    {
-                        $images = [];
-                        $images_list = CommunicationAttachments::where(['communication_id'=>$value['communication_id']])->get()->toArray();
-                        if(!empty($images_list))
+                        ]);
+                        if($message_details->message_category == 6 && $message_details->communication_type == 1)
+                            $messages[$index]['message']=''; 
+                        else
+                            $messages[$index]['message']=$message_details->chat_message; 
+                        if($message_details->communication_type == 2)
                         {
-                            foreach ($images_list as $image_key => $image_value) {
-                                $images[]= $image_value['attachment_location'].''.$image_value['attachment_name'];
+                            if(!empty($message_details))
+                            {
+                                $subject_details = AcademicSubjects::where('id',$message_details->subject_id)->get()->first();
+                                $messages[$index]['subject_id'] = isset($message_details->subject_id)?$message_details->subject_id:0;
+                                $messages[$index]['subject_name'] =isset($subject_details->subject_name)?$subject_details->subject_name:'';
+                                $messages[$index]['short_name'] = isset( $subject_details->short_name)?$subject_details->short_name:'';
                             }
-                            
-                            $messages[$key]['images'] = $images;
+
                         }
+                        else  if($value['communication_type'] == 2)
+                        {
+                            $messages[$index]['title'] = isset($message_details->title)?$message_details->title:0;
+                            $messages[$index]['description'] =isset($message_details->description)?$message_details->description:'';
+                            $messages[$index]['news_events_category'] =isset($message_details->news_events_category)?$message_details->news_events_category:'';
+                            $messages[$index]['module_type'] =isset($message_details->module_type)?$message_details->module_type:'';
+                            $messages[$index]['event_date'] =isset($message_details->event_date)?$message_details->event_date:null;
+                            $messages[$index]['event_time'] =isset($message_details->event_time)?$message_details->event_time:null;
+                            $messages[$index]['important'] =0;
+                            $messages[$index]['date_time']=($message_details->published_time ==null)?$message_details->published_time:$message_details->published_time;
+                            $messages[$index]['message_status'] = $message_details->status;
+                        }
+
+                        if($value['view_type'] == 1)
+                        {
+                            $watched = CommunicationRecipients::select('id')->where(['message_status'=>2,'communication_id'=>$value['communication_id'],'communication_type'=>$value['communication_type']])->get()->count();
+                            $messages[$index]['delivered_users'] = $message_details['delivered_users'];
+                            $messages[$index]['watched'] = $watched;
+                        }
+                        if($message_details->message_category == 7 )
+                            $messages[$index]['sub_title'] = 'Quotes';
+                        if($message_details->message_category == 8 )
+                            $messages[$index]['sub_title'] = 'Management Speaks';
+                        if($message_details->message_category == 9 )
+                            $messages[$index]['sub_title'] = 'Circular';
+
+                        if($value['communication_type']  == 1)
+                        {
+                            if($message_details->message_category == 3 || $message_details->message_category == 2 || $message_details->message_category == 4 || $message_details->message_category == 10 || $message_details->message_category == 5 )
+                            {
+                                $images = [];
+                                $images_list = CommunicationAttachments::where(['communication_id'=>$value['communication_id']])->get()->toArray();
+                                if(!empty($images_list))
+                                {
+                                    foreach ($images_list as $image_key => $image_value) {
+                                        $images[]= $image_value['attachment_location'].''.$image_value['attachment_name'];
+                                    }
+                                    
+                                    $messages[$index]['images'] = $images;
+                                }
+                            }
+                            else if($message_details->message_category == 6 && $message_details->communication_type == 1)
+                                $messages[$index]['images']=explode(',',$message_details->chat_message); 
+                        }
+                        else
+                        {
+                            $images = [];
+                            $images_list = NewsEventsAttachments::where(['news_events_id'=>$value['communication_id']])->get()->toArray();
+                            if(!empty($images_list))
+                            {
+                                foreach ($images_list as $image_key => $image_value) {
+                                    $images[]= $image_value['attachment_location'].'/'.$image_value['attachment_name'];
+                                }
+                                
+                                $messages[$index]['images'] = $images;
+                            }
+                        }
+                        $index++;
                     }
-                    else if($message_details->message_category == 6 && $message_details->communication_type == 1)
-                        $messages[$key]['images']=explode(',',$message_details->chat_message); 
                       
                 }
             }
@@ -592,20 +664,39 @@ class APICommunicationController extends Controller
             $user_table_id = $user_data->id;
             $userall_id = UserAll::where(['user_table_id'=>$user_table_id,'user_role'=>$user->user_role])->pluck('id')->first();
             $notification_id = $request->notification_id;
-            $communication_data = Communications::where(['group_id'=>$request->group_id,'id'=>$notification_id])->get()->first();
-            // foreach ($notification_id as $key => $value) {
-            $delete_status = Communications::where(['group_id'=>$request->group_id,'id'=>$notification_id])->update(['message_status'=>Config::get('app.Deleted'),'deleted_by'=>$userall_id,'deleted_time'=>Carbon::now()->timezone('Asia/Kolkata')]);
+            if($request->communication_type == 3)
+            {
+                $communication_data = NewsEvents::where(['id'=>$notification_id])->get()->first();
+                $delete_status = NewsEvents::where(['id'=>$notification_id])->update(['status'=>3,'updated_by'=>$userall_id,'updated_time'=>Carbon::now()->timezone('Asia/Kolkata')]);
 
-            // }
+            }
+            else
+            {
+
+                $communication_data = Communications::where(['group_id'=>$request->group_id,'id'=>$notification_id])->get()->first();
+                // foreach ($notification_id as $key => $value) {
+                $delete_status = Communications::where(['group_id'=>$request->group_id,'id'=>$notification_id])->update(['message_status'=>Config::get('app.Deleted'),'deleted_by'=>$userall_id,'deleted_time'=>Carbon::now()->timezone('Asia/Kolkata')]);
+
+                // }
+            }
             $chat_message ='';
-            $group_name = UserGroups::where('id',$request->group_id)->pluck('group_name')->first();
-            if($user->user_role == Config::get('app.Management_role'))
-                $chat_message = $user_data->first_name." has deleted a communication in ".$group_name;
-            if($user->user_role == Config::get('app.Admin_role'))
-                $chat_message = "Admin has deleted a communication in ".$group_name;
+            if($request->communication_type == 3)
+            {
+                $module_type = ($communication_data->module_type==1)?'a News':'an Events';
+                $chat_message = $user_data->first_name." has deleted ".$module_type;
+            }
+            else
+            {
+
+                $group_name = UserGroups::where('id',$request->group_id)->pluck('group_name')->first();
+                if($user->user_role == Config::get('app.Management_role'))
+                    $chat_message = $user_data->first_name." has deleted a communication in ".$group_name;
+                if($user->user_role == Config::get('app.Admin_role'))
+                    $chat_message = "Admin has deleted a communication in ".$group_name;
+            }
             $player_ids[] = Appusers::where('loginid',$communication_data->created_by)->pluck('player_id')->first();
             if(!empty($player_ids) && $chat_message!='')
-                $delivery_details = APIPushNotificationController::SendNotification($chat_message,$player_ids); //trigger pushnotification function
+                $delivery_details = APIPushNotificationController::SendNotification($chat_message,$player_ids,$notification_id,'chat'); //trigger pushnotification function
             return response()->json(['success'=>'Deleted Successfully!...']);
         }
     }
@@ -666,7 +757,7 @@ class APICommunicationController extends Controller
                     $chat_message = "Admin has approved your ".Config::get('app.MessageCategories.'.$communication_data->message_category);
 
                 
-                $delivery_details = APIPushNotificationController::SendNotification($chat_message,$player_ids); //trigger pushnotification function
+                $delivery_details = APIPushNotificationController::SendNotification($chat_message,$player_ids,$request->notification_id,'chat'); //trigger pushnotification function
 
                 return response()->json(['message'=>'Approved Successfully!...']);
 
@@ -681,7 +772,7 @@ class APICommunicationController extends Controller
                     $chat_message = "Admin has denied your ".Config::get('app.MessageCategories.'.$communication_data->message_category);
 
                 
-                $delivery_details = APIPushNotificationController::SendNotification($chat_message,$player_ids); //trigger pushnotification function
+                $delivery_details = APIPushNotificationController::SendNotification($chat_message,$player_ids,$request->notification_id,'chat'); //trigger pushnotification function
 
                 return response()->json(['message'=>'Denied Successfully!...']);
             }
@@ -705,7 +796,20 @@ class APICommunicationController extends Controller
             $user_table_id = UserParents::where(['user_id'=>$user->user_id])->pluck('id')->first();//fetch id from user all table to store notification triggered user
         $userall_id = UserAll::where(['user_table_id'=>$user_table_id,'user_role'=>$user->user_role])->pluck('id')->first();
         if($request->message_status == 2)
-            CommunicationRecipients::where(['user_table_id'=>$user_table_id,'user_role'=>$user->user_role,'message_status'=>1])->where('communication_id','<=',$request->notification_id)->update(['message_status'=>$request->message_status,'updated_time'=>Carbon::now()->timezone('Asia/Kolkata')]);
+        {
+            $communication_type = $request->communication_type == 3?2:1;
+            $altercommunication_type = $request->communication_type == 3?1:2;
+            $actioned_time = CommunicationRecipients::where(['user_table_id'=>$user_table_id,'user_role'=>$user->user_role,'message_status'=>1])->where('communication_id','<=',$request->notification_id)->where('communication_type',$communication_type)->orderBy('actioned_time','DESC')->pluck('actioned_time')->first();
+            if($actioned_time!='')
+            {
+                $get_news_events_id = CommunicationRecipients::where(['user_table_id'=>$user_table_id,'user_role'=>$user->user_role,'message_status'=>1])->where('actioned_time','<=',$actioned_time)->where('communication_type',$altercommunication_type)->orderBy('actioned_time','DESC')->pluck('communication_id')->first();
+                if($get_news_events_id!='')
+                {
+                    CommunicationRecipients::where(['user_table_id'=>$user_table_id,'user_role'=>$user->user_role,'message_status'=>1])->where('communication_id','<=',$get_news_events_id)->where('communication_type',$altercommunication_type)->update(['message_status'=>$request->message_status,'updated_time'=>Carbon::now()->timezone('Asia/Kolkata')]);
+                }
+            }
+            CommunicationRecipients::where(['user_table_id'=>$user_table_id,'user_role'=>$user->user_role,'message_status'=>1])->where('communication_id','<=',$request->notification_id)->where('communication_type',$communication_type)->update(['message_status'=>$request->message_status,'updated_time'=>Carbon::now()->timezone('Asia/Kolkata')]);
+        }
         else
             CommunicationRecipients::where(['communication_id'=>$request->notification_id,'user_table_id'=>$user_table_id,'user_role'=>$user->user_role])->update(['message_status'=>$request->message_status,'updated_time'=>Carbon::now()->timezone('Asia/Kolkata')]);
         return response()->json(['message'=>'inserted Successfully!...']);
@@ -718,6 +822,7 @@ class APICommunicationController extends Controller
         $validator = Validator::make($request->all(), [
             'group_id' => 'required', 
             'notification_id' => 'required', 
+            'communication_type'=>'required',
         ]);
         // Validate form
         if ($validator->fails()) {
@@ -727,7 +832,10 @@ class APICommunicationController extends Controller
         // Get authorizated user details
         $user = auth()->user();
 
-        $message_details = Communications::where(['id'=>$request->notification_id])->get()->first();
+        if($request->communication_type == 3)
+            $message_details = NewsEvents::where(['id'=>$request->notification_id])->get()->first();
+        else
+            $message_details = Communications::where(['id'=>$request->notification_id])->get()->first();
         if(!empty($message_details))
         {
             $initated_user_details = UserAll::where(['id'=>$message_details->created_by])->get()->first();
@@ -760,7 +868,7 @@ class APICommunicationController extends Controller
                 echo json_encode(["message_info"=>$message_info]);exit();  
             }      
         }
-        return response()->json('No Messages');
+        return response()->json(['status'=>false,'message'=>'No Messages']);
     }
 
     public function user_details($userdetails)
@@ -918,7 +1026,10 @@ class APICommunicationController extends Controller
             {
                 $class_name =$section_name ='';
                 $category = ($data['user_category']==1)?'F/O':($data['user_category']==2?'M/O':'G/O');
-                $student_id = UserStudentsMapping::where(['parent'=>$data->id])->pluck('student')->first();
+                if(isset($request->student_id) && $request->student_id!='')
+                    $student_id = $request->student_id;
+                else
+                    $student_id =UserStudentsMapping::where(['parent'=>$data->id])->pluck('student')->first();
                 $student_details = UserStudents::select('first_name','class_config')->where(['id'=>$student_id])->get()->first();
                 $user_details['name'] = $data->first_name." ".$category." ".$student_details['first_name'];
                 $user_details['dob'] = $student_details['dob'];
@@ -1004,110 +1115,130 @@ class APICommunicationController extends Controller
         // Get authorizated user details
         $user = auth()->user();
         $approval_message = $approval_data = [];
-        $designation ='';
-        if($user->user_role == Config::get('app.Management_role') || $user->user_role == Config::get('app.Admin_role'))
-            $approval_data = Communications::whereNull('approval_status')->whereNull('deleted_by')->get()->toArray();
+        $designation =$logged_in_staff ='';
+        if($user->user_role == Config::get('app.Management_role') || $user->user_role == Config::get('app.Admin_role') || $user->user_role == Config::get('app.Staff_role'))
+        {
 
+            $approval_data = Communications::whereNull('approval_status')->whereNull('deleted_by');
+            if($user->user_role == Config::get('app.Staff_role'))
+            {
+                $logged_in_staff = UserStaffs::where('user_id',$user->user_id)->pluck('id')->first();
+                $approval_data = $approval_data->where('communication_type',2);
+            }
+
+            $approval_data =  $approval_data->orderBy('actioned_time','DESC')->get()->toArray();
+        }
         if(!empty($approval_data))
         {
             $index = 0;
             foreach ($approval_data as $key => $value) {
-                $fetch_sender_id = CommunicationRecipients::select('user_table_id','user_role')->where(['view_type'=>1,'communication_id'=>$value['id']])->get()->first();
-                if(!empty($fetch_sender_id))
+                if(($value['communication_type'] == 2 && (date('Y-m-d',strtotime($value['actioned_time'])) >= date("Y-m-d",strtotime(Carbon::now()->timezone('Asia/Kolkata')))) ) || $value['communication_type'] == 1)
                 {
-                    $sender_details = $fetch_sender_id->userDetails();
-                    if(!empty($sender_details))
+                    $fetch_sender_id = CommunicationRecipients::select('user_table_id','user_role')->where(['view_type'=>1,'communication_id'=>$value['id']])->get()->first();
+                    if(!empty($fetch_sender_id))
                     {
-                        $group_details = UserGroups::select('class_config','group_name')->where('id',$value['group_id'])->get()->first();
-                        if($fetch_sender_id->user_role == Config::get('app.Management_role'))
+                        $sender_details = $fetch_sender_id->userDetails();
+                        if(!empty($sender_details))
                         {
-                            $user = isset($management_categories[$sender_details['user_category']])?ucfirst($sender_details['first_name'])." ".$management_categories[$sender_details['user_category']]:ucfirst($sender_details['first_name']);
-                            $designation = 'Management';
-                        }
-                        else if($fetch_sender_id->user_role == Config::get('app.Staff_role'))
-                        {
-                            $user = ucfirst($sender_details['first_name']);
-                            $designation='Staff';
-                        }
-                        else if($fetch_sender_id->user_role == Config::get('app.Admin_role'))
-                        {
-                            $user = ucfirst($sender_details['first_name']);
-                            $designation = 'Admin';
-                        }
-                        else if($fetch_sender_id->user_role == Config::get('app.Parent_role'))
-                        {
-                            $user = ucfirst($sender_details['first_name']);
-                            $user_table_id = UserParents::where(['user_id'=>$sender_details['user_details']->user_id])->first();//fetch id from user all table to store notification triggered user
-                            if(!empty($user_table_id))
+                            $group_details = UserGroups::select('class_config','group_name')->where('id',$value['group_id'])->get()->first();
+                            if($fetch_sender_id->user_role == Config::get('app.Management_role'))
                             {
-                                $user_category = UserCategories::where(['id'=>$user_table_id->user_category])->pluck('category_name')->first();
-                                $user_category = (strtolower($user_category) == 'father')?'F/O':((strtolower($user_category) == 'mother')?'M/O':'G/O');
-                                $student_id = UserStudentsMapping::where(['parent'=>$user_table_id->id])->pluck('student')->toArray();
-                                $student_name = UserStudents::whereIn('id',$student_id)->pluck('first_name')->first();
-
-                                $designation = $user_category.' '.$student_name;
+                                $user = isset($management_categories[$sender_details['user_category']])?ucfirst($sender_details['first_name'])." ".$management_categories[$sender_details['user_category']]:ucfirst($sender_details['first_name']);
+                                $designation = 'Management';
                             }
-                        }
-
-                        $message_category='';                 
-                        if($value['message_category'] == 1)
-                            $message_category = 'Text';
-                        else if($value['message_category'] == 2)
-                            $message_category = 'ImageWithCaption';
-                        else if($value['message_category'] == 3)
-                            $message_category = 'Images';
-                        else if($value['message_category'] == 4)
-                            $message_category = 'Document';
-                        else if($value['message_category'] == 5)
-                            $message_category = 'Audio';
-                        else if($value['message_category'] == 6)
-                            $message_category = 'Video';
-                        else if($value['message_category'] == 7)
-                            $message_category = 'Quotes';
-                        else if($value['message_category'] == 8)
-                            $message_category = 'ManagementSpeaks';
-                        else if($value['message_category'] == 9)
-                            $message_category = 'Circular';
-                        else if($value['message_category'] == 10)
-                            $message_category = 'StudyMaterial';
-
-                        $approval_message[$index] = ([
-                            'notification_id'=>$value['id'],
-                            'user'=>$user,
-                            'designation'=>$designation,
-                            'communication_type'=>$value['communication_type'],
-                            'message_category'=>$message_category,
-                            'message'=>$value['chat_message'],
-                            'group_name'=>$group_details['group_name'], 
-                            'date_time'=>$value['actioned_time'],
-                            'caption'=>$value['caption_message'],
-                            'class'=>$group_details['class_config'],
-                        ]);
-
-                        if($value['message_category'] == 3 || $value['message_category'] == 2 || $value['message_category'] == 2 || $value['message_category'] == 4 || $value['message_category'] == 10 || $value['message_category'] == 5)
-                        {
-                            $images = [];
-                            $images_list = CommunicationAttachments::where(['communication_id'=>$value['id']])->get()->toArray();
-                            if(!empty($images_list))
+                            else if($fetch_sender_id->user_role == Config::get('app.Staff_role'))
                             {
-                                foreach ($images_list as $image_key => $image_value) {
-                                    $images[]= $image_value['attachment_location'].''.$image_value['attachment_name'];
+                                $user = ucfirst($sender_details['first_name']);
+                                $designation='Staff';
+                            }
+                            else if($fetch_sender_id->user_role == Config::get('app.Admin_role'))
+                            {
+                                $user = ucfirst($sender_details['first_name']);
+                                $designation = 'Admin';
+                            }
+                            else if($fetch_sender_id->user_role == Config::get('app.Parent_role'))
+                            {
+                                $user = ucfirst($sender_details['first_name']);
+                                $user_table_id = UserParents::where(['user_id'=>$sender_details['user_details']->user_id])->first();//fetch id from user all table to store notification triggered user
+                                if(!empty($user_table_id))
+                                {
+                                    $user_category = UserCategories::where(['id'=>$user_table_id->user_category])->pluck('category_name')->first();
+                                    $user_category = (strtolower($user_category) == 'father')?'F/O':((strtolower($user_category) == 'mother')?'M/O':'G/O');
+                                    $student_id = UserStudentsMapping::where(['parent'=>$user_table_id->id])->pluck('student')->toArray();
+                                    $student_name = UserStudents::whereIn('id',$student_id)->pluck('first_name')->first();
+
+                                    $designation = $user_category.' '.$student_name;
                                 }
-                                
-                                $approval_message[$index]['images'] = $images;
                             }
+
+                            $message_category='';                 
+                            if($value['message_category'] == 1)
+                                $message_category = 'Text';
+                            else if($value['message_category'] == 2)
+                                $message_category = 'ImageWithCaption';
+                            else if($value['message_category'] == 3)
+                                $message_category = 'Images';
+                            else if($value['message_category'] == 4)
+                                $message_category = 'Document';
+                            else if($value['message_category'] == 5)
+                                $message_category = 'Audio';
+                            else if($value['message_category'] == 6)
+                                $message_category = 'Video';
+                            else if($value['message_category'] == 7)
+                                $message_category = 'Quotes';
+                            else if($value['message_category'] == 8)
+                                $message_category = 'ManagementSpeaks';
+                            else if($value['message_category'] == 9)
+                                $message_category = 'Circular';
+                            else if($value['message_category'] == 10)
+                                $message_category = 'StudyMaterial';
+
+                            $approval_message[$index] = ([
+                                'notification_id'=>$value['id'],
+                                'user'=>$user,
+                                'designation'=>$designation,
+                                'communication_type'=>$value['communication_type'],
+                                'message_category'=>$message_category,
+                                'message'=>$value['chat_message'],
+                                'group_name'=>$group_details['group_name'], 
+                                'date_time'=>$value['actioned_time'],
+                                'caption'=>$value['caption_message'],
+                                'class'=>$group_details['class_config'],
+                            ]);
+
+                            if($value['message_category'] == 3 || $value['message_category'] == 2 || $value['message_category'] == 2 || $value['message_category'] == 4 || $value['message_category'] == 10 || $value['message_category'] == 5)
+                            {
+                                $images = [];
+                                $images_list = CommunicationAttachments::where(['communication_id'=>$value['id']])->get()->toArray();
+                                if(!empty($images_list))
+                                {
+                                    foreach ($images_list as $image_key => $image_value) {
+                                        $images[]= $image_value['attachment_location'].''.$image_value['attachment_name'];
+                                    }
+                                    
+                                    $approval_message[$index]['images'] = $images;
+                                }
+                            }
+                            if($value['communication_type'] == 2)//2-homework,1-chat
+                            {
+                                $subject_details = AcademicSubjects::where('id',$value['subject_id'])->get()->first();
+                                $teachingstaff = AcademicSubjectsMapping::where(['subject'=>$value['subject_id'],'class_config'=>$group_details['class_config']])->pluck('staff')->first();
+                                $staff_details = UserStaffs::select('id','first_name')->where('id',$teachingstaff)->get()->first();
+                                $classteacher = 'no';
+                                if($logged_in_staff!='')
+                                {
+                                    $classteacher_id = AcademicClassConfiguration::Where('id',$group_details['class_config'])->pluck('class_teacher')->first();
+                                    if($classteacher_id == $logged_in_staff)
+                                        $classteacher = 'yes';
+                                }
+                                $approval_message[$index]['classteacher']=$classteacher;
+                                $approval_message[$index]['subject_id']=$value['subject_id'];
+                                $approval_message[$index]['subject_name']=$subject_details->subject_name;
+                                $approval_message[$index]['staff_name']=(!empty($staff_details))?$staff_details->first_name:'';
+                                $approval_message[$index]['staff_id']=(!empty($staff_details))?$staff_details->id:'';
+                            }
+                            $index++;
                         }
-                        if($value['communication_type'] == 2)//2-homework,1-chat
-                        {
-                            $subject_details = AcademicSubjects::where('id',$value['subject_id'])->get()->first();
-                            $teachingstaff = AcademicSubjectsMapping::where(['subject'=>$value['subject_id'],'class_config'=>$group_details['class_config']])->pluck('staff')->first();
-                            $staff_details = UserStaffs::select('id','first_name')->where('id',$teachingstaff)->get()->first();
-                            $approval_message[$index]['subject_id']=$value['subject_id'];
-                            $approval_message[$index]['subject_name']=$subject_details->subject_name;
-                            $approval_message[$index]['staff_name']=(!empty($staff_details))?$staff_details->first_name:'';
-                            $approval_message[$index]['staff_id']=(!empty($staff_details))?$staff_details->id:'';
-                        }
-                        $index++;
                     }
                 }
             }
@@ -1132,18 +1263,28 @@ class APICommunicationController extends Controller
             $group_users =$group_users->get();
         if(!empty($group_users))
         {
+            // echo '<pre>';print_r($group_users);exit;
             foreach ($group_users as $key => $value) {
                 $category = $app_status = $admission_no='';
+
                 $list = $this->user_details($value); //fetch individual user details
 
                 if($value->user_role == Config::get('app.Parent_role')) //for parent fetch student details
                 {
                     $user_category = UserCategories::where(['id'=>$list['user_details']->user_category])->pluck('category_name')->first(); //fetch parent category and student name
                     $user_category = (strtolower($user_category) == 'father')?'F/O':((strtolower($user_category) == 'mother')?'M/O':'G/O');
-                    $student_id = UserStudentsMapping::where(['parent'=>$list['user_details']->id])->pluck('student')->toArray();
-                    $student_name = UserStudents::whereIn('id',$student_id)->first();
-                    $category = $user_category.' '.$student_name->first_name; //combine category and name
-                    $admission_no = $student_name->admission_number;
+                    $class_config = UserGroups::where('id',$request->group_id)->pluck('class_config')->first();
+                    $student_ids_list = UserStudentsMapping::where(['parent'=>$list['user_details']->id])->pluck('student')->toArray();
+                    $student_id = UserStudents::whereIn('id',$student_ids_list);
+
+                    if($request->group_id!=2)
+                        $student_id =$student_id->where('class_config',$class_config);
+
+                    $student_id =$student_id->get()->toArray();
+
+                    $student_name = implode(',',array_column($student_id,'first_name'));
+                    $category = $user_category.' '.$student_name; //combine category and name
+                    $admission_no = implode(',',array_column($student_id,'admission_number'));
                 }
 
                 //fetch id from user all table to store notification triggered user
@@ -1163,7 +1304,6 @@ class APICommunicationController extends Controller
                     'admission_no'=>$admission_no
                 ]);
             }
-
             $key_values = array_column($members_list, 'admission_no'); 
             array_multisort($key_values, SORT_ASC, $members_list);
         }

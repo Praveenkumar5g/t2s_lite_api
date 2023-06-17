@@ -1748,23 +1748,29 @@ class APIConfigurationsController extends Controller
             $parent_list = $parent_list->where('first_name', 'like', '%' . $request->search . '%')->orWhere('mobile_number', 'like', '%' . $request->search . '%');
         	
         $parent_list =$parent_list->get()->toArray();
+        $index = 0;
         foreach ($parent_list as $key => $value) {
         	$student_id = UserStudentsMapping::where('parent',$value['id'])->pluck('student')->toArray();
-            $student_details = UserStudents::whereIn('id',$student_id)->get()->first();
-            // echo '<pre>';print_r($student_details);
-        	$user_category = (strtolower($value['user_category']) == 1)?'F/O':'M/O';
-        	$parent_list[$key]['student_name'] = ($user_category.' '.((isset($student_details->first_name))?$student_details->first_name:''));
-        	// $parent_list[$key]['mobile_number'] = $value['mobile_number'];
-        	$parent_list[$key]['dob'] = (isset($student_details->dob))?$student_details->dob:'';
-        	$parent_list[$key]['admission_number'] = (isset($student_details->admission_number))?$student_details->admission_number:'';
-        	$classessections =[];
-        	if(isset($student_details->class_config))
-        		$classessections = AcademicClassConfiguration::select('id','class_id','section_id','division_id','class_teacher')->where('id',$student_details->class_config)->get()->first();
-        	$parent_list[$key]['class'] = (!empty($classessections))?$classessections->classsectionName():'';
-        	$parent_list[$key]['class_teacher'] = (!empty($classessections))?UserStaffs::where('id',$classessections->class_teacher)->pluck('first_name')->first():'';
-        	$parent_list[$key]['student_profile_image'] = (isset($student_details->profile_image))?$student_details->profile_image:'';
+            $student_details = UserStudents::whereIn('id',$student_id)->get()->toArray();
+            foreach($student_details as $stu_key => $stu_value)
+            {
+            	$parent_details[$index] = $value;
+	        	$user_category = (strtolower($value['user_category']) == 1)?'F/O':((strtolower($value['user_category']) == 2)?'M/O':'G/O');
+	        	$parent_details[$index]['student_name'] = ($user_category.' '.((isset($stu_value['first_name']))?$stu_value['first_name']:''));
+	        	$parent_details[$index]['student_id'] =(isset($stu_value['id']))?$stu_value['id']:'';
+	        	// $parent_details[$index]['mobile_number'] = $value['mobile_number'];
+	        	$parent_details[$index]['dob'] = (isset($stu_value['dob']))?$stu_value['dob']:'';
+	        	$parent_details[$index]['admission_number'] = (isset($stu_value['admission_number']))?$stu_value['admission_number']:'';
+	        	$classessections =[];
+	        	if(isset($stu_value['class_config']))
+	        		$classessections = AcademicClassConfiguration::select('id','class_id','section_id','division_id','class_teacher')->where('id',$stu_value['class_config'])->get()->first();
+	        	$parent_details[$index]['class'] = (!empty($classessections))?$classessections->classsectionName():'';
+	        	$parent_details[$index]['class_teacher'] = (!empty($classessections))?UserStaffs::where('id',$classessections->class_teacher)->pluck('first_name')->first():'';
+	        	$parent_details[$index]['student_profile_image'] = (isset($stu_value['profile_image']))?$stu_value['profile_image']:'';
+	        	$index++;
+            }
         }
-        return response()->json($parent_list);
+        return response()->json($parent_details);
 	}
 
 	// Store Onesignal device details in DB
@@ -1798,12 +1804,13 @@ class APIConfigurationsController extends Controller
 	                'device_version'=>($request->device_version)?$request->device_version:'',
 	                'app_version'=>($request->app_version)?$request->app_version:'',
 	                'login_date'=>Carbon::now()->timezone('Asia/Kolkata'),
+	               	'created_on'=>Carbon::now()->timezone('Asia/Kolkata'),
 	            ]);
             	Appusers::insert($data);
 	        }
 	        else
 	        {
-	        	Appusers::where(['loginid'=>$userall_id])->update(['player_id'=>($request->player_id!='')?$request->player_id:'','external_user_id'=>$request->external_user_id,'device_type'=>$request->device_type,'device_name'=>$request->device_name,'device_version'=>$request->device_version,'app_version'=>$request->app_version,'login_date'=>Carbon::now()->timezone('Asia/Kolkata')]);
+	        	Appusers::where(['loginid'=>$userall_id])->update(['player_id'=>($request->player_id!='')?$request->player_id:'','external_user_id'=>$request->external_user_id,'device_type'=>$request->device_type,'device_name'=>$request->device_name,'device_version'=>$request->device_version,'app_version'=>$request->app_version,'login_date'=>Carbon::now()->timezone('Asia/Kolkata'),'created_on'=>Carbon::now()->timezone('Asia/Kolkata')]);
 	        }
             return response()->json('Device details registered Successfully');
         }
@@ -1902,6 +1909,7 @@ class APIConfigurationsController extends Controller
             $user_table_id = UserAdmin::where(['user_id'=>$user->user_id])->pluck('id')->first();
 
         $userall_id = UserAll::where(['user_table_id'=>$user_table_id,'user_role'=>$user->user_role])->pluck('id')->first();
+        $profile_details = SchoolProfile::where(['id'=>$user->school_profile_id])->first();//Fetch school profile details 
         $staffs_details = [];
         if($request->id!='')// fetch selected staff details 
         	$staffs_details = UserStaffs::where('id',$request->id)->get()->first();
@@ -1923,6 +1931,9 @@ class APIConfigurationsController extends Controller
 	        $staffs_details->email_id=$request->email_address;
 	        $staffs_details->specialized_in=$request->specialized_in;
 	        $staffs_details->user_category=$request->teacher_category;
+	        $staffs_details->dob=$request->dob;
+	        $staffs_details->doj=$request->doj;
+	        $staffs_details->employee_no=$request->employee_no;
 	        $staffs_details->updated_by=$userall_id;
 	    	$staffs_details->updated_time=Carbon::now()->timezone('Asia/Kolkata');
 	        $staffs_details->save();
@@ -1933,10 +1944,28 @@ class APIConfigurationsController extends Controller
             $schoolusers->user_email_id=$request->email_address;
             $schoolusers->save();
 
-            if(strtolower($request->class_teacher) == 'yes')
-             	AcademicSubjectsMapping::where('class_config',$request->class_config)->update(['staff'=>$request->id]); //assign staff to class.
+            if($request->class_teacher_class_config!='')
+            {
+            	AcademicClassConfiguration::where('id',$request->class_teacher_class_config)->update(['class_teacher'=>$request->id]); //assign class teacher to class.
 
-            return response()->json('Staff details updated Successfully!...');
+            	$class_techer_group = UserGroups::where('group_status',Config::get('app.Group_Active'))->where('class_config',$request->class_teacher_class_config)->pluck('id')->first();
+            	$check_exists = UserGroupsMapping::where(['group_id'=>$class_techer_group,'user_table_id'=>$request->id,'user_role'=>Config::get('app.Staff_role'),'user_status'=>1])->pluck('id')->first();
+             	if($check_exists=='')
+            		UserGroupsMapping::insert(['group_id'=>$class_techer_group,'user_table_id'=>$request->id,'user_role'=>Config::get('app.Staff_role'),'user_status'=>1,'group_access'=>1]);
+            }
+            
+            if(!empty($request->teacher_class_config))
+            {
+            	foreach ($request->teacher_class_config as $teacher_key => $teacher_value) {
+             		AcademicSubjectsMapping::where('class_config',$teacher_value)->update(['staff'=>$request->id]); //assign staff to class.
+             		$techer_group = UserGroups::where('group_status',Config::get('app.Group_Active'))->where('class_config',$teacher_value)->pluck('id')->first();
+             		$check_exists = UserGroupsMapping::where(['group_id'=>$techer_group,'user_table_id'=>$request->id,'user_role'=>Config::get('app.Staff_role'),'user_status'=>1])->pluck('id')->first();
+             		if($check_exists=='')
+            			UserGroupsMapping::insert(['group_id'=>$techer_group,'user_table_id'=>$request->id,'user_role'=>Config::get('app.Staff_role'),'user_status'=>1,'group_access'=>1]);
+            	}
+            }
+
+            return response()->json(['status'=>true,'messgae'=>'Staff details updated Successfully!...']);
         }
         else
         {
@@ -1958,6 +1987,9 @@ class APIConfigurationsController extends Controller
             $staffs_details->email_id=$request->email_address;
 	        $staffs_details->specialized_in=$request->specialized_in;
 	        $staffs_details->user_category=$request->teacher_category;
+	        $staffs_details->dob=$request->dob;
+	        $staffs_details->doj=$request->doj;
+	        $staffs_details->employee_no=$request->employee_no;
             $staffs_details->created_by=$userall_id;
         	$staffs_details->created_time=Carbon::now()->timezone('Asia/Kolkata');
             $staffs_details->save();
@@ -1975,16 +2007,39 @@ class APIConfigurationsController extends Controller
             $user_all->save();
 
             $schoolusers = new SchoolUsers;
-            $schoolusers->school_profile_id=$user_data->school_profile_id;
+            $schoolusers->school_profile_id=$user->school_profile_id;
             $schoolusers->user_id=$userstaff_id;
             $schoolusers->user_mobile_number=$request->mobile_number;
             $schoolusers->user_password=bcrypt($request->mobile_number);
-            $schoolusers->user_role=2;
+            $schoolusers->user_role=Config::get('app.Staff_role');
             $schoolusers->user_status=1;
             $schoolusers->save();
+
+            if($request->class_teacher_class_config!='')
+            {
+            	AcademicClassConfiguration::where('id',$request->class_teacher_class_config)->update(['class_teacher'=>$staff_id]); //assign class teacher to class.
+
+            	$class_teacher_group = UserGroups::where('group_status',Config::get('app.Group_Active'))->where('class_config',$request->class_teacher_class_config)->pluck('id')->first();
+            	$check_exists = UserGroupsMapping::where(['group_id'=>$class_teacher_group,'user_table_id'=>$staff_id,'user_role'=>Config::get('app.Staff_role'),'user_status'=>1])->pluck('id')->first();
+             	if($check_exists=='')
+            		UserGroupsMapping::insert(['group_id'=>$class_teacher_group,'user_table_id'=>$staff_id,'user_role'=>Config::get('app.Staff_role'),'user_status'=>1,'group_access'=>1]);
+            }
+            
+            if(!empty($request->teacher_class_config))
+            {
+            	UserGroupsMapping::insert(['group_id'=>2,'user_table_id'=>$staff_id,'user_role'=>Config::get('app.Staff_role'),'user_status'=>1,'group_access'=>1]);
+            	foreach ($request->teacher_class_config as $teacher_key => $teacher_value) {
+             		AcademicSubjectsMapping::where('class_config',$teacher_value)->update(['staff'=>$staff_id]); //assign staff to class.
+             		$techer_group = UserGroups::where('group_status',Config::get('app.Group_Active'))->where('class_config',$teacher_value)->pluck('id')->first();
+             		$check_exists = UserGroupsMapping::where(['group_id'=>$teacher_group,'user_table_id'=>$staff_id,'user_role'=>Config::get('app.Staff_role'),'user_status'=>1])->pluck('id')->first();
+             		if($check_exists=='')
+            			UserGroupsMapping::insert(['group_id'=>$techer_group,'user_table_id'=>$staff_id,'user_role'=>Config::get('app.Staff_role'),'user_status'=>1,'group_access'=>1]);
+            	}
+            }
         }
 
-        Configurations::where('school_profile_id',$user_data->school_profile_id)->update(['map_staffs'=>1]);
+        Configurations::where('school_profile_id',$user->school_profile_id)->update(['map_staffs'=>1]);
+        return response()->json(['status'=>true,'messgae'=>'Staff details inserted Successfully!...']);
     }
 
     // Get single user details(onboarding)
@@ -2044,10 +2099,11 @@ class APIConfigurationsController extends Controller
             $user_table_id = UserAdmin::where(['user_id'=>$user->user_id])->pluck('id')->first();
 
         $userall_id = UserAll::where(['user_table_id'=>$user_table_id,'user_role'=>$user->user_role])->pluck('id')->first();
+        $profile_details = SchoolProfile::where(['id'=>$user->school_profile_id])->first();//Fetch school profile details 
         $management_details = [];
         if($request->id!='')// fetch selected management user details 
         	$management_details = UserManagements::where('id',$request->id)->get()->first();
-
+        $value = $request->all();
         if(!empty($management_details))
         {
         	$image ='';
@@ -2058,12 +2114,15 @@ class APIConfigurationsController extends Controller
 	        	$request->photo->move(public_path(env('SAMPLE_CONFIG_URL').'managements'), $image);
         	}
 	        //save staff details
-	        $management_details->first_name= $request->management_name;
+	        $management_details->first_name= $request->management_person_name;
 	        $management_details->mobile_number=$request->mobile_number;
 	        if($image!='')
 	        	$management_details->profile_image = ($image!='')?public_path(env('SAMPLE_CONFIG_URL').'managements/'.$image):'';
 	        $management_details->email_id=$request->email_address;
 	        $management_details->user_category=$request->user_category;
+	        $management_details->employee_no=$request->employee_no;
+	        $management_details->dob=$request->dob;
+	        $management_details->doj=$request->doj;
 	        $management_details->updated_by=$userall_id;
 	    	$management_details->updated_time=Carbon::now()->timezone('Asia/Kolkata');
 	        $management_details->save();
@@ -2075,17 +2134,29 @@ class APIConfigurationsController extends Controller
             $schoolusers->save();
        		Configurations::where('school_profile_id',$user->school_profile_id)->update(['management'=>1]);
 
-            return response()->json('Management details updated Successfully!...');
+            return response()->json(['status'=>true,'message'=>'Management details updated Successfully!...']);
         }
         else
        	{
        		//save management details
+
+       		$image ='';
+        	if(!empty($request->photo))//check upload photo exist or not
+        	{
+        		$name = explode('.',$request->photo->getClientOriginalName())[0];
+	        	$image = $name.''.time().'.'.$request->photo->extension();
+	        	$request->photo->move(public_path(env('SAMPLE_CONFIG_URL').'managements'), $image);
+        	}
+
             $UserManagements = new UserManagements;
             $UserManagements->first_name= $value['management_person_name'];
             $UserManagements->mobile_number=$value['mobile_number'];
             $UserManagements->profile_image = ($image!='')?public_path(env('SAMPLE_CONFIG_URL').'managements/'.$image):'';
             $UserManagements->email_id=$request->email_address;
 	        $UserManagements->user_category=$request->user_category;
+	        $UserManagements->employee_no=$request->employee_no;
+	        $UserManagements->dob=$request->dob;
+	        $UserManagements->doj=$request->doj;
             $UserManagements->created_by=$userall_id;
         	$UserManagements->created_time=Carbon::now()->timezone('Asia/Kolkata');
             $UserManagements->save();
@@ -2103,16 +2174,25 @@ class APIConfigurationsController extends Controller
             $user_all->save();
 
             $schoolusers = new SchoolUsers;
-            $schoolusers->school_profile_id=$user_data->school_profile_id;
+            $schoolusers->school_profile_id=$user->school_profile_id;
             $schoolusers->user_id=$usermanagement_id;
             $schoolusers->user_mobile_number=$value['mobile_number'];
             $schoolusers->user_password=bcrypt($value['mobile_number']);
             $schoolusers->user_role=5;
             $schoolusers->user_status=1;
             $schoolusers->save();
-
-       		Configurations::where('school_profile_id',$user->school_profile_id)->update(['managements'=>1]);
-            return response()->json('Management user added Successfully!...');
+            $group_id = $request->group_id;
+            if($group_id!='')
+	        {
+	        	$select_all_groups = UserGroups::where('group_status',Config::get('app.Group_Active'))->get()->toArray();
+	        	foreach($select_all_groups as $allgroup_key => $allgroup_value)
+	        	{
+	        		UserGroupsMapping::insert(['group_id'=>$allgroup_value['id'],'user_table_id'=>$management_id,'user_role'=>Config::get('app.Management_role'),'user_status'=>1,'group_access'=>1]);
+	        	}
+	        }
+	        else
+       			Configurations::where('school_profile_id',$user->school_profile_id)->update(['managements'=>1]);
+            return response()->json(['status'=>true,'mesage'=>'Management user added Successfully!...']);
        	}
     }
 
@@ -2151,20 +2231,23 @@ class APIConfigurationsController extends Controller
 		$student_list = ([
 			'student_id'=>isset($students->id)?$students->id:0,
 			'student_name'=>isset($students->first_name)?$students->first_name:'',
-			'father_mobile_number'=>isset($parentsdata[1])?$parentsdata[1]->mobile_number:'',
+			'father_mobile_number'=>isset($parentsdata[1])?$parentsdata[1]->mobile_number:0,
 			'father_email_address'=>isset($parentsdata[1])?$parentsdata[1]->email_id:'',
 			'father_name'=>isset($parentsdata[1])?$parentsdata[1]->first_name:'',
 			'father_id'=>isset($parentsdata[1])?$parentsdata[1]->id:0,
-			'mother_mobile_number'=>isset($parentsdata[2])?$parentsdata[2]->mobile_number:'',
+			'mother_mobile_number'=>isset($parentsdata[2])?$parentsdata[2]->mobile_number:0,
 			'mother_email_address'=>isset($parentsdata[2])?$parentsdata[2]->email_id:'',
 			'mother_name'=>isset($parentsdata[2])?$parentsdata[2]->first_name:'',
 			'mother_id'=>isset($parentsdata[3])?$parentsdata[3]->id:0,
-			'guardian_mobile_number'=>isset($parentsdata[3])?$parentsdata[3]->mobile_number:'',
+			'guardian_mobile_number'=>isset($parentsdata[3])?$parentsdata[3]->mobile_number:0,
 			'guardian_email_address'=>isset($parentsdata[3])?$parentsdata[3]->email_id:'',
 			'guardian_name'=>isset($parentsdata[3])?$parentsdata[3]->first_name:'',
 			'guardian_id'=>isset($parentsdata[3])?$parentsdata[3]->id:0,
-			'admission_number'=>isset($students->first_name)?$students->admission_number:0,
+			'admission_number'=>isset($students->first_name)?$students->admission_number:'',
 			'roll_no'=>isset($students->roll_number)?$students->roll_number:0,
+			'dob'=>isset($students->dob)?$students->roll_number:null,
+			'doj'=>isset($students->dob)?$students->roll_number:null,
+			'employee_no'=>isset($students->employee_no)?$students->employee_no:'',
 			'gender'=>isset($students->roll_number)?(Config::get('app.'.$students->gender)):0,
 			'photo'=>isset($students->profile_image)?$students->profile_image:'',
 			'temporary_student'=>(isset($students->profile_image) && $students->class_config == null)?'yes':'no',
@@ -2196,6 +2279,10 @@ class APIConfigurationsController extends Controller
         $user = auth()->user();
 		if($user->user_role == Config::get('app.Admin_role'))//check role and get current user id
             $user_table_id = UserAdmin::where(['user_id'=>$user->user_id])->pluck('id')->first();
+        else if($user->user_role == Config::get('app.Management_role'))
+            $user_table_id = UserManagements::where(['user_id'=>$user->user_id])->pluck('id')->first();
+        else if($user->user_role == Config::get('app.Staff_role'))
+            $user_table_id = UserStaffs::where(['user_id'=>$user->user_id])->pluck('id')->first();
 
         $userall_id = UserAll::where(['user_table_id'=>$user_table_id,'user_role'=>$user->user_role])->pluck('id')->first();
 
@@ -2203,35 +2290,64 @@ class APIConfigurationsController extends Controller
         $parent_details = $mother_details = $guardian_details = $student_details = [];
 
         $class_config_id = null;
-
-        $gender = (isset($row['gender']) && strtolower($row['gender']) == 'male')?1:((isset($row['gender']) && strtolower($row['gender']) == 'female')?2:3);
+        if(isset($request->gender))
+        	$gender = (isset($request->gender) && strtolower($request->gender) == 'male')?1:((isset($request->gender) && strtolower($request->gender) == 'female')?2:3);
 
         //check image exists
    		$image ='';
+   		$profile_image_path ='';
     	if(!empty($request->student_photo))
     	{
+            $path = public_path('uploads/'.$profile_details['school_code'].'/students');//
+
+            if(!File::isDirectory($path)){ //check path already exists
+                File::makeDirectory($path, 0777, true, true);
+            }
     		$name = explode('.',$request->student_photo->getClientOriginalName())[0];
         	$image = $name.''.time().'.'.$request->student_photo->extension();
-        	$request->student_photo->move(public_path(env('SAMPLE_CONFIG_URL').'students'), $image);
+    		$filename = str_replace(["-",","," ","/"], '_', $image);
+        	$request->student_photo->move(public_path().'/uploads/'.$profile_details['school_code'].'/students', $filename);
+        	$profile_image_path =url('/').'/uploads/'.$profile_details['school_code'].'/students/'.$filename;
     	}
+
 
         if($request->father_id>0 || $request->mother_id>0 || $request->guardian_id>0 || $request->student_id>0)// fetch check user already exists 
         {
-        	if(isset($request->student_id) && $request->student_id>0)//arrange student details in array 
+        	$group_id =$old_group_id=$new_group_id='';
+
+       		if($request->group_id!='')
+       			$group_id = $request->group_id;
+
+        	if(isset($request->student_id) && $request->student_id>0)//arrange student details in array
+        	{
+
         		$student_details = UserStudents::where(['id'=>$request->student_id])->get()->first();
+        		if($student_details->class_config != $request->class_config)
+        		{
+        			$old_group_id = UserGroups::where('class_config',$student_details->class_config)->pluck('id')->first();
+        			$new_group_id = UserGroups::where('class_config',$request->class_config)->pluck('id')->first();
+        		}
+
+        	} 
         	else
                 $student_details = new UserStudents;
+
             // student details insert or edit into db
             $student_details->first_name= $request->student_name;
             $student_details->admission_number=$request->admission_no;
             $student_details->roll_number=isset($request->roll_no)?$request->roll_no:'';
-            $student_details->profile_image=public_path(env('SAMPLE_CONFIG_URL').'students/'.$image);
-            $student_details->gender=$gender;
-            $student_details->dob=date('Y-m-d',strtotime($request->dob));
+            if(!empty($profile_image_path) && !empty($request->student_photo))
+            	$student_details->profile_image=$profile_image_path;
+            if(isset($request->gender))
+            	$student_details->gender=$gender;
+            if(isset($request->dob))
+            	$student_details->dob=date('Y-m-d',strtotime($request->dob));
+
             $student_details->class_config=$request->class_config;
+
             $student_details->user_status=(isset($request->temporary_student) && $request->temporary_student!='' && strtolower($request->temporary_student)=='yes')?5:1;
-            $student_details->created_by=$userall_id;
-        	$student_details->created_time=Carbon::now()->timezone('Asia/Kolkata');
+            $student_details->updated_by=$userall_id;
+        	$student_details->updated_time=Carbon::now()->timezone('Asia/Kolkata');
             $student_details->save();
 
    			$student_id = $student_details->id;
@@ -2240,48 +2356,68 @@ class APIConfigurationsController extends Controller
             $userstudent_id = $profile_details['school_code'].substr($profile_details['active_academic_year'], -2).'S'.sprintf("%04s", $student_id);
             $student_details->user_id = $userstudent_id;
             $student_details->save(); 
+
+            // add into group
+	        if($new_group_id!='' && ($old_group_id != $new_group_id) && $request->student_id!='')
+	        {
+	        	$parent_ids = UserStudentsMapping::where('student',$request->student_id)->pluck('parent')->toArray();
+	        	UserGroupsMapping::where(['group_id'=>$old_group_id,'user_role'=>Config::get('app.Parent_role')])->whereIn('user_table_id',$parent_ids)->delete();
+	        	foreach ($parent_ids as $key => $parent_value) {
+	        		UserGroupsMapping::insert(['group_id'=>$new_group_id,'user_table_id'=>$parent_value,'user_role'=>Config::get('app.Parent_role'),'user_status'=>1,'group_access'=>2]);
+	        	}
+	        }
+
             
             // insert parents details
-        	$father_details = UserParents::where('id',$request->father_id)->get()->first();
-	        if(!empty($father_details) || $request->father_mobile_number!='')
-	        {
-	        	$data['photo'] = $request->father_photo;
-	        	$data['first_name'] = $request->father_name;
-	        	$data['mobile_number'] = $request->father_mobile_number;
-	        	$data['email_address'] = $request->father_email_address;
-	        	$data['user_category'] = 1;
+            if(isset($request->father_id))
+            {
+	        	$father_details = UserParents::where('id',$request->father_id)->get()->first();
+		        if(!empty($father_details) || $request->father_mobile_number!='')
+		        {
+		        	$data['photo'] = $request->father_photo;
+		        	$data['first_name'] = $request->father_name;
+		        	$data['mobile_number'] = $request->father_mobile_number;
+		        	$data['email_address'] = $request->father_email_address;
+		        	$data['user_category'] = 1;
 
-	        	$this->edit_parent_details($data,$father_details,$student_id,$userall_id);
-	        }
+		        	$this->edit_parent_details($data,$father_details,$student_id,$userall_id,$old_group_id,$new_group_id);
+		        }
+		    }
 	        // update or insert parents details
-	        $mother_details = UserParents::where('id',$request->mother_id)->get()->first();
-	        if(!empty($mother_details) || $request->mother_mobile_number!='' )
-	        {
-	        	$data = [];
-	        	$data['photo'] = $request->mother_photo;
-	        	$data['first_name'] = $request->mother_name;
-	        	$data['mobile_number'] = $request->mother_mobile_number;
-	        	$data['email_address'] = $request->mother_email_address;
-	        	$data['user_category'] = 2;
+	        if(isset($request->mother_id))
+            {
+		        $mother_details = UserParents::where('id',$request->mother_id)->get()->first();
+		        if(!empty($mother_details) || $request->mother_mobile_number!='' )
+		        {
+		        	$data = [];
+		        	$data['photo'] = $request->mother_photo;
+		        	$data['first_name'] = $request->mother_name;
+		        	$data['mobile_number'] = $request->mother_mobile_number;
+		        	$data['email_address'] = $request->mother_email_address;
+		        	$data['user_category'] = 2;
 
-	        	$this->edit_parent_details($data,$mother_details,$student_id,$userall_id);
-	        }
+		        	$this->edit_parent_details($data,$mother_details,$student_id,$userall_id,$old_group_id,$new_group_id);
+		        }
+		    }
 
+		    if(isset($request->guardian_id))
+            {
 	        // update or insert parents details
-	        $guardian_details = UserParents::where('id',$request->guardian_id)->get()->first();
-	        if(!empty($guardian_details) || $request->guardian_mobile_number!='' )
-	        {
-	        	$data = [];
-	        	$data['photo'] = $request->guardian_photo;
-	        	$data['first_name'] = $request->guardian_name;
-	        	$data['mobile_number'] = $request->guardian_mobile_number;
-	        	$data['email_address'] = $request->guardian_email_address;
-	        	$data['user_category'] = 3;
+		        $guardian_details = UserParents::where('id',$request->guardian_id)->get()->first();
+		        if(!empty($guardian_details) || $request->guardian_mobile_number!='' )
+		        {
+		        	$data = [];
+		        	$data['photo'] = $request->guardian_photo;
+		        	$data['first_name'] = $request->guardian_name;
+		        	$data['mobile_number'] = $request->guardian_mobile_number;
+		        	$data['email_address'] = $request->guardian_email_address;
+		        	$data['user_category'] = 3;
 
-	        	$this->edit_parent_details($data,$guardian_details,$student_id,$userall_id);
-	        }
+		        	$this->edit_parent_details($data,$guardian_details,$student_id,$userall_id,$old_group_id,$new_group_id);
+		        }
+		    }
 	        Configurations::where('school_profile_id',$user->school_profile_id)->update(['students'=>1]);
-	        return response()->json('Student and parents details updated Successfully!...');
+	        return response()->json(['status'=>true,'message'=>'Student and parents details updated Successfully!...']);
 	    }
         else
        	{  		
@@ -2294,72 +2430,139 @@ class APIConfigurationsController extends Controller
 
             $student_details->first_name= $request->student_name;
             $student_details->admission_number=$request->admission_no;
-            $student_details->roll_number=isset($request->roll_no)?$request->roll_no:'';
-            $student_details->profile_image=public_path(env('SAMPLE_CONFIG_URL').'students/'.$image);
+            if(isset($request->roll_no))
+            	$student_details->roll_number=isset($request->roll_no)?$request->roll_no:'';
+            if(!empty($profile_image_path) && !empty($request->student_photo))
+            	$student_details->profile_image=$profile_image_path;
             $student_details->gender=$gender;
             $student_details->class_config=$request->class_config;
+            $student_details->dob=date('Y-m-d',strtotime($request->dob));
             $student_details->user_status=(isset($request->temporary_student) && $request->temporary_student!='' && strtolower($request->temporary_student)=='yes')?5:1;
             $student_details->created_by=$userall_id;
         	$student_details->created_time=Carbon::now()->timezone('Asia/Kolkata');
             $student_details->save();
 
    			$student_id = $student_details->id;
-
+   			$password = '';
    			// generate and update staff id in db 
             $userstudent_id = $profile_details['school_code'].substr($profile_details['active_academic_year'], -2).'S'.sprintf("%04s", $student_id);
             $student_details->user_id = $userstudent_id;
             $student_details->save();
-
-            if($default_password_type == 'admission_number')
+            
+            if($profile_details->default_password_type == 'admission_number')
 				$password = bcrypt($request->admission_no);
-			else if($default_password_type == 'dob')
-				$password = date('Ymd',strtotime($request->dob));
+			else if($profile_details->default_password_type == 'dob')
+				$password = bcrypt(date('Ymd',strtotime($request->dob)));
 
             // insert father details
             if($request->father_mobile_number!='' && $request->father_name!='')
         	{
-	        	$data = [];
-	        	$data['photo'] = $request->father_photo;
-	        	$data['first_name'] = $request->father_name;
-	        	$data['mobile_number'] = $request->father_mobile_number;
-	        	$data['email_address'] = $request->father_email_address;
-	        	$data['user_category'] = 1;
+        		$father_id = UserParents::where('mobile_number',$request->father_mobile_number)->pluck('id')->first();
+        		if($father_id == '')
+        		{
+		        	$data = [];
+		        	$data['photo'] = $request->father_photo;
+		        	$data['first_name'] = $request->father_name;
+		        	$data['mobile_number'] = $request->father_mobile_number;
+		        	$data['email_address'] = $request->father_email_address;
+		        	$data['user_category'] = 1;
 
-	        	if($profile_details->default_password_type == 'mobile_number')
-					$password = bcrypt($request->father_mobile_number);
-
-	        	$this->insert_parent_details($data,$student_details->id,$userall_id,$group_id,$password);
+		        	if($profile_details->default_password_type == 'mobile_number' || $password == '')
+						$password = bcrypt($request->father_mobile_number);
+					
+		        	$this->insert_parent_details($data,$student_details->id,$userall_id,$group_id,$password);
+        		}
+        		else
+        		{
+        			 // add into group
+			        if($group_id!='')
+			        {
+			        	UserGroupsMapping::insert(['group_id'=>$group_id,'user_table_id'=>$father_id,'user_role'=>Config::get('app.Parent_role'),'user_status'=>1]);
+			        	UserGroupsMapping::insert(['group_id'=>2,'user_table_id'=>$father_id,'user_role'=>Config::get('app.Parent_role'),'user_status'=>1]);
+			        }
+			        
+			        // mapping the student and parent
+			        $student_map = new UserStudentsMapping;
+			        $student_map->student = $student_details->id;  
+			        $student_map->parent = $father_id;
+			        $student_map->created_by = $userall_id;
+			        $student_map->created_time=Carbon::now()->timezone('Asia/Kolkata');
+			        $student_map->save();
+        		}
 	        }
 	        // insert mother details
 	        if($request->mother_mobile_number!='' && $request->mother_name!='')
         	{
-	        	$data = [];
-	        	$data['photo'] = $request->mother_photo;
-	        	$data['first_name'] = $request->mother_name;
-	        	$data['mobile_number'] = $request->mother_mobile_number;
-	        	$data['email_address'] = $request->mother_email_address;
-	        	$data['user_category'] = 2;
+        		$mother_id = UserParents::where('mobile_number',$request->mother_mobile_number)->pluck('id')->first();
+        		if($mother_id == '')
+        		{
+		        	$data = [];
+		        	$data['photo'] = $request->mother_photo;
+		        	$data['first_name'] = $request->mother_name;
+		        	$data['mobile_number'] = $request->mother_mobile_number;
+		        	$data['email_address'] = $request->mother_email_address;
+		        	$data['user_category'] = 2;
 
-	        	if($profile_details->default_password_type == 'mobile_number')
-					$password = bcrypt($request->mother_mobile_number);
+		        	if($profile_details->default_password_type == 'mobile_number' || $password == '')
+						$password = bcrypt($request->mother_mobile_number);
 
-	        	$this->insert_parent_details($data,$student_details->id,$userall_id,$group_id,$password);
+		        	$this->insert_parent_details($data,$student_details->id,$userall_id,$group_id,$password);
+
+	        	}
+        		else
+        		{
+        			 // add into group
+			        if($group_id!='')
+			        {
+			        	UserGroupsMapping::insert(['group_id'=>$group_id,'user_table_id'=>$mother_id,'user_role'=>Config::get('app.Parent_role'),'user_status'=>1]);
+			        	UserGroupsMapping::insert(['group_id'=>2,'user_table_id'=>$father_id,'user_role'=>Config::get('app.Parent_role'),'user_status'=>1]);
+			        }
+			        			        
+			        // mapping the student and parent
+			        $student_map = new UserStudentsMapping;
+			        $student_map->student = $student_details->id;  
+			        $student_map->parent = $mother_id;
+			        $student_map->created_by = $userall_id;
+			        $student_map->created_time=Carbon::now()->timezone('Asia/Kolkata');
+			        $student_map->save();
+        		}
 	        }
 
 	        // insert guardian details
 	        if($request->guardian_mobile_number!='' && $request->guardian_name!='')
         	{
-	        	$data = [];
-	        	$data['photo'] = $request->guardian_photo;
-	        	$data['first_name'] = $request->guardian_name;
-	        	$data['mobile_number'] = $request->guardian_mobile_number;
-	        	$data['email_address'] = $request->guardian_email_address;
-	        	$data['user_category'] = 3;
+        		$guardian_id = UserParents::where('mobile_number',$request->guardian_mobile_number)->pluck('id')->first();
+        		if($guardian_id == '')
+        		{
+		        	$data = [];
+		        	$data['photo'] = $request->guardian_photo;
+		        	$data['first_name'] = $request->guardian_name;
+		        	$data['mobile_number'] = $request->guardian_mobile_number;
+		        	$data['email_address'] = $request->guardian_email_address;
+		        	$data['user_category'] = 9;
 
-	        	if($profile_details->default_password_type == 'mobile_number')
-					$password = bcrypt($request->guardian_mobile_number);
+		        	if($profile_details->default_password_type == 'mobile_number' || $password == '')
+						$password = bcrypt($request->guardian_mobile_number);
 
-	        	$this->insert_parent_details($data,$student_details->id,$userall_id,$group_id,$password);
+		        	$this->insert_parent_details($data,$student_details->id,$userall_id,$group_id,$password);
+	        	}
+        		else
+        		{
+        			 // add into group
+			        if($group_id!='')
+			        {
+			        	UserGroupsMapping::insert(['group_id'=>$group_id,'user_table_id'=>$guardian_id,'user_role'=>Config::get('app.Parent_role'),'user_status'=>1]);
+			        	UserGroupsMapping::insert(['group_id'=>2,'user_table_id'=>$father_id,'user_role'=>Config::get('app.Parent_role'),'user_status'=>1]);
+			        }
+			        
+			        // mapping the student and parent
+			        $student_map = new UserStudentsMapping;
+			        $student_map->student = $student_details->id;  
+			        $student_map->parent = $guardian_id;
+			        $student_map->created_by = $userall_id;
+			        $student_map->created_time=Carbon::now()->timezone('Asia/Kolkata');
+			        $student_map->save();
+        		}
 	        }
 	        Configurations::where('school_profile_id',$user->school_profile_id)->update(['students'=>1]);
 	        return response()->json(['status'=>true,'message'=>'Student and parents details inserted Successfully!...']);
@@ -2367,14 +2570,24 @@ class APIConfigurationsController extends Controller
     }
 
     // Edit parent details dependency function - onboarding
-    public function edit_parent_details($data,$details,$id,$userall_id)
+    public function edit_parent_details($data,$details,$id,$userall_id,$old_group_id,$new_group_id)
     {
     	$image =$page='';
+    	$user = auth()->user();
+    	$profile_image_path ='';
+        $profile_details = SchoolProfile::where(['id'=>$user->school_profile_id])->first();//Fetch school profile details 
     	if(!empty($data['photo']))//check upload photo exist or not
     	{
+    		$path = public_path('uploads/'.$profile_details['school_code'].'/students');//
+
+            if(!File::isDirectory($path)){ //check path already exists
+                File::makeDirectory($path, 0777, true, true);
+            }
     		$name = explode('.',$data['photo']->getClientOriginalName())[0];
         	$image = $name.''.time().'.'.$data['photo']->extension();
-        	$data['photo']->move(public_path(env('SAMPLE_CONFIG_URL').'students'), $image);
+    		$filename = str_replace(["-",","," ","/"], '_', $image);
+        	$data['photo']->move(public_path().'/uploads/'.$profile_details['school_code'].'/students', $filename);
+        	$profile_image_path =url('/').'/uploads/'.$profile_details['school_code'].'/students/'.$filename;
     	}
     	if(empty($details) && !isset($details->mobile_number))
     	{
@@ -2382,17 +2595,19 @@ class APIConfigurationsController extends Controller
     	    $details = new UserParents;
     	}
     	
-    	$user = auth()->user();
-
-        $profile_details = SchoolProfile::where(['id'=>$user->school_profile_id])->first();//Fetch school profile details 
+    	
 
         //save staff details
-        $details->first_name= $data['first_name'];
-        $details->mobile_number=$data['mobile_number'];
-        if($image!='')
-        	$details->profile_image = ($image!='')?public_path(env('SAMPLE_CONFIG_URL').'students/'.$image):'';
-        $details->email_id=$data['email_address'];
-        $details->user_category = $data['user_category'];
+        if($data['first_name']!='')
+        	$details->first_name= $data['first_name'];
+        if($data['mobile_number']!='')
+        	$details->mobile_number=$data['mobile_number'];
+        if($profile_image_path!='')
+        	$details->profile_image = ($profile_image_path!='')?$profile_image_path:'';
+       	if($data['email_address']!='')
+        	$details->email_id=$data['email_address'];
+        if($data['user_category']!='')
+        	$details->user_category = $data['user_category'];
         $details->updated_by=$userall_id;
     	$details->updated_time=Carbon::now()->timezone('Asia/Kolkata');
         $details->save();
@@ -2430,13 +2645,16 @@ class APIConfigurationsController extends Controller
             $schoolusers->save();
 	    }
 	    
-        // mapping the student and parent
-        $student_map = new UserStudentsMapping;
-        $student_map->student = $id;  
-        $student_map->parent = $details->id;
-        $student_map->created_by = $userall_id;
-        $student_map->created_time=Carbon::now()->timezone('Asia/Kolkata');
-        $student_map->save();
+	    if($page!='')
+	    {
+	        // mapping the student and parent
+	        $student_map = new UserStudentsMapping;
+	        $student_map->student = $id;  
+	        $student_map->parent = $details->id;
+	        $student_map->created_by = $userall_id;
+	        $student_map->created_time=Carbon::now()->timezone('Asia/Kolkata');
+	        $student_map->save();
+	    }
     }
 
     // create parent details dependency function -onboarding
@@ -2444,18 +2662,33 @@ class APIConfigurationsController extends Controller
     {
     	$user_data = auth()->user();
     	$profile_details = SchoolProfile::where(['id'=>$user_data->school_profile_id])->first();//Fetch school profile details 
+  		$profile_image_path ='';
+    	if(!empty($data['photo']))//check upload photo exist or not
+    	{
+    		$path = public_path('uploads/'.$profile_details['school_code'].'/students');//
+
+            if(!File::isDirectory($path)){ //check path already exists
+                File::makeDirectory($path, 0777, true, true);
+            }
+    		$name = explode('.',$data['photo']->getClientOriginalName())[0];
+        	$image = $name.''.time().'.'.$data['photo']->extension();
+    		$filename = str_replace(["-",","," ","/"], '_', $image);
+        	$data['photo']->move(public_path().'/uploads/'.$profile_details['school_code'].'/students', $filename);
+        	$profile_image_path =url('/').'/uploads/'.$profile_details['school_code'].'/students/'.$filename;
+    	}
 
     	// insert parent details in db
     	$parent=[];
         $parent_details = new UserParents;
     	$parent_details->created_by=$userall_id;
+    	if($profile_image_path!='')
+        	$parent_details->profile_image = ($profile_image_path!='')?$profile_image_path:'';
     	$parent_details->created_time=Carbon::now()->timezone('Asia/Kolkata');
         $parent_details->mobile_number= $data['mobile_number'];
         $parent_details->user_category = $data['user_category'];
         $parent_details->first_name= $data['first_name'];
         $parent_details->email_id= $data['email_address'];
         $parent_details->user_status=1;//active
-        $parent_details->user_category = 1;
             
             
         $parent_details->save();
@@ -2470,7 +2703,8 @@ class APIConfigurationsController extends Controller
         // add into group
         if($group_id!='')
         {
-        	UserGroupsMapping::insert(['group_id'=>$group_id,'user_table_id'=>$parent_id,'user_role'=>Config::get('app.Parent_role'),'user_status'=>1]);
+        	UserGroupsMapping::insert(['group_id'=>2,'user_table_id'=>$parent_id,'user_role'=>Config::get('app.Parent_role'),'user_status'=>1,'group_access'=>2]);
+        	UserGroupsMapping::insert(['group_id'=>$group_id,'user_table_id'=>$parent_id,'user_role'=>Config::get('app.Parent_role'),'user_status'=>1,'group_access'=>2]);
         }
         
         //make an entry in user all table
@@ -2498,6 +2732,7 @@ class APIConfigurationsController extends Controller
         $student_map->created_time=Carbon::now()->timezone('Asia/Kolkata');
         $student_map->save();
     }
+
 
 
 
@@ -2975,6 +3210,15 @@ class APIConfigurationsController extends Controller
         // Get authorizated user details
         $user = auth()->user();
 
+        if($user->user_role == Config::get('app.Management_role'))
+	        $mobile_number = UserManagements::where(['mobile_number'=>$request->mobile_number])->pluck('id')->first();
+	    else if($user->user_role == Config::get('app.Staff_role'))
+	    	$mobile_number = UserStaffs::where(['mobile_number'=>$request->mobile_number])->pluck('id')->first();
+	    else if($user->user_role == Config::get('app.Parent_role'))
+	    	$mobile_number = UserParents::where(['mobile_number'=>$request->mobile_number])->pluck('id')->first();
+
+	    if($mobile_number!='')
+	    	return (['status'=>false,'message'=>'Given Mobile no already exists!.']);
         if(!isset($request->pin) || $request->pin=='')
         {
         	$digits = 4;
@@ -3077,6 +3321,10 @@ class APIConfigurationsController extends Controller
 
         // fetch all the users under role staff,parent and management
 		$userslist = SchoolUsers::select(DB::raw('count(*) as count'),'user_role')->whereIn('user_role',[2,3,5])->where('school_profile_id',$user->school_profile_id)->where('user_status',1)->groupBy('user_role')->get()->toArray();
+
+		$deactiveusercount = SchoolUsers::select(DB::raw('count(*) as count'))->where('school_profile_id',$user->school_profile_id)->where('user_status',2)->get()->first();
+		$school_name = SchoolProfile::where('id',$user->school_profile_id)->pluck('school_name')->first();
+
 		// check if values or exists or not
 		if(!empty($userslist))
 		{
@@ -3089,13 +3337,13 @@ class APIConfigurationsController extends Controller
 		// staff count based on category
 		$stafflist = UserStaffs::select(DB::raw('count(*) as count'),'user_category')->where('user_status',1)->groupBy('user_category')->get()->toArray();
 
-		// check if values or exists or not
-		if(!empty($stafflist))
-		{
-			$separate_staff_count = array_column($stafflist,'count','user_category'); //apply array column function to get count and category
-			$teaching_staffs = $separate_staff_count[Config::get('app.Teaching_staff')]; //teaching staff count
-			$non_teaching_staffs = $separate_staff_count[Config::get('app.Non_teaching_staff')]; // non teaching staff count
-		}
+		// // check if values or exists or not
+		// if(!empty($stafflist))
+		// {
+		// 	$separate_staff_count = array_column($stafflist,'count','user_category'); //apply array column function to get count and category
+		// 	$teaching_staffs = $separate_staff_count[Config::get('app.Teaching_staff')]; //teaching staff count
+		// 	$non_teaching_staffs = $separate_staff_count[Config::get('app.Non_teaching_staff')]; // non teaching staff count
+		// }
 
 		// student count
 		$student = UserStudents::select(DB::raw('count(*) as count'))->where('user_status',1)->pluck('count')->first();
@@ -3105,8 +3353,11 @@ class APIConfigurationsController extends Controller
 		if(!empty($total_father_count))
 		{
 			$father_common_ids = UserAll::where('user_role',Config::get('app.Parent_role'))->whereIn('user_table_id',array_column($total_father_count,'id'))->pluck('id')->toArray();//get common id's for all the users
-			$total_father = count($father_common_ids);
-			$total_installed_father = AppUsers::select(DB::raw('count(*) as count'))->whereIn('loginid',$father_common_ids)->pluck('count')->first();
+			if(!empty($father_common_ids))
+			{
+				$total_father = count($father_common_ids);
+				$total_installed_father = AppUsers::select(DB::raw('count(*) as count'))->whereIn('loginid',$father_common_ids)->pluck('count')->first();
+			}
 		}
 
 		// mother installed count
@@ -3114,17 +3365,23 @@ class APIConfigurationsController extends Controller
 		if(!empty($total_mother_count))
 		{
 			$mother_common_ids = UserAll::where('user_role',Config::get('app.Parent_role'))->whereIn('user_table_id',array_column($total_mother_count,'id'))->pluck('id')->toArray();//get common id's for all the users
-			$total_mother = count($mother_common_ids);
-			$total_installed_mother = AppUsers::select(DB::raw('count(*) as count'))->whereIn('loginid',$mother_common_ids)->pluck('count')->first();
+			if(!empty($mother_common_ids))
+			{
+				$total_mother = count($mother_common_ids);
+				$total_installed_mother = AppUsers::select(DB::raw('count(*) as count'))->whereIn('loginid',$mother_common_ids)->pluck('count')->first();
+			}
 		}
 
 		// guardian installed count
-		$total_guardian_count = UserParents::where('user_status',1)->where('user_category',3)->get()->toArray();
+		$total_guardian_count = UserParents::where('user_status',1)->where('user_category',Config::get('app.Guardian'))->get()->toArray();
 		if(!empty($total_guardian_count))
 		{
 			$guardian_common_ids = UserAll::where('user_role',Config::get('app.Parent_role'))->whereIn('user_table_id',array_column($total_guardian_count,'id'))->pluck('id')->toArray();//get common id's for all the users
-			$total_guardian = count($guardian_common_ids);
-			$total_installed_guardian = AppUsers::select(DB::raw('count(*) as count'))->whereIn('loginid',$guradian_common_ids)->pluck('count')->first();
+			if(count($guardian_common_ids)>0)
+			{
+				$total_guardian = count($guardian_common_ids);
+				$total_installed_guardian = AppUsers::select(DB::raw('count(*) as count'))->whereIn('loginid',$guardian_common_ids)->pluck('count')->first();
+			}
 		}
 
 		// admin installed count
@@ -3160,7 +3417,7 @@ class APIConfigurationsController extends Controller
 		{
 			$nonteaching_staff_common_ids = UserAll::where('user_role',Config::get('app.Staff_role'))->whereIn('user_table_id',array_column($total_non_teaching_count,'id'))->pluck('id')->toArray();//get common id's for all the users
 			$total_nonteaching_staff = count($nonteaching_staff_common_ids);
-			$total_installed_nonteaching = AppUsers::select(DB::raw('count(*) as count'))->whereIn('loginid',$teaching_staff_common_ids)->pluck('count')->first();
+			$total_installed_nonteaching = AppUsers::select(DB::raw('count(*) as count'))->whereIn('loginid',$nonteaching_staff_common_ids)->pluck('count')->first();
 		}
 
 
@@ -3168,11 +3425,13 @@ class APIConfigurationsController extends Controller
 		$inactive_user = SchoolUsers::select(DB::raw('count(*) as count'))->where('last_login', '<=', $last_week)->pluck('count')->first();
 
         $users_count = ([
+        	'school_name'=>$school_name,
+        	'deactiveusercount'=>$deactiveusercount['count'],
         	'total_users'=>$total_users+$student,
         	'student'=>$student,
         	'parent'=>$parent,
-        	'teaching_staffs'=>$teaching_staffs,
-        	'non_teaching_staffs'=>$non_teaching_staffs,
+        	// 'teaching_staffs'=>$teaching_staffs,
+        	// 'non_teaching_staffs'=>$non_teaching_staffs,
         	'management'=>$management,
         	'total_father'=>$total_father,
         	'total_mother'=>$total_mother,
@@ -3194,6 +3453,7 @@ class APIConfigurationsController extends Controller
         return response()->json($users_count);
     }
 
+
     public function importdob(Request $request)
     {
     	Excel::import(new DOBImport,request()->file('import_file'));
@@ -3206,13 +3466,14 @@ class APIConfigurationsController extends Controller
 		// Save last login in DB
         $user = auth()->user();
 
-        $student_list = UserStudents::select('first_name','id','user_status','profile_image');
+        $student_list = UserStudents::select('*');
         if(isset($request->search) && $request->search!='')
             $student_list = $student_list->where('first_name', 'like', '%' . $request->search . '%')->orWhere('mobile_number', 'like', '%' . $request->search . '%');
         	
-        $student_list =$student_list->get()->toArray();
+        $student_list =$student_list->orderBy('class_config')->get()->toArray();
         foreach ($student_list as $key => $value) {
-        	$student_list[$key]['father_name'] = $student_list[$key]['father_mobile'] = $student_list[$key]['mother_name'] = $student_list[$key]['mother_mobile'] = $student_list[$key]['guardian_name'] = $student_list[$key]['guardian_mobile'] = '';
+        	$student_list[$key]['father_name'] =  $student_list[$key]['mother_name'] =  $student_list[$key]['guardian_name']  = '';
+        	$student_list[$key]['father_mobile'] = $student_list[$key]['mother_mobile'] = $student_list[$key]['guardian_mobile'] = 0;
         	$parent_id = UserStudentsMapping::where('student',$value['id'])->pluck('parent')->toArray();
         	foreach($parent_id as $parentid)
         	{
@@ -3249,5 +3510,54 @@ class APIConfigurationsController extends Controller
         	$student_list[$key]['student_profile_image'] = (isset($value['profile_image']))?$value['profile_image']:'';
         }
         return response()->json($student_list);
+	}
+	
+	// All admin list
+	public function all_admin_list(Request $request)
+	{
+		// Save last login in DB
+        $user = auth()->user();
+
+        $admin_list = UserAdmin::select('id','first_name','mobile_number','user_status','dob','doj','employee_no');
+        if(isset($request->search) && $request->search!='')
+        {
+        	$admin_list = $admin_list->where('first_name', 'like', '%' . $request->search . '%')->orWhere('mobile_number', 'like', '%' . $request->search . '%')->orWhere('dob', 'like', '%' . $request->search . '%')->orWhere('doj', 'like', '%' . $request->search . '%')->orWhere('employee_no', 'like', '%' . $request->search . '%');
+        }
+        $admin_list = $admin_list->get()->toArray();
+        foreach ($admin_list as $key => $value) {
+    	 	$admin_list[$key]['dob'] = $value['dob'];
+            $admin_list[$key]['doj'] = $value['doj'];
+            $admin_list[$key]['employee_no'] = $value['employee_no'];
+            $admin_list[$key]['user_status'] = $value['user_status'];
+            $admin_list[$key]['designation'] = 'Admin';
+        }
+        return response()->json($admin_list);
+	}
+
+	// All management list
+	public function all_management_list(Request $request)
+	{
+		// Save last login in DB
+        $user = auth()->user();
+
+        $management_list = UserManagements::select('id','first_name','mobile_number','user_category','user_status','dob','doj','employee_no');
+        if(isset($request->search) && $request->search!='')
+        {
+        	$category = (strpos('main head',strtolower($request->search)))?6:((strpos('chairman',strtolower($request->search)))?7:((strpos('principal',strtolower($request->search)))?8:((strpos('headmaster',strtolower($request->search)))?8:'')));
+        	$management_list = $management_list->where('first_name', 'like', '%' . $request->search . '%')->orWhere('mobile_number', 'like', '%' . $request->search . '%')->orWhere('dob', 'like', '%' . $request->search . '%')->orWhere('doj', 'like', '%' . $request->search . '%')->orWhere('employee_no', 'like', '%' . $request->search . '%')->orWhere('department', 'like', '%' . $request->search . '%');
+        	if($category!='')
+        		$management_list = $management_list->orWhere('user_category', 'like', '%' . $category . '%');
+        }
+        $management_list = $management_list->get()->toArray();
+        foreach ($management_list as $key => $value) {
+        	$designation = ($value['user_category']!='')? UserCategories::where('id',$value['user_category'])->pluck('category_name')->first():'';
+        	$management_list[$key]['dob'] = $value['dob'];
+            $management_list[$key]['doj'] = $value['doj'];
+            $management_list[$key]['employee_no'] = $value['employee_no'];
+            $management_list[$key]['user_status'] = $value['user_status'];
+            $management_list[$key]['designation'] = $designation;
+            ;
+        }
+        return response()->json($management_list);
 	}
 }

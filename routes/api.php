@@ -9,6 +9,7 @@ use App\Http\Controllers\APINewsEventsController;
 use App\Http\Controllers\APIHomeworkController;
 use App\Http\Controllers\APILoginController;
 use App\Http\Controllers\WelcomeController;
+use App\Http\Controllers\PayfeesController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -107,6 +108,8 @@ Route::group(['middleware' => 'auth.connect','prefix' => 'user'], function ($rou
     Route::post('/all_staff_list',[APIConfigurationsController::class,'all_staff_list']);
     Route::post('/all_parent_list',[APIConfigurationsController::class,'all_parent_list']);
     Route::post('/all_student_list',[APIConfigurationsController::class,'all_student_list']);
+    Route::post('/all_admin_list',[APIConfigurationsController::class,'all_admin_list']);
+    Route::post('/all_management_list',[APIConfigurationsController::class,'all_management_list']);
     Route::post('/class_subjects_list',[APIConfigurationsController::class,'class_subjects_list']);
     Route::get('/onboarding_staff_list',[APIConfigurationsController::class,'onboarding_staff_list']);
     Route::post('/onboarding_fetch_single_staff',[APIConfigurationsController::class,'onboarding_fetch_single_staff']);
@@ -154,6 +157,7 @@ Route::group(['middleware' => 'auth.connect','prefix' => 'user'], function ($rou
     Route::post('/update_homework_status',[APIHomeworkController::class,'update_homework_status']);
     Route::post('/homework_details_report',[APIHomeworkController::class,'homework_details_report']);
     Route::post('/delete_homework_attachment',[APIHomeworkController::class,'delete_homework_attachment']);
+    Route::post('/list_homework_status',[APIHomeworkController::class,'list_homework_status']);
 
     /*News and Events -- Start*/
     Route::post('/store_news_events',[APINewsEventsController::class,'store_news_events']);
@@ -166,4 +170,11 @@ Route::group(['middleware' => 'auth.connect','prefix' => 'user'], function ($rou
     Route::post('/event_accept_decline',[APINewsEventsController::class,'event_accept_decline']);
     Route::post('/store_liked_news',[APINewsEventsController::class,'store_liked_news']);//store liked data in db
     /*News and Events -- Ends*/
+
+    /*Payfees -- starts*/
+    Route::get('/feesStructure',[PayfeesController::class,'feesStructure']);
+    Route::get('/studentFees', [PayfeesController::class,'studentFees']);
+    Route::get('/academicYear', [PayfeesController::class,'academicYear']);
+    Route::get('/studentPaymentHistory', [PayfeesController::class,'studentPaymentHistory']);
+    /*Payfees - Ends*/
 });

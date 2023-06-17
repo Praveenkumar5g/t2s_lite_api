@@ -24,13 +24,18 @@ class DbconnMiddleware
     {   
         // check whether the user is authorized or not
         if ($user = auth()->user()) {
-            try {
-                $this->getDb($user->school_profile_id);
-                // valid credentails and allow proceed 
-                return $next($request);
-            } catch (JWTException $e) { // invalid token and thrown an exception
-                return response()->json(['error' => 'Token Error'], 500);
+            if($user['user_status'] == 1)
+            {
+                try {
+                    $this->getDb($user['school_profile_id']);
+                    // valid credentails and allow proceed 
+                    return $next($request);
+                } catch (JWTException $e) { // invalid token and thrown an exception
+                    return response()->json(['error' => 'Token Error'], 500);
+                }
             }
+            else
+                return response()->json(['status'=>false,'error' => 'Your is account deactived!..']);
         }else // invalid token and thrown an exception
         {
             return response()->json(['error' => 'Invalid token'], 401);

@@ -32,6 +32,7 @@ use Validator;
 use Config;
 use File;
 use URL;
+use DB;
 
 class APIHomeworkController extends Controller
 {
@@ -160,16 +161,21 @@ class APIHomeworkController extends Controller
 
                         $classteacherdetails = UserStaffs::where('id',$classteacher_data->class_teacher)->get()->first(); //class teacher details
                         $percent = 0;
-                        $completed_students =0;
+                        $completed_students = $not_completed_students = 0;
                         if(!empty($homework_details))
                         {
                             //get count of parents received homework and calcuating percentage based on completion
-                            $total_students = CommunicationRecipients::select('id')->where(['user_role'=>Config::get('app.Parent_role'),'communication_id'=>$homework_details->id])->get()->toArray();
-                            if(!empty($total_students))
+                            $total_parents = CommunicationRecipients::select('user_table_id')->where(['user_role'=>Config::get('app.Parent_role'),'communication_id'=>$homework_details->id])->get()->toArray();
+
+                            if(!empty($total_parents))
                             {
+                                $student_ids = UserStudents::where('class_config',$sub_value->class_config)->where('user_status',1)->pluck('id')->toArray();
+                                $total_students_mapped = array_unique(UserStudentsMapping::whereIn('parent',$total_parents)->pluck('student')->toArray());
+                                $total_students = array_intersect($total_students_mapped,$student_ids);
                                 $count_total_student = count($total_students);
                                 $completed_students = HomeworkParentStatus::where('notification_id',$homework_details->id)->where('status',1)->get()->count();
-                                $percent = ($completed_students/$count_total_student)*100;
+                                $not_completed_students = HomeworkParentStatus::where('notification_id',$homework_details->id)->where('status',2)->get()->count();
+                                $percent = round(($completed_students/$count_total_student)*100);
                             }
                         }
 
@@ -188,6 +194,7 @@ class APIHomeworkController extends Controller
                             'percent'=>$percent,
                             'expires_in'=>'04h:00m:00s',
                             'completed_count'=>$completed_students,
+                            'not_completed_students'=>$not_completed_students,
                             'flag'=>(!empty($classteacher_details))?'classteacher':'staff',
                             'homework_content'=>!empty($homework_details)?$homework_details->chat_message:'',
                             'approval_status'=>(!empty($homework_details) && $homework_details->approval_status>0)?$homework_details->approval_status:0,
@@ -255,8 +262,12 @@ class APIHomeworkController extends Controller
             $communications->actioned_time=Carbon::now()->timezone('Asia/Kolkata');
         }
         if(isset($request->homework_date) && $request->homework_date !='')
-            $communications->actioned_time=$request->homework_date;
-       
+        {
+            $date = Carbon::createFromFormat('Y-m-d', $request->homework_date);
+            $date->setTimeZone('Asia/Kolkata');
+            $date = $date->format('Y-m-d H:i:s');
+            $communications->actioned_time=$date;
+        }
         $communications->chat_message=$request->message;
         if(isset($request->title))
             $communications->title=$request->title;
@@ -364,9 +375,8 @@ class APIHomeworkController extends Controller
         foreach ($request->notification_id as $key => $value) {
             if($value>0)
             {
-                $triggered_users = [];
+                $triggered_users = $user_list = [];
                 $communication_data = Communications::where(['id'=>$value])->get()->first();
-                
                 $class_config = UserGroups::where('id',$communication_data->group_id)->pluck('class_config')->first();
                 $subject_teacher = AcademicSubjectsMapping::where('subject',$communication_data->subject_id)->where('class_config',$class_config)->pluck('staff')->first();
 
@@ -377,7 +387,7 @@ class APIHomeworkController extends Controller
 
                 $user_ids = UserGroupsMapping::where('group_id',$communication_data->group_id)->whereIn('user_role',([Config::get('app.Parent_role')]))->get()->toArray();
                 foreach ($user_ids as $user_key => $user_value) {
-                   if((!empty($triggered_users) && !in_array($user_value['user_table_id'],$triggered_users))|| empty($triggered_users))
+                   // if((!empty($triggered_users) && !in_array($user_value['user_table_id'],$triggered_users))|| empty($triggered_users))
                         $user_list[] = $user_value;
                 }
                 if(!empty($subject_teacher) && !in_array($subject_teacher,$notification_triggered_user)) //check notification already triggered for subject staff or not 
@@ -405,15 +415,27 @@ class APIHomeworkController extends Controller
         $userall_id = UserAll::where(['user_table_id'=>$user_table_id,'user_role'=>$user->user_role])->pluck('id')->first();
         $student_id = UserStudentsMapping::where('parent',$user_table_id)->pluck('student')->first();
 
-        $homeworkparentstatus = new HomeworkParentStatus;
-        $homeworkparentstatus->notification_id=$request->notification_id;
-        $homeworkparentstatus->parent=$user_table_id;
-        $homeworkparentstatus->status=$request->status;//1-completed,2-not completed
-        $homeworkparentstatus->student=$student_id;
-        $homeworkparentstatus->reason=$request->reason;
-        $homeworkparentstatus->created_by=$userall_id;
-        $homeworkparentstatus->created_time=Carbon::now()->timezone('Asia/Kolkata');
-        $homeworkparentstatus->save();
+        $homework_status = HomeworkParentStatus::where('notification_id',$request->notification_id)->where('student',$student_id)->get()->first();
+        if(empty($homework_status))
+        {
+            $homework_status = new HomeworkParentStatus;
+            $homework_status->created_by=$userall_id;
+            $homework_status->created_time=Carbon::now()->timezone('Asia/Kolkata');
+        }
+        else
+        {
+            $homework_status->updated_by=$userall_id;
+            $homework_status->updated_time=Carbon::now()->timezone('Asia/Kolkata');
+        }
+
+        $homework_status->notification_id=$request->notification_id;
+        $homework_status->parent=$user_table_id;
+        $homework_status->status=$request->status;//1-completed,2-not completed
+        $homework_status->student=$student_id;
+        $homework_status->reason=$request->reason;
+       
+        $homework_status->save();
+
 
         return response()->json(['message'=>'Status noted Successfully!...']);
     }
@@ -462,6 +484,35 @@ class APIHomeworkController extends Controller
         CommunicationAttachments::where('id',$request->id)->delete();
 
         return response()->json(['status'=>true,'message'=>'Deleted Successfully!...']);
+    }
+
+    // get homework status list
+    public function list_homework_status(Request $request)
+    {
+        $status_list =[];
+        $list = HomeworkParentStatus::where(['status' =>$request->status, 'notification_id' => $request->homework_id])->get()->toArray();
+        if(!empty($list))
+        {
+            foreach($list as $key=>$value)
+            {
+                $student_name = UserStudents::where('id',$value['student'])->pluck('first_name')->first();
+                $parent_name = UserParents::where('id',$value['parent'])->pluck('first_name')->first();
+
+                $status_list[] = ([
+                    'id'=>$value['id'],
+                    'student_id'=>$value['student'],
+                    'parent_id'=>$value['parent'],
+                    'status'=>$value['status'],
+                    'reason'=>$value['reason'],
+                    'reported_time'=>($value['updated_time']!=null)?$value['updated_time']:$value['created_time'],
+                    'student_name'=>$student_name,
+                    'parent_name'=>$parent_name,
+
+                ]);
+            }
+        }
+        // $list = DB::table('homework_parent_status as s')->select('s.id','s.student','s.parent','s.status','s.reason','s.created_time','s.updated_time','us.first_name','p.first_name')->join('user_student as us','us.id','=','s.student')->join('user_parent as p','p.id','=','p.parent')->get()->toArray();
+        return response()->json($status_list);
     }
 
 }

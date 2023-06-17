@@ -220,6 +220,9 @@ return [
     'Group_Active'=>1,
     'Group_Deactive'=>2,
     'Group_Delete'=>3,
+    'Father'=>1,
+    'Mother'=>2,
+    'Guardian'=>9,
     'MessageCategories' => [
         1=>'Text',
         2=>'Images With Caption',

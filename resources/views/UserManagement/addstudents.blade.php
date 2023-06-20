@@ -221,6 +221,18 @@
 					},
 					admission_no: {
 						required: true,
+						remote: {
+		                    url: "{{url('usermanagement/checkAdmissionno')}}",
+		                    type: "post",
+		                    'headers': {
+			                   'X-CSRF-TOKEN': '{{ csrf_token() }}'
+			                },
+		                    data: {
+		                        admission_no: function() {
+		                            return $("#admission_no").val();
+		                        },
+		                    },		     
+		                }
 					},
 					dob: {
 						required: true,
@@ -319,6 +331,7 @@
 					},
 					admission_no: {
 						required: 'Admission no field is required',
+						remote: "Given Admission number already exists",
 					},
 					dob: {
 						required: 'DOB is required',

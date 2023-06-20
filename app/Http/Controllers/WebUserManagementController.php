@@ -594,4 +594,20 @@ class WebUserManagementController extends Controller
         else
             echo 'true';
     }
+
+    public function checkAdmissionno(Request $request)
+    {
+        $check_exists = UserStudents::where('admission_number',$request->admission_no);
+        
+        if(isset($request->id)!='')
+            $check_exists = $check_exists->where('id','!=',$request->id);
+
+        $check_exists = $check_exists->get()->first();
+
+        if(!empty($check_exists))
+            echo 'false';
+        else
+            echo 'true';
+    }
+
 }

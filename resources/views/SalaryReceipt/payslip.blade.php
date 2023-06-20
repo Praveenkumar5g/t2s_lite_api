@@ -14,7 +14,7 @@
 <body>
 	<table border="1">
 		<tr  style="text-align:center;font-size:24px; font-weight:600;height:1000px">
-			<td style="line-height: 100px !important;"><img class="animation__shake" src="{!! asset('public/assets/images/AdminLTELogo.png" alt="AdminLTELogo') !!}" height="60" width="60"></td>
+			<td style="line-height: 100px !important;"><img class="animation__shake" src="{!! asset('assets/images/AdminLTELogo.png" alt="AdminLTELogo') !!}" height="60" width="60"></td>
 			<td style="line-height: 80px !important;" colspan='3'><p style="margin-top: 1%">{{$school_name}}</p></td>
 		</tr>
 		<tr height="90px" style="text-align:center;font-size:12px; font-weight:200">

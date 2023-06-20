@@ -56,7 +56,7 @@ class WebLoginController extends Controller
                 Session::put('token',$token);
                 Session::put('id',Auth::id());
                 Session::put('user_data',Auth::user());
-                return redirect()->intended('employee/salarydetails'); //redirect to salary upload page
+                return redirect()->intended('usermanagement/students'); //redirect to salary upload page
             }
             else
                 return back()->with('error','Invalid credentials!...');

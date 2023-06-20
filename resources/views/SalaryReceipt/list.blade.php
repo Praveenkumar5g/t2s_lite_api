@@ -108,18 +108,18 @@
 	</div>
 @endsection
 @section('script')
-	<script src="{!! asset('public/assets/js/jquery.dataTables.min.js') !!}"></script>
-	<script src="{!! asset('public/assets/js/dataTables.bootstrap4.min.js') !!}"></script>
-	<script src="{!! asset('public/assets/js/dataTables.responsive.min.js') !!}"></script>
-	<script src="{!! asset('public/assets/js/responsive.bootstrap4.min.js') !!}"></script>
-	<script src="{!! asset('public/assets/js/dataTables.buttons.min.js') !!}"></script>
-	<script src="{!! asset('public/assets/js/buttons.bootstrap4.min.js') !!}"></script>
-	<script src="{!! asset('public/assets/js/jszip.min.js') !!}"></script>
-	<script src="{!! asset('public/assets/js/pdfmake.min.js') !!}"></script>
-	<script src="{!! asset('public/assets/js/vfs_fonts.js') !!}"></script>
-	<script src="{!! asset('public/assets/js/buttons.html5.min.js') !!}"></script>
-	<script src="{!! asset('public/assets/js/buttons.print.min.js') !!}"></script>
-	<script src="{!! asset('public/assets/js/buttons.colVis.min.js') !!}"></script>
+	<script src="{!! asset('assets/js/jquery.dataTables.min.js') !!}"></script>
+	<script src="{!! asset('assets/js/dataTables.bootstrap4.min.js') !!}"></script>
+	<script src="{!! asset('assets/js/dataTables.responsive.min.js') !!}"></script>
+	<script src="{!! asset('assets/js/responsive.bootstrap4.min.js') !!}"></script>
+	<script src="{!! asset('assets/js/dataTables.buttons.min.js') !!}"></script>
+	<script src="{!! asset('assets/js/buttons.bootstrap4.min.js') !!}"></script>
+	<script src="{!! asset('assets/js/jszip.min.js') !!}"></script>
+	<script src="{!! asset('assets/js/pdfmake.min.js') !!}"></script>
+	<script src="{!! asset('assets/js/vfs_fonts.js') !!}"></script>
+	<script src="{!! asset('assets/js/buttons.html5.min.js') !!}"></script>
+	<script src="{!! asset('assets/js/buttons.print.min.js') !!}"></script>
+	<script src="{!! asset('assets/js/buttons.colVis.min.js') !!}"></script>
 	<script type="text/javascript">
 		$(document).ready(function(){
 			var url = "{{url('employee/download_report')}}";

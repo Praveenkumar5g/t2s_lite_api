@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\WebUserManagementController;
 use App\Http\Controllers\WebSalaryReceiptController;
 use App\Http\Controllers\WebLoginController;
 use Illuminate\Support\Facades\Route;
@@ -26,5 +27,16 @@ Route::group(['middleware' => 'auth.webcheck'], function ($router) {
     Route::post('employee/getSalary_list', [WebSalaryReceiptController::class, 'getSalary_list']);
     Route::get('/employee/download_individual_payslip',[WebSalaryReceiptController::class,'download_individual_payslip']);
     Route::get('/employee/download_report',[WebSalaryReceiptController::class,'download_report']);
+    Route::get('employee/sample_excel',[WebSalaryReceiptController::class,'sample_excel']);
     Route::get('logout', [WebLoginController::class, 'logout']);
+
+    /*user Management -- starts*/
+    Route::get('/usermanagement/students',[WebUserManagementController::class,'students']);
+    Route::post('/usermanagement/getStudent_list',[WebUserManagementController::class,'getStudent_list']);
+    Route::get('/usermanagement/addStudents',[WebUserManagementController::class,'addStudents']);
+    Route::post('/usermanagement/storeStudents',[WebUserManagementController::class,'storeStudents']);
+    Route::get('/usermanagement/editStudent',[WebUserManagementController::class,'editStudent']);
+    Route::post('/usermanagement/updateStudent',[WebUserManagementController::class,'updateStudent']);
+    Route::post('/usermanagement/checkMobileno',[WebUserManagementController::class,'checkMobileno']);
+    /*user management -- Ends*/
 });

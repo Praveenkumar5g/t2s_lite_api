@@ -65,5 +65,6 @@ class Kernel extends HttpKernel
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         'auth.check'=> \App\Http\Middleware\AuthCheckMiddleware::class,
         'auth.connect'=>\App\Http\Middleware\DbconnMiddleware::class,
+        'auth.webcheck'=> \App\Http\Middleware\WebAuthCheckMiddleware::class,
     ];
 }

@@ -5,9 +5,9 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1">
 		<title>LiteChat</title>
 		<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
-		<link rel="stylesheet" href="{!! asset('public/assets/css/all.min.css') !!}">
-		<link rel="stylesheet" href="{!! asset('public/assets/css/icheck-bootstrap.min.css') !!}">
-		<link rel="stylesheet" href="{!! asset('public/assets/css/adminlte.min.css') !!}">
+		<link rel="stylesheet" href="{!! asset('assets/css/all.min.css') !!}">
+		<link rel="stylesheet" href="{!! asset('assets/css/icheck-bootstrap.min.css') !!}">
+		<link rel="stylesheet" href="{!! asset('assets/css/adminlte.min.css') !!}">
 	</head>
 	<body class="hold-transition login-page">
 
@@ -62,11 +62,11 @@
 				</div>
 			</div>
 		</div>
-		<script src="{!! asset('public/assets/js/jquery.min.js') !!}"></script>
-		<script src="{!! asset('public/assets/js/bootstrap.bundle.min.js') !!}"></script>
-		<script src="{!! asset('public/assets/js/adminlte.min.js') !!}"></script>
-		<script type="text/javascript" src="{!! asset('public/assets/js/jquery.validate.min.js') !!}"></script>
-		<script type="text/javascript" src="{!! asset('public/assets/js/additional-methods.min.js') !!}"></script>
+		<script src="{!! asset('assets/js/jquery.min.js') !!}"></script>
+		<script src="{!! asset('assets/js/bootstrap.bundle.min.js') !!}"></script>
+		<script src="{!! asset('assets/js/adminlte.min.js') !!}"></script>
+		<script type="text/javascript" src="{!! asset('assets/js/jquery.validate.min.js') !!}"></script>
+		<script type="text/javascript" src="{!! asset('assets/js/additional-methods.min.js') !!}"></script>
 		<script>
 			$(document).ready(function(){
 

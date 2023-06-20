@@ -28,18 +28,21 @@ class APIRegistrationController extends Controller
 {
     public function register(Request $request)
     {
-        // Validate the input details
-        $request->validate([
-            'school_name'=>'required',
-            'name' => 'required',
-            'email' => 'required|email',
-            'user_mobile_number' => 'required',
-            'password' => 'required',
-            'designation'=>'required',
-            'academic_year'=>'required',
-        ]);
-        // Check mobile no / email id already exist
-        $mobile_exist = SchoolUsers::where('user_mobile_number',$request->user_mobile_number)->orWhere('user_email_id',$request->email)->get()->toArray();
+        // // Validate the input details
+        // $request->validate([
+        //     'school_name'=>'required',
+        //     'name' => 'required',
+        //     'email' => 'required|email',
+        //     'user_mobile_number' => 'required',
+        //     'password' => 'required',
+        //     'designation'=>'required',
+        //     'academic_year'=>'required',
+        // ]);
+        // // Check mobile no / email id already exist
+        $mobile_exist = SchoolUsers::where('user_mobile_number',$request->user_mobile_number);
+        if($request->email!='')
+            $mobile_exist = $mobile_exist->orWhere('user_email_id',$request->email);
+        $mobile_exist = $mobile_exist->get()->toArray();
         if(count($mobile_exist)>0)
             return response()->json(['error' => 'Mobile Number/ Email already exist'], 401);
 

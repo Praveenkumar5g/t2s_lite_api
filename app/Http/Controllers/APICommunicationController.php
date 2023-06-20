@@ -735,7 +735,7 @@ class APICommunicationController extends Controller
                 $notification_triggered_user = UserAll::select('user_role','user_table_id')->where(['id'=>$communication_data->created_by])->first();
                 if($communication_data->distribution_type == 3) // Everyone
                 {
-                    $$user_ids = UserGroupsMapping::where('group_id',$communication_data->group_id)->where('user_status',Config::get('app.Group_Active'))->whereIn('user_role',([Config::get('app.Staff_role'),Config::get('app.Parent_role')]))->get()->toArray();
+                    $user_ids = UserGroupsMapping::where('group_id',$communication_data->group_id)->where('user_status',Config::get('app.Group_Active'))->whereIn('user_role',([Config::get('app.Staff_role'),Config::get('app.Parent_role')]))->get()->toArray();
                 }
                 else if($communication_data->distribution_type == 4 || $communication_data->distribution_type == 5)
                 {    

@@ -56,7 +56,7 @@ class WebUserManagementController extends Controller
             if($request->mobile_no!='')
                 $data = $data->where('up.mobile_number', 'like', '%' .$request->mobile_no. '%');
            
-            $data = $data->orderBy('user_students.created_time','desc')->get(['user_students.id','user_students.user_id','user_students.first_name as student_name','user_students.roll_number','user_students.admission_number', 'p.parent', 'up.mobile_number','up.user_category','user_students.class_config','user_students.user_status','up.first_name as parent_name']);
+            $data = $data->orderBy('user_students.created_time','desc')->get(['user_students.id','user_students.user_id','user_students.first_name as student_name','user_students.roll_number','user_students.admission_number', 'p.parent', 'up.mobile_number','up.user_category','user_students.class_config','user_students.user_status','up.first_name as parent_name','user_students.dob']);
             $checked_records = [];
             foreach ($data as $key => $value) {            
                 $user_list[$value->id]['id']=$value->id;
@@ -64,6 +64,7 @@ class WebUserManagementController extends Controller
                 $user_list[$value->id]['student_name']=$value->student_name;
                 $user_list[$value->id]['roll_no']=$value->roll_number;
                 $user_list[$value->id]['admission_number']=$value->admission_number;
+                $user_list[$value->id]['dob']=date('d-m-Y',strtotime($value->dob));
                 $user_list[$value->id]['class_config_id']=$value->class_config;
                 $user_list[$value->id]['class_section']=$value->classsectionName();
                 $user_list[$value->id]['student_status']=$value->user_status;
@@ -170,10 +171,10 @@ class WebUserManagementController extends Controller
             $student_details->user_id = $userstudent_id;
             $student_details->save();
             
-            if($profile_details->default_password_type == 'admission_number')
+            if($profile_details['default_password_type'] == 'admission_number')
                 $password = bcrypt($request->admission_no);
-            else if($profile_details->default_password_type == 'dob')
-                $password = bcrypt(date('Ymd',strtotime($request->dob)));
+            else if($profile_details['default_password_type'] == 'dob')
+                $password = bcrypt(date('dmY',strtotime($request->dob)));
 
             $group_id = UserGroups::where('class_config',$request->class_section)->pluck('id')->first();
             // insert father details
@@ -186,7 +187,7 @@ class WebUserManagementController extends Controller
                 $data['email_address'] = $request->father_email_address;
                 $data['user_category'] = 1;
 
-                if($profile_details->default_password_type == 'mobile_number' || $password == '')
+                if($profile_details['default_password_type'] == 'mobile_number' || $password == '')
                     $password = bcrypt($request->father_mobile_number);
                 
                 $this->insert_parent_details($data,$student_details->id,$userall_id,$group_id,$password);
@@ -201,7 +202,7 @@ class WebUserManagementController extends Controller
                 $data['email_address'] = $request->mother_email_address;
                 $data['user_category'] = 2;
 
-                if($profile_details->default_password_type == 'mobile_number' || $password == '')
+                if($profile_details['default_password_type'] == 'mobile_number' || $password == '')
                     $password = bcrypt($request->mother_mobile_number);
 
                 $this->insert_parent_details($data,$student_details->id,$userall_id,$group_id,$password);
@@ -217,7 +218,7 @@ class WebUserManagementController extends Controller
                 $data['email_address'] = $request->guardian_email_address;
                 $data['user_category'] = 9;
 
-                if($profile_details->default_password_type == 'mobile_number' || $password == '')
+                if($profile_details['default_password_type'] == 'mobile_number' || $password == '')
                     $password = bcrypt($request->guardian_mobile_number);
 
                 $this->insert_parent_details($data,$student_details->id,$userall_id,$group_id,$password);
@@ -341,7 +342,7 @@ class WebUserManagementController extends Controller
             'guardian_id'=>isset($parentsdata[3])?$parentsdata[3]->id:0,
             'admission_number'=>isset($students->first_name)?$students->admission_number:'',
             'roll_no'=>isset($students->roll_number)?$students->roll_number:'',
-            'dob'=>isset($students->dob)?$students->dob:null,
+            'dob'=>isset($students->dob)?date('d-m-Y',strtotime($students->dob)):null,
             'employee_no'=>isset($students->employee_no)?$students->employee_no:'',
             'gender'=>$students->gender,
             'photo'=>isset($students->profile_image)?$students->profile_image:'',
@@ -432,6 +433,10 @@ class WebUserManagementController extends Controller
                     UserGroupsMapping::insert(['group_id'=>$new_group_id,'user_table_id'=>$parent_value,'user_role'=>Config::get('app.Parent_role'),'user_status'=>1,'group_access'=>2]);
                 }
             }
+            if($profile_details['default_password_type'] == 'admission_number')
+                $password = bcrypt($request->admission_no);
+            else if($profile_details['default_password_type'] == 'dob')
+                $password = bcrypt(date('dmY',strtotime($request->dob)));
 
             // insert parents details
             if(isset($request->father_id) && $request->father_id > 0)
@@ -444,8 +449,9 @@ class WebUserManagementController extends Controller
                     $data['mobile_number'] = $request->father_mobile_number;
                     $data['email_address'] = $request->father_email_address;
                     $data['user_category'] = 1;
-
-                    $this->edit_parent_details($data,$father_details,$student_id,$userall_id,$old_group_id,$new_group_id);
+                    if($profile_details['default_password_type'] == 'mobile_number' || $password == '')
+                        $password = bcrypt($request->father_mobile_number);
+                    $this->edit_parent_details($data,$father_details,$student_id,$userall_id,$old_group_id,$new_group_id,$password);
                 }
             }
             // update or insert parents details
@@ -460,8 +466,9 @@ class WebUserManagementController extends Controller
                     $data['mobile_number'] = $request->mother_mobile_number;
                     $data['email_address'] = $request->mother_email_address;
                     $data['user_category'] = 2;
-
-                    $this->edit_parent_details($data,$mother_details,$student_id,$userall_id,$old_group_id,$new_group_id);
+                    if($profile_details['default_password_type'] == 'mobile_number' || $password == '')
+                        $password = bcrypt($request->mother_mobile_number);
+                    $this->edit_parent_details($data,$mother_details,$student_id,$userall_id,$old_group_id,$new_group_id,$password);
                 }
             }
 
@@ -477,8 +484,9 @@ class WebUserManagementController extends Controller
                     $data['mobile_number'] = $request->guardian_mobile_number;
                     $data['email_address'] = $request->guardian_email_address;
                     $data['user_category'] = 3;
-
-                    $this->edit_parent_details($data,$guardian_details,$student_id,$userall_id,$old_group_id,$new_group_id);
+                    if($profile_details['default_password_type'] == 'mobile_number' || $password == '')
+                        $password = bcrypt($request->guardian_mobile_number);
+                    $this->edit_parent_details($data,$guardian_details,$student_id,$userall_id,$old_group_id,$new_group_id,$password);
                 }
             }
            return back()->with('success','Updated Successfully');
@@ -487,7 +495,7 @@ class WebUserManagementController extends Controller
     }
 
     // Edit parent details dependency function - onboarding
-    public function edit_parent_details($data,$details,$id,$userall_id,$old_group_id,$new_group_id)
+    public function edit_parent_details($data,$details,$id,$userall_id,$old_group_id,$new_group_id,$password)
     {
         $image =$page='';
         $user = Session::get('user_data');
@@ -554,8 +562,7 @@ class WebUserManagementController extends Controller
             $schoolusers->school_profile_id=$user->school_profile_id;
             $schoolusers->user_id=$userparent_id;
             $schoolusers->user_mobile_number=$data['mobile_number'];
-            if($page!='')
-                $schoolusers->user_password=bcrypt($data['mobile_number']);
+            $schoolusers->user_password=$password;
             $schoolusers->user_email_id=$data['email_address'];
             $schoolusers->user_role=Config::get('app.Parent_role');
             $schoolusers->user_status=1;
@@ -571,6 +578,9 @@ class WebUserManagementController extends Controller
             $student_map->created_by = $userall_id;
             $student_map->created_time=Carbon::now()->timezone('Asia/Kolkata');
             $student_map->save();
+            
+            UserGroupsMapping::insert(['group_id'=>$new_group_id,'user_table_id'=>$details->id,'user_role'=>Config::get('app.Parent_role'),'user_status'=>1,'group_access'=>2]);
+            UserGroupsMapping::insert(['group_id'=>2,'user_table_id'=>$details->id,'user_role'=>Config::get('app.Parent_role'),'user_status'=>1,'group_access'=>2]);
         }
     }
 
@@ -610,4 +620,58 @@ class WebUserManagementController extends Controller
             echo 'true';
     }
 
+    public function changeDobformat()
+    {
+        $user = Session::get('user_data');
+
+        $default_password_type = SchoolProfile::where('id',$user->school_profile_id)->pluck('default_password_type')->first();
+           
+        // fetch all users mobile number under role staff,parent and management
+        $userslist = SchoolUsers::whereIn('user_role',[3])->where('school_profile_id',$user->school_profile_id)->get()->toArray();
+        // get the common id to insert
+        if($user->user_role == Config::get('app.Admin_role'))//check role and get current user id
+            $user_table_id = UserAdmin::where(['user_id'=>$user->user_id])->first();
+
+        $userall_id = UserAll::where(['user_table_id'=>$user_table_id->id,'user_role'=>$user->user_role])->pluck('id')->first();
+        // fetch welcome template
+        if(!empty($userslist)) //check empty condition
+        {
+            // remove duplicate mobile numbers;
+            // $userslist = array_unique($userslist);
+
+            // run the loop and trigger the sms to all users one by one.
+            foreach ($userslist as $key => $value) {
+                if($value['user_role'] == 3)
+                {
+                    $schoolusers = SchoolUsers::where(['user_role'=>$value['user_role'],'school_profile_id'=>$user->school_profile_id,'id'=>$value['id']]);
+                    if($default_password_type == 'admission_number' || $default_password_type == 'dob')
+                    {
+                        $parent_id = UserParents::where('user_id',$value['user_id'])->pluck('id')->first();
+                        $mapped_student = UserStudentsMapping::where('parent',$parent_id)->pluck('student')->first();
+                        $student_details = UserStudents::where('id',$mapped_student)->get()->first();
+                    }
+
+                    if($default_password_type == 'mobile_number')
+                    {
+                        $password = $value['user_mobile_number'];
+                        $schoolusers = $schoolusers->update(['user_password'=>bcrypt($value['user_mobile_number'])]);
+                    }
+                    else if($default_password_type == 'admission_number')
+                    {
+                        $password = $student_details->admission_number;
+                        $schoolusers = $schoolusers->update(['user_password'=>bcrypt($student_details->admission_number)]);
+                    }
+                    else if($default_password_type == 'dob')
+                    {
+                        $password = date('dmY',strtotime($student_details->dob));
+                        $schoolusers = $schoolusers->update(['user_password'=>bcrypt($password)]);
+                    }
+                }
+            }
+            
+            echo '<prE>';print_r(['status'=>true,'message'=>'SMS sent Successfully!...']);
+        }
+        else
+            echo '<prE>';print_r(['status'=>false,'message'=>'Please configure template details!...']);
+    }
 }

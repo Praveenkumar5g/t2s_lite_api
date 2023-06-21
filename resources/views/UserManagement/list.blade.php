@@ -84,6 +84,7 @@
 							                    <th>Id</th>
 							                    <th>Name</th>
 							                    <th>Admission No</th>
+							                    <th>DOB</th>
 							                    <th>Class - Section</th>
 							                    <th>Father Name</th>
 							                    <th>Father Mobile No</th>
@@ -145,6 +146,7 @@
 		            {data: 'user_id', name: 'user_id'},
 		            {data: 'student_name', name: 'student_name'},
 		            {data: 'admission_number', name: 'admission_number'},
+		            {data: 'dob', name: 'dob'},
 		            {data: 'class_section', name: 'class_section'},
 		            {data: 'father_name', name: 'father_name'},
 		            {data: 'father_mobile_no', name: 'father_mobile_no'},
@@ -194,6 +196,7 @@
 			            {data: 'user_id', name: 'user_id'},
 			            {data: 'student_name', name: 'student_name'},
 			            {data: 'admission_number', name: 'admission_number'},
+			            {data: 'dob', name: 'dob'},
 			            {data: 'class_section', name: 'class_section'},
 			            {data: 'father_name', name: 'father_name'},
 			            {data: 'father_mobile_no', name: 'father_mobile_no'},

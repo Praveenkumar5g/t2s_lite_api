@@ -214,7 +214,7 @@
 			$('.dob').datepicker({
 			    autoclose: true,
 			    setDate: new Date(),
-			    format: 'yyyy-mm-dd'
+			    format: 'dd-mm-yyyy'
 			});
 			
 

@@ -2452,7 +2452,7 @@ class APIConfigurationsController extends Controller
             if($profile_details->default_password_type == 'admission_number')
 				$password = bcrypt($request->admission_no);
 			else if($profile_details->default_password_type == 'dob')
-				$password = bcrypt(date('Ymd',strtotime($request->dob)));
+				$password = bcrypt(date('dmY',strtotime($request->dob)));
 
             // insert father details
             if($request->father_mobile_number!='' && $request->father_name!='')
@@ -3152,7 +3152,8 @@ class APIConfigurationsController extends Controller
 	      			$schoolusers = SchoolUsers::where(['user_role'=>$value['user_role'],'school_profile_id'=>$user->school_profile_id,'id'=>$value['id']]);
 	      			if($default_password_type == 'admission_number' || $default_password_type == 'dob')
 	      			{
-	      				$mapped_student = UserStudentsMapping::where('parent',$user_table_id->id)->pluck('student')->first();
+	      				$parent_id = UserParents::where('user_id',$value['user_id'])->pluck('id')->first();
+                        $mapped_student = UserStudentsMapping::where('parent',$parent_id)->pluck('student')->first();
 	      				$student_details = UserStudents::where('id',$mapped_student)->get()->first();
 	      			}
 
@@ -3168,7 +3169,7 @@ class APIConfigurationsController extends Controller
 	      			}
 	      			else if($default_password_type == 'dob')
 	      			{
-	      				$password = date('Ymd',strtotime($student_details->dob));
+	      				$password = date('dmY',strtotime($student_details->dob));
 	      				$schoolusers = $schoolusers->update(['user_password'=>bcrypt($password)]);
 	      			}
 	      		}

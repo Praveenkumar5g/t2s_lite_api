@@ -40,28 +40,29 @@ class PayfeesController extends Controller
 
     public function feesStructure(Request $request){
         $user_data = auth()->user();
+        $total_amount = 0;
+        $today = Carbon::today();
+        $today_date = $today->format("Y-m-d");
         $id = $request->get('student_id');
         $student=UserStudents::where('id',$id)->first();
         $class_config=$student->class_config;
-        $fees=PfClsDetails::where('class_config_id',$class_config)->get();
-        foreach($fees as $fee){
-            // Declare and define two dates
-            $date1 = strtotime( $fee->fee_start_date);
-            $date2 = strtotime($fee->fee_end_date);
-            
-            // Formulate the Difference between two dates
-            $diff = abs($date2 - $date1);
-            $days=($diff/60/60/24);
-            if($days < 30){
-                $fee->component_name=$fee->feesComp->comp_name." [".date('M',strtotime($fee->fee_start_date))."]";
-            }else{
-                $fee->component_name=$fee->feesComp->comp_name." [".date('M',strtotime($fee->fee_start_date))."-".date('M',strtotime($fee->fee_end_date))."]";
+        $fees = PfStuDetails::select('fee_stu_id','fee_comp_id','stu_id','sub_comp_id','amount','fee_end_date')->where('stu_id', $id)->get();
+        if(count($fees) > 0) {
+            foreach($fees as $key=>$fee){
+                $fees[$key]['component_name'] = $fee->fee_comp_id != null?$fee->feesComp->comp_name:"";
+                $fees[$key]['sub_component_name'] = $fee->sub_comp_id != null?$fee->subComp->name:"";
+                //$fee->component_name=$fee->feesComp->comp_name;
+                if($today_date > $fee->fee_end_date && $fee->balanceFee() != 'NIL') {
+                    $fees[$key]['overdue_days'] = Carbon::parse($fee->fee_end_date)->diffInDays($today);
+                } else {
+                    $fees[$key]['overdue_days'] = null;
+                }
+                $total_amount += $fee->amount;
+                unset($fee->feesComp);
+                unset($fee->subComp);
             }
-            $fee->amount=number_format($fee->amount,2);
-            //$fee->component_name=$fee->feesComp->comp_name;
-            unset($fee->feesComp);
         }
-        return response()->json($fees);
+        return response()->json(compact('total_amount','fees'));
     }   
 
     public function studentFees(Request $request) {

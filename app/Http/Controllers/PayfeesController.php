@@ -136,9 +136,8 @@ class PayfeesController extends Controller
     public function paymentHistory(Request $request){
         $user_data = auth()->user();
         $batch=BatchTable::where('batch_active',1)->first();
-        $fees=PfStuDetails::where(['batch'=>$batch->batch_id,'stu_id'=>$request->get('student_id')])->pluck('fee_comp_id')->toArray();
+        $fees = PfStuDetails::where(['batch'=>$batch->batch_id,'stu_id'=>$request->get('stu_id')])->pluck('fee_stu_id')->toArray();
         $transaction = PfTransaction::select('pf_stu_id','active_status','adjusted_amount','paid_amount','trans_id','receipt_no','pf_stu_id','pf_pay_mode','paid_date')->whereIn('pf_stu_id', $fees)->where('active_status', 1)->orderBy('paid_date','DESC')->get();
-        echo '<pre>';print_r($transaction);exit;
         foreach($transaction as $key=>$value){
             $transaction[$key]['total_paid'] = $value->adjusted_amount != null?($value->paid_amount+$value->adjusted_amount):$value->paid_amount;
             $transaction[$key]['component_name'] = $value->student->fee_comp_id != null?$value->student->feesComp->comp_name:"";

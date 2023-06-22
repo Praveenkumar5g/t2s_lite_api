@@ -173,8 +173,8 @@ Route::group(['middleware' => 'auth.connect','prefix' => 'user'], function ($rou
 
     /*Payfees -- starts*/
     Route::get('/feesStructure',[PayfeesController::class,'feesStructure']);
-    Route::get('/studentFees', [PayfeesController::class,'studentFees']);
+    Route::get('/studentFees', [PayfeesController::class,'index']);
     Route::get('/academicYear', [PayfeesController::class,'academicYear']);
-    Route::get('/studentPaymentHistory', [PayfeesController::class,'studentPaymentHistory']);
+    Route::get('/paymentHistory', [PayfeesController::class,'paymentHistory']);
     /*Payfees - Ends*/
 });

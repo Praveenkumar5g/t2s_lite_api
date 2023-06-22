@@ -3331,8 +3331,10 @@ class APIConfigurationsController extends Controller
 		{
 			$separate_count = array_column($userslist,'count','user_role'); //apply array column function to get count and role
 			$total_users = array_sum($separate_count); //sum the count
-			$management = $separate_count[Config::get('app.Management_role')]; //management users count
-			$parent = $separate_count[Config::get('app.Parent_role')]; // parent users count
+			$management = isset
+			($separate_count[Config::get('app.Management_role')])?$separate_count[Config::get('app.Management_role')]:0; //management users count
+			$parent = isset
+			($separate_count[Config::get('app.Parent_role')])?$separate_count[Config::get('app.Parent_role')]:0; // parent users count
 		}
 
 		// staff count based on category

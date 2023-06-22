@@ -20,6 +20,19 @@
 			<!-- Main content -->
 		    <section class="content">
 		      	<div class="container-fluid">
+		      		@if ($message = Session::get('error'))
+						<div class="alert alert-danger alert-block">
+							<button type="button" class="close" data-dismiss="alert">×</button>	
+						        <strong>{{$message}}</strong>
+						</div>
+					@endif
+
+					@if ($message = Session::get('success'))
+						<div class="alert alert-success alert-block">
+							<button type="button" class="close" data-dismiss="alert">×</button>	
+						        <strong>{{$message}}</strong>
+						</div>
+					@endif
 		        	<div class="row">
 		          		<div class="col-12">
 		            		<div class="card">
@@ -93,6 +106,7 @@
 							                    <th>Guardian Name</th>
 							                    <th>Guardian Mobile No</th>
 							                    <th>Action</th>
+							                    <th>Unmap</th>
 						                  	</tr>
 		                  				</thead>
 		                			</table>
@@ -154,8 +168,8 @@
 		            {data: 'mother_mobile_no', name: 'mother_mobile_no'},
 		            {data: 'guardian_name', name: 'guardian_name'},
 		            {data: 'guardian_mobile_no', name: 'guardian_mobile_no'},
-		            {data: 'edit_student', name: 'edit_student'}
-
+		            {data: 'edit_student', name: 'edit_student'},
+		            {data: 'unmap', name: 'unmap'}
 		        ],
 
 		    });
@@ -204,7 +218,8 @@
 			            {data: 'mother_mobile_no', name: 'mother_mobile_no'},
 			            {data: 'guardian_name', name: 'guardian_name'},
 			            {data: 'guardian_mobile_no', name: 'guardian_mobile_no'},
-			            {data: 'edit_student', name: 'edit_student'}
+			            {data: 'edit_student', name: 'edit_student'},
+		            	{data: 'unmap', name: 'unmap'}
 			        ],
 			        
 			    });

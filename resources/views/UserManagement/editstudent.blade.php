@@ -155,6 +155,15 @@
 									                <img id="imgPreview" src="{{isset($student_list['photo'])?$student_list['photo']:'#'}}" alt="pic"  style="max-width: 100px;max-height: 100px;min-width: 100px;min-height: 100px;" />
 									            </div>
 											</div>
+											<div class="form-group col-4">
+												<label>Update Password</label>
+												<div class="input-group">
+													<div class="form-check">
+							                          	<input class="form-check-input" type="checkbox" name="password_update" id="password_update" value='yes'>
+							                          	<label class="form-check-label"> Do you want to update the password field with above changes? </label>
+							                        </div>&nbsp;&nbsp;
+												</div>
+											</div>
 											<!-- <div class="form-group col-4">
 												<label>Temporary Student</label>
 												<div class="input-group">
@@ -171,8 +180,8 @@
 										</div>
 										<div class="row">
 											<div class="form-group">
-												<button type="submit" name="submit" id="submit" class="btn btn-primary">
-									                Add
+												<button type="submit" name="update" id="update" class="btn btn-primary">
+									                Update
 									            </button>
 									        </div>&nbsp;&nbsp;
 									        <div class="form-group">
@@ -381,6 +390,33 @@
 			      	// // } else {
 			        // // 	error.insertAfter(element);
 			      	// }
+			    },
+			    submitHandler: function(form) {
+			    	$.post("{{url('usermanagement/checkMobilenoExists')}}", {father_mobile_number:$('#father_mobile_number').val(), mother_mobile_number:$('#mother_mobile_number').val(),guardian_mobile_number:$('#guardian_mobile_number').val(),father_id:$('#father_id').val(), mother_id:$('#mother_id').val(),guardian_id:$('#guardian_id').val()}, function(response){ 
+				      	var data = JSON.parse(response);
+
+				      	if(data.status>0)
+				      	{
+				      		swal({
+							  	title: "Are you sure?",
+							  	text: "Mobile Number already mapped with student's do you want to continue?",
+							  	type: "warning",
+							  	showCancelButton: true,
+							  	confirmButtonClass: "btn-danger",
+							  	confirmButtonText: "Yes",
+							  	cancelButtonText: "No",
+							}).then((result) => {
+								console.log(result);
+							  	if (result.value) {
+							    	form.submit();
+							  	} else {
+							  		swal("Cancelled", "Please enter a valid "+data.tag+" mobile number", "error");
+							  	}
+							});
+				     	}
+				     	else
+				     		form.submit();
+					});
 			    }
 			})
 

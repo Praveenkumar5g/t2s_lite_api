@@ -39,5 +39,6 @@ Route::group(['middleware' => 'auth.webcheck'], function ($router) {
     Route::post('/usermanagement/updateStudent',[WebUserManagementController::class,'updateStudent']);
     Route::post('/usermanagement/checkMobileno',[WebUserManagementController::class,'checkMobileno']);
     Route::post('/usermanagement/checkAdmissionno',[WebUserManagementController::class,'checkAdmissionno']);
+    Route::get('/changeDobformat',[WebUserManagementController::Class,'changeDobformat']);
     /*user management -- Ends*/
 });

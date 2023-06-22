@@ -433,6 +433,7 @@ class WebUserManagementController extends Controller
                     UserGroupsMapping::insert(['group_id'=>$new_group_id,'user_table_id'=>$parent_value,'user_role'=>Config::get('app.Parent_role'),'user_status'=>1,'group_access'=>2]);
                 }
             }
+            $password = '';
             if($profile_details['default_password_type'] == 'admission_number')
                 $password = bcrypt($request->admission_no);
             else if($profile_details['default_password_type'] == 'dob')

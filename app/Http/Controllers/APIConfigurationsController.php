@@ -3318,7 +3318,7 @@ class APIConfigurationsController extends Controller
     {
     	// Get authorizated user details
         $user = auth()->user();
-        $total_users = $student = $parent = $teaching_staffs = $non_teaching_staffs = $management = $total_father = $total_mother = $total_guardian = $total_installed_guardian = $total_installed_father = $total_installed_mother = $inactive_user = 0;
+        $total_users = $student = $parent = $teaching_staffs = $non_teaching_staffs = $management = $total_father = $total_mother = $total_guardian = $total_installed_guardian = $total_installed_father = $total_installed_mother = $inactive_user = $total_management = 0;
 
         // fetch all the users under role staff,parent and management
 		$userslist = SchoolUsers::select(DB::raw('count(*) as count'),'user_role')->whereIn('user_role',[2,3,5])->where('school_profile_id',$user->school_profile_id)->where('user_status',1)->groupBy('user_role')->get()->toArray();
@@ -3331,8 +3331,10 @@ class APIConfigurationsController extends Controller
 		{
 			$separate_count = array_column($userslist,'count','user_role'); //apply array column function to get count and role
 			$total_users = array_sum($separate_count); //sum the count
-			$management = $separate_count[Config::get('app.Management_role')]; //management users count
-			$parent = $separate_count[Config::get('app.Parent_role')]; // parent users count
+			$management = isset
+			($separate_count[Config::get('app.Management_role')])?$separate_count[Config::get('app.Management_role')]:0; //management users count
+			$parent = isset
+			($separate_count[Config::get('app.Parent_role')])?$separate_count[Config::get('app.Parent_role')]:0; // parent users count
 		}
 
 		// staff count based on category

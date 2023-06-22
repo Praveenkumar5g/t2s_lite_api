@@ -3319,7 +3319,7 @@ class APIConfigurationsController extends Controller
     	// Get authorizated user details
         $user = auth()->user();
         $total_users = $student = $parent = $teaching_staffs = $non_teaching_staffs = $management = $total_father = $total_mother = $total_guardian = $total_installed_guardian = $total_installed_father = $total_installed_mother = $inactive_user = $total_management = 0;
-
+ 
         // fetch all the users under role staff,parent and management
 		$userslist = SchoolUsers::select(DB::raw('count(*) as count'),'user_role')->whereIn('user_role',[2,3,5])->where('school_profile_id',$user->school_profile_id)->where('user_status',1)->groupBy('user_role')->get()->toArray();
 

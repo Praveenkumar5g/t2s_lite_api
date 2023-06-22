@@ -40,28 +40,29 @@ class PayfeesController extends Controller
 
     public function feesStructure(Request $request){
         $user_data = auth()->user();
+        $total_amount = 0;
+        $today = Carbon::today();
+        $today_date = $today->format("Y-m-d");
         $id = $request->get('student_id');
         $student=UserStudents::where('id',$id)->first();
         $class_config=$student->class_config;
-        $fees=PfClsDetails::where('class_config_id',$class_config)->get();
-        foreach($fees as $fee){
-            // Declare and define two dates
-            $date1 = strtotime( $fee->fee_start_date);
-            $date2 = strtotime($fee->fee_end_date);
-            
-            // Formulate the Difference between two dates
-            $diff = abs($date2 - $date1);
-            $days=($diff/60/60/24);
-            if($days < 30){
-                $fee->component_name=$fee->feesComp->comp_name." [".date('M',strtotime($fee->fee_start_date))."]";
-            }else{
-                $fee->component_name=$fee->feesComp->comp_name." [".date('M',strtotime($fee->fee_start_date))."-".date('M',strtotime($fee->fee_end_date))."]";
+        $fees = PfStuDetails::select('fee_stu_id','fee_comp_id','stu_id','sub_comp_id','amount','fee_end_date')->where('stu_id', $id)->get();
+        if(count($fees) > 0) {
+            foreach($fees as $key=>$fee){
+                $fees[$key]['component_name'] = $fee->fee_comp_id != null?$fee->feesComp->comp_name:"";
+                $fees[$key]['sub_component_name'] = $fee->sub_comp_id != null?$fee->feesSubComp->name:"";
+                //$fee->component_name=$fee->feesComp->comp_name;
+                if($today_date > $fee->fee_end_date && $fee->balanceFee() != 'NIL') {
+                    $fees[$key]['overdue_days'] = Carbon::parse($fee->fee_end_date)->diffInDays($today);
+                } else {
+                    $fees[$key]['overdue_days'] = null;
+                }
+                $total_amount += $fee->amount;
+                unset($fee->feesComp);
+                unset($fee->feesSubComp);
             }
-            $fee->amount=number_format($fee->amount,2);
-            //$fee->component_name=$fee->feesComp->comp_name;
-            unset($fee->feesComp);
         }
-        return response()->json($fees);
+        return response()->json(compact('total_amount','fees'));
     }   
 
     public function studentFees(Request $request) {
@@ -132,46 +133,22 @@ class PayfeesController extends Controller
     }
 
     // student payment history
-    public function studentPaymentHistory(Request $request){
+    public function paymentHistory(Request $request){
         $user_data = auth()->user();
         $batch=BatchTable::where('batch_active',1)->first();
-        $fees=PfStuDetails::where(['batch'=>$batch->batch_id,'stu_id'=>$request->get('student_id')])->pluck('fee_comp_id')->toArray();
-        $distinct_value=array_unique($fees);
-        $components=PfComponents::whereIn('comp_id',$distinct_value)->get();
-        $comp=[];
-        foreach($components as $key=>$value){
-            $fees=PfStuDetails::where(['batch'=>$batch->batch_id,'stu_id'=>$request->get('student_id'),'fee_comp_id'=>$value->comp_id])->pluck('fee_stu_id')->toArray();
-            $paid_amount=PfTransaction::whereIn('pf_stu_id',$fees)->where('active_status',1)->sum('paid_amount');  
-            $adjusted_amount=PfTransaction::whereIn('pf_stu_id',$fees)->where('active_status',1)->sum('adjusted_amount');       
-            $value->total_paid=$paid_amount+$adjusted_amount;
-            if((int)$value->total_paid == 0){
-                unset($components->$key);
-                continue;
-            }
-            $history=PfTransaction::whereIn('pf_stu_id',$fees)->where('active_status',1)->get();
-            foreach($history as $his){
-                // Declare and define two dates
-                $date1 = strtotime($his->student->fee_start_date);
-                $date2 = strtotime($his->student->fee_end_date);
-                
-                // Formulate the Difference between two dates
-                $diff = abs($date2 - $date1);
-                $days=($diff/60/60/24);
-                if($days < 30){
-                    $his->fees_component=$his->student->feesComp->comp_name." [".date('M',strtotime($his->student->fee_start_date))."]";
-                }else{
-                   $his->fees_component=$his->student->feesComp->comp_name." [".date('M',strtotime($his->student->fee_start_date))."-".date('M',strtotime($his->student->fee_end_date))."]";
-                }
-                //$his->fees_component=$his->student->feesComp->comp_name;
-                $his->total_amount=$his->paid_amount+$his->adjusted_amount;
-                $payment_method=PfPaymentMode::where('mode_id',$his->pf_pay_mode)->first();
-                $his->payment_mode=$payment_method->mode_name;
-                unset($his->student);
-            }
-            $value->payment_history=$history;
-            $comp[]=$value;
+        $fees = PfStuDetails::where(['batch'=>$batch->batch_id,'stu_id'=>$request->get('stu_id')])->pluck('fee_stu_id')->toArray();
+        $transaction = PfTransaction::select('pf_stu_id','active_status','adjusted_amount','paid_amount','trans_id','receipt_no','pf_stu_id','pf_pay_mode','paid_date')->whereIn('pf_stu_id', $fees)->where('active_status', 1)->orderBy('paid_date','DESC')->get();
+        foreach($transaction as $key=>$value){
+            $transaction[$key]['total_paid'] = $value->adjusted_amount != null?($value->paid_amount+$value->adjusted_amount):$value->paid_amount;
+            $transaction[$key]['component_name'] = $value->student->fee_comp_id != null?$value->student->feesComp->comp_name:"";
+            $transaction[$key]['sub_component_name'] = $value->student->sub_comp_id != null?$value->student->feessubComp->name:"";
+            $transaction[$key]['paid_date'] = Carbon::parse($value->paid_date)->format("d-m-Y");
+            //$his->fees_component=$his->student->feesComp->comp_name;
+            $payment_method = PfPaymentMode::where('mode_id',$value->pf_pay_mode)->first();
+            $transaction[$key]['payment_mode'] = $payment_method->mode_name;
+            unset($value->student);
         }
-        return response()->json($comp);
+        return response()->json($transaction);
     }
 
     public function receiptGenerate(Request $request, $receipt_no) {

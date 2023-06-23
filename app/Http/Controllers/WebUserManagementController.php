@@ -202,6 +202,8 @@ class WebUserManagementController extends Controller
                 $data['email_address'] = $request->father_email_address;
                 $data['user_category'] = 1;
 
+                if($profile_details['default_password_type'] != 'admission_number' && $profile_details['default_password_type'] != 'dob')
+                            $password ='';
                 if($profile_details['default_password_type'] == 'mobile_number' || $password == '')
                     $password = bcrypt($request->father_mobile_number);
                 
@@ -216,6 +218,8 @@ class WebUserManagementController extends Controller
                 $data['mobile_number'] = $request->mother_mobile_number;
                 $data['email_address'] = $request->mother_email_address;
                 $data['user_category'] = 2;
+                if($profile_details['default_password_type'] != 'admission_number' && $profile_details['default_password_type'] != 'dob')
+                            $password ='';
 
                 if($profile_details['default_password_type'] == 'mobile_number' || $password == '')
                     $password = bcrypt($request->mother_mobile_number);
@@ -232,6 +236,9 @@ class WebUserManagementController extends Controller
                 $data['mobile_number'] = $request->guardian_mobile_number;
                 $data['email_address'] = $request->guardian_email_address;
                 $data['user_category'] = 9;
+
+                if($profile_details['default_password_type'] != 'admission_number' && $profile_details['default_password_type'] != 'dob')
+                            $password ='';
 
                 if($profile_details['default_password_type'] == 'mobile_number' || $password == '')
                     $password = bcrypt($request->guardian_mobile_number);

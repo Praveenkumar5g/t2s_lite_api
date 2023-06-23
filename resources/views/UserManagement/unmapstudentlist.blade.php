@@ -53,12 +53,7 @@
 												<input type="text" class="form-control form-control-1 input-sm" name="admission_no" id="admission_no" placeholder="Admission No">
 											</div>
 										</div>
-										<div class="form-group col-4">
-											<label>Mobile No </label>
-						                  	<div class="input-group">
-												<input type="text" class="form-control form-control-1 input-sm" name="mobile_no" id="mobile_no" placeholder="Mobile No">
-											</div>
-										</div>
+										
 										<div class="form-group col-4">
 											<label>Class - Section <span class="mandatory_field">*</span></label>
 						                  	<select class="custom-select input-group" id="class_section" name="class_section">
@@ -81,14 +76,6 @@
 								            </button>
 								        </div>
 									</div><hr/>
-
-									<div class="row">
-										<div class="form-group col-12">
-											<a href="{{url('usermanagement/addStudents')}}" name="add_student" id="add_student" class="btn btn-info float-sm-right">
-								                Add Student
-								            </a>
-								        </div>
-									</div>
 
 		                			<table id="example2" class="table table-bordered table-hover table-striped">
 		                  				<thead>

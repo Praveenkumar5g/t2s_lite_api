@@ -56,6 +56,14 @@
 					</ul>
 					<ul class="nav nav-treeview">
 						<li class="nav-item">
+							<a href="{{ url('usermanagement/unmappedstudents') }}" class="{{ Request::segment(count(request()->segments())) == 'unmappedstudents' ? 'nav-link active' : 'nav-link'}}">
+								<i class="fas fa-user nav-icon"></i>
+								<p>Unmapped Students</p>
+							</a>
+						</li>
+					</ul>
+					<ul class="nav nav-treeview">
+						<li class="nav-item">
 							<a href="{{ url('usermanagement/parents') }}" class="{{ Request::segment(count(request()->segments())) == 'parents' ? 'nav-link active' : 'nav-link'}}">
 								<i class="fas fa-user nav-icon"></i>
 								<p>Parents</p>

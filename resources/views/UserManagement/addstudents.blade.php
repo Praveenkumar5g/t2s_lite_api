@@ -166,7 +166,7 @@
 										</div>
 										<div class="row">
 											<div class="form-group">
-												<button type="submit" name="submit" id="submit" class="btn btn-primary">
+												<button type="submit" name="add" id="add" class="btn btn-primary">
 									                Add
 									            </button>
 									        </div>&nbsp;&nbsp;
@@ -370,6 +370,33 @@
 			      	// // } else {
 			        // // 	error.insertAfter(element);
 			      	// }
+			    },
+			    submitHandler: function(form) {
+			    	$.post("{{url('usermanagement/checkMobilenoExists')}}", {father_mobile_number:$('#father_mobile_number').val(), mother_mobile_number:$('#mother_mobile_number').val(),guardian_mobile_number:$('#guardian_mobile_number').val()}, function(response){ 
+			    		var data = JSON.parse(response);
+
+				      	if(data.status>0)
+				      	{
+				      		swal({
+							  	title: "Are you sure?",
+							  	text: "Mobile Number already mapped with student's do you want to continue?",
+							  	type: "warning",
+							  	showCancelButton: true,
+							  	confirmButtonClass: "btn-danger",
+							  	confirmButtonText: "Yes",
+							  	cancelButtonText: "No",
+							}).then((result) => {
+								console.log(result);
+							  	if (result.value) {
+							    	form.submit();
+							  	} else {
+							  		swal("Cancelled", "Please enter a valid "+data.tag+" mobile number", "error");
+							  	}
+							});
+				     	}
+				     	else
+				     		form.submit();
+					});
 			    }
 			})
 			return false;

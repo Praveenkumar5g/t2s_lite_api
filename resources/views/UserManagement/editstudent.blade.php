@@ -160,7 +160,7 @@
 												<div class="input-group">
 													<div class="form-check">
 							                          	<input class="form-check-input" type="checkbox" name="password_update" id="password_update" value='yes'>
-							                          	<label class="form-check-label"> Do you want to update the password field with above changes? </label>
+							                          	<label class="form-check-label"> Update the password field with above changes </label>
 							                        </div>&nbsp;&nbsp;
 												</div>
 											</div>

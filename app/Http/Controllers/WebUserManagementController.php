@@ -107,8 +107,18 @@ class WebUserManagementController extends Controller
                     return $actionBtn;
                 })
                 ->addColumn('unmap', function($row){
-                    $actionBtn = '<a href="'.url('usermanagement/studentunmapwithparent?id='.$row['id']).'" class="exit btn btn-success btn-sm"><i class="fas fa-sign-out-alt nav-icon" style="color:white"></i></a>';
-                    return $actionBtn;
+                    $actionBtn = ' - ';
+                    if($row['father_id']!='' || $row['mother_id']!='' || $row['guardian_id']!='')
+                    {
+                        $parent_id = ($row['father_id']!='')?$row['father_id']:(($row['mother_id']!='')?$row['mother_id']:$row['guardian_id']);
+                        if($parent_id!='')
+                        {
+                            $check_sibilings = UserStudentsMapping::where('parent',$parent_id)->where('student','!=',$row['id'])->pluck('id')->first();
+                            if($check_sibilings!= '')
+                                $actionBtn = '<a href="'.url('usermanagement/studentunmapwithparent?id='.$row['id']).'" class="exit btn btn-success btn-sm"><i class="fas fa-sign-out-alt nav-icon" style="color:white"></i></a>';
+                        }
+                    }
+                       
                 })
                 ->rawColumns(['edit_student','unmap'])
                 ->make(true);
@@ -520,7 +530,7 @@ class WebUserManagementController extends Controller
                     $data['first_name'] = $request->guardian_name;
                     $data['mobile_number'] = $request->guardian_mobile_number;
                     $data['email_address'] = $request->guardian_email_address;
-                    $data['user_category'] = 3;
+                    $data['user_category'] = 9;
                     if((isset($request->password_update) && $request->password_update!='') || $new_user!='')
                     {   
                         if($profile_details['default_password_type'] != 'admission_number' && $profile_details['default_password_type'] != 'dob')
@@ -653,13 +663,18 @@ class WebUserManagementController extends Controller
             }
 
 
-            // mapping the student and parent
-            $student_map = new UserStudentsMapping;
-            $student_map->student = $id;  
-            $student_map->parent = $details->id;
-            $student_map->created_by = $userall_id;
-            $student_map->created_time=Carbon::now()->timezone('Asia/Kolkata');
-            $student_map->save();
+            $check_exists = UserStudentsMapping::where('student',$id)->where('parent',$details->id)->pluck('id')->first();
+
+            if($check_exists=='')
+            {
+                // mapping the student and parent
+                $student_map = new UserStudentsMapping;
+                $student_map->student = $id;  
+                $student_map->parent = $details->id;
+                $student_map->created_by = $userall_id;
+                $student_map->created_time=Carbon::now()->timezone('Asia/Kolkata');
+                $student_map->save();
+            }
             $group_id = $new_group_id!=''?$new_group_id:$old_group_id;
             UserGroupsMapping::insert(['group_id'=>$group_id,'user_table_id'=>$details->id,'user_role'=>Config::get('app.Parent_role'),'user_status'=>1,'group_access'=>2]);
 

@@ -910,14 +910,14 @@ class WebUserManagementController extends Controller
             $data = UserStudents::select('id','user_id','first_name as student_name','roll_number','admission_number','class_config','user_status','dob');
 
             if($request->name!='')
-                $data = $data->where('first_name', 'like', '%' .$request->name. '%')->orwhere('up.first_name', 'like', '%' .$request->name. '%');
+                $data = $data->where('first_name', 'like', '%' .$request->name. '%');
            if($request->class_section!='')
                 $data = $data->where('class_config',$request->class_section);
 
             if($request->admission_no!='')
                 $data = $data->where('admission_number', 'like', '%' .$request->admission_no. '%');
            
-            $data = $data->orderBy('user_students.created_time','desc')->get();
+            $data = $data->orderBy('created_time','desc')->get();
             $checked_records = [];
 
             foreach ($data as $key => $value) {  

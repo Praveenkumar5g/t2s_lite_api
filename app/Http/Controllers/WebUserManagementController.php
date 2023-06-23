@@ -698,7 +698,7 @@ class WebUserManagementController extends Controller
             if($request->admission_no!='')
                 $data = $data->where('s.admission_number', 'like', '%' .$request->admission_no. '%');
             if($request->mobile_no!='')
-                $data = $data->where('user_parent.mobile_number', 'like', '%' .$request->mobile_no. '%');
+                $data = $data->where('user_parents.mobile_number', 'like', '%' .$request->mobile_no. '%');
            
             $data = $data->get(['user_parents.id','user_parents.user_id','s.first_name as student_name', 'p.parent', 'user_parents.mobile_number','user_parents.user_category','s.class_config','user_parents.first_name as parent_name','s.dob']);
             $checked_records = [];

@@ -895,4 +895,56 @@ class WebUserManagementController extends Controller
             return Datatables::of($user_list)->addIndexColumn()->make(true);
         }
     }  
+
+    public function unmappedstudents()
+    {
+        $data['class_configs'] = AcademicClassConfiguration::select('academic_class_configuration.id',DB::raw("CONCAT(c.class_name,'-',s.section_name) as class_section"))->join('academic_classes as c', 'c.id', '=', 'academic_class_configuration.class_id')->join('academic_sections as s', 's.id', '=', 'academic_class_configuration.section_id')->get()->toArray();
+        return view('UserManagement.unmapstudentlist',$data);
+    }
+
+    // get list of students details
+    public function getunmapStudent_list(Request $request)
+    {
+        $user_list =[];
+        if ($request->ajax()) {
+            $data = UserStudents::select('id','user_id','first_name as student_name','roll_number','admission_number','class_config','user_status','dob');
+
+            if($request->name!='')
+                $data = $data->where('first_name', 'like', '%' .$request->name. '%')->orwhere('up.first_name', 'like', '%' .$request->name. '%');
+           if($request->class_section!='')
+                $data = $data->where('class_config',$request->class_section);
+
+            if($request->admission_no!='')
+                $data = $data->where('admission_number', 'like', '%' .$request->admission_no. '%');
+           
+            $data = $data->orderBy('user_students.created_time','desc')->get();
+            $checked_records = [];
+
+            foreach ($data as $key => $value) {  
+
+                $check_unmapped = UserStudentsMapping::where('student',$value->id)->pluck('id')->first();
+                if($check_unmapped=='')
+                {
+                    $user_list[$value->id]['id']=$value->id;
+                    $user_list[$value->id]['user_id']=$value->user_id;
+                    $user_list[$value->id]['student_name']=$value->student_name;
+                    $user_list[$value->id]['roll_no']=$value->roll_number;
+                    $user_list[$value->id]['admission_number']=$value->admission_number;
+                    $user_list[$value->id]['dob']=date('d-m-Y',strtotime($value->dob));
+                    $user_list[$value->id]['class_config_id']=$value->class_config;
+                    $user_list[$value->id]['class_section']=$value->classsectionName();
+                    $user_list[$value->id]['student_status']=$value->user_status;
+                }
+            }
+
+            return Datatables::of($user_list)->addIndexColumn()
+                ->addColumn('edit_student', function($row){
+                    $actionBtn = '<a href="'.url('usermanagement/editStudent?id='.$row['id']).'" class="edit btn btn-success btn-sm"><i class="fas fa-edit nav-icon"></i></a>';
+                    return $actionBtn;
+                })
+                
+                ->rawColumns(['edit_student'])
+                ->make(true);
+        }
+    } 
 }

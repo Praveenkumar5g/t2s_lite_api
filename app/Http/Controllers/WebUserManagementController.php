@@ -118,7 +118,8 @@ class WebUserManagementController extends Controller
                                 $actionBtn = '<a href="'.url('usermanagement/studentunmapwithparent?id='.$row['id']).'" class="exit btn btn-success btn-sm"><i class="fas fa-sign-out-alt nav-icon" style="color:white"></i></a>';
                         }
                     }
-                       
+                    
+                    return $actionBtn;  
                 })
                 ->rawColumns(['edit_student','unmap'])
                 ->make(true);

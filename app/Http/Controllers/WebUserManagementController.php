@@ -675,4 +675,56 @@ class WebUserManagementController extends Controller
         else
             echo '<prE>';print_r(['status'=>false,'message'=>'Please configure template details!...']);
     }
+
+    // parent list
+    public function parents()
+    {
+        $data['class_configs'] = AcademicClassConfiguration::select('academic_class_configuration.id',DB::raw("CONCAT(c.class_name,'-',s.section_name) as class_section"))->join('academic_classes as c', 'c.id', '=', 'academic_class_configuration.class_id')->join('academic_sections as s', 's.id', '=', 'academic_class_configuration.section_id')->get()->toArray();
+        return view('UserManagement.parentlist',$data);
+    }
+
+    // get list of students details
+    public function getParent_list(Request $request)
+    {
+        $user_list =[];
+        if ($request->ajax()) {
+            $data = UserParents::join('user_students_mapping as p', 'user_parents.id', '=', 'p.parent')->leftjoin('user_students as s', 's.id', '=', 'p.student');
+
+            if($request->name!='')
+                $data = $data->where('s.first_name', 'like', '%' .$request->name. '%')->orwhere('up.first_name', 'like', '%' .$request->name. '%');
+           if($request->class_section!='')
+                $data = $data->where('s.class_config',$request->class_section);
+
+            if($request->admission_no!='')
+                $data = $data->where('s.admission_number', 'like', '%' .$request->admission_no. '%');
+            if($request->mobile_no!='')
+                $data = $data->where('user_parent.mobile_number', 'like', '%' .$request->mobile_no. '%');
+           
+            $data = $data->get(['user_parents.id','user_parents.user_id','s.first_name as student_name', 'p.parent', 'user_parents.mobile_number','user_parents.user_category','s.class_config','user_parents.first_name as parent_name','s.dob']);
+            $checked_records = [];
+            foreach ($data as $key => $value) {        
+                $user_list[$value->id]['id']=$value->id;    
+                $user_list[$value->id]['user_id']=$value->user_id;
+                $user_list[$value->id]['parent_name']=$value->parent_name;
+                $user_list[$value->id]['mobile_number']=$value->mobile_number;
+                $user_list[$value->id]['class_section']=$value->classsectionName();
+                if(!in_array($value->user_id,$checked_records))
+                {
+                    $user_list[$value->id]['dob1'] = '-';
+                    $user_list[$value->id]['dob2'] = '-';
+                    $user_list[$value->id]['dob3'] = '-';
+                }
+                if($user_list[$value->id]['dob1']=='-')
+                    $user_list[$value->id]['dob1'] = date('d-m-Y',strtotime($value->dob));
+                else if($user_list[$value->id]['dob2']=='-')
+                    $user_list[$value->id]['dob2'] = date('d-m-Y',strtotime($value->dob));
+                else if($user_list[$value->id]['dob3']=='-')
+                    $user_list[$value->id]['dob3'] = date('d-m-Y',strtotime($value->dob));
+                
+                array_push($checked_records,$value->user_id);
+                
+            }
+            return Datatables::of($user_list)->addIndexColumn()->make(true);
+        }
+    }  
 }

@@ -40,5 +40,9 @@ Route::group(['middleware' => 'auth.webcheck'], function ($router) {
     Route::post('/usermanagement/checkMobileno',[WebUserManagementController::class,'checkMobileno']);
     Route::post('/usermanagement/checkAdmissionno',[WebUserManagementController::class,'checkAdmissionno']);
     Route::get('/changeDobformat',[WebUserManagementController::Class,'changeDobformat']);
+    Route::post('/usermanagement/checkMobilenoExists',[WebUserManagementController::class,'checkMobilenoExists']);
+    Route::get('/usermanagement/studentunmapwithparent',[WebUserManagementController::class,'studentunmapwithparent']);
+    Route::get('/usermanagement/parents',[WebUserManagementController::class,'parents']);
+    Route::post('/usermanagement/getParent_list',[WebUserManagementController::class,'getParent_list']);
     /*user management -- Ends*/
 });

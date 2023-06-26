@@ -1563,6 +1563,7 @@ class APIConfigurationsController extends Controller
 				$approval_pending = count(Communications::select('id')->where('group_id',$group_value['id'])->whereNull('approval_status')->get()->toArray());
 
 				$parent_ids = UserGroupsMapping::where(['user_role'=>Config::get('app.Parent_role'),'group_id'=>$group_value['id']])->pluck('user_table_id')->toArray();
+				$all_user_count = UserGroupsMapping::where(['group_id'=>$group_value['id']])->pluck('user_table_id')->toArray();
 				$parent_online = 0;
 				if(!empty($parent_ids))
 				{
@@ -1603,6 +1604,7 @@ class APIConfigurationsController extends Controller
 					$classteacher_group[$group_key]['class_config'] = $group_value['class_config'];
 					$classteacher_group[$group_key]['classteacher']=($groupaccess[$group_value['id']] == 1)?'yes':'no';
 					$classteacher_group[$group_key]['total_parent_count'] =(!empty($parent_ids))?count($parent_ids):0;
+					$classteacher_group[$group_key]['all_user_count'] =(!empty($all_user_count))?count($all_user_count):0;
 					$classteacher_group[$group_key]['subject_list']= $subject_list;
 					$classteacher_group[$group_key]['uploaded_homeworks_count']=(!empty($approved_subject_homeworks))?count($approved_subject_homeworks):0;
 
@@ -1619,6 +1621,7 @@ class APIConfigurationsController extends Controller
 					$staff_group[$group_key]['class_config'] = $group_value['class_config'];
 					$staff_group[$group_key]['classteacher']=($groupaccess[$group_value['id']] == 1)?'yes':'no';
 					$staff_group[$group_key]['total_parent_count'] =(!empty($parent_ids))?count($parent_ids):0;
+					$staff_group[$group_key]['all_user_count'] =(!empty($all_user_count))?count($all_user_count):0;
 					$staff_group[$group_key]['subject_list']= $subject_list;
 					$staff_group[$group_key]['uploaded_homeworks_count']=(!empty($approved_subject_homeworks))?count($approved_subject_homeworks):0;
 				}

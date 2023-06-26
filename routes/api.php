@@ -158,7 +158,7 @@ Route::group(['middleware' => 'auth.connect','prefix' => 'user'], function ($rou
     Route::post('/homework_details_report',[APIHomeworkController::class,'homework_details_report']);
     Route::post('/delete_homework_attachment',[APIHomeworkController::class,'delete_homework_attachment']);
     Route::post('/list_homework_status',[APIHomeworkController::class,'list_homework_status']);
-
+    Route::post('/get_group_students',[APICommunicationController::class,'get_group_students']);
     /*News and Events -- Start*/
     Route::post('/store_news_events',[APINewsEventsController::class,'store_news_events']);
     Route::get('/mainscreen_view_newsevents',[APINewsEventsController::class,'mainscreen_view_newsevents']);

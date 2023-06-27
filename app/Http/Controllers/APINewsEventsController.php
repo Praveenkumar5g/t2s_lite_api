@@ -478,7 +478,7 @@ class APINewsEventsController extends Controller
             $user_table_id = UserParents::where(['user_id'=>$user->user_id])->first();//fetch id from user all table to store notification triggered user
             $student_id = UserStudentsMapping::where(['parent'=>$user_table_id->id])->pluck('student')->toArray();
             $class_config = UserStudents::whereIn('id',$student_id)->pluck('class_config')->first();
-            $newsevents=$newsevents->where('visible_to','all')->orWhere('visible_to', 'like', '%' .$class_config. '%');
+            $newsevents=$newsevents->where('visible_to','all')->orWhere('visible_to', 'like', '%' .$class_config. '%')->where('module_type',2);
         }
         $newsevents=$newsevents->orderBy('event_date','DESC')->get()->toArray();//fetch all the news data
         $upcoming_events = $completed_events = [];

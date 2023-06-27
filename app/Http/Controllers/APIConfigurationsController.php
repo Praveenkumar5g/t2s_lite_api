@@ -2752,8 +2752,8 @@ class APIConfigurationsController extends Controller
 
         	if($upload_type == 'import')
         	{
-                $class_id = AcademicClasses::where('division_id',$row['division'])->where('class_name',$row['class_name'])->pluck('id')->first();
-                $section_id = AcademicSections::where('division_id',$row['division'])->where('section_name',$row['section_name'])->pluck('id')->first();
+                $class_id = AcademicClasses::where('class_name',$row['class_name'])->pluck('id')->first();
+                $section_id = AcademicSections::where('section_name',$row['section_name'])->pluck('id')->first();
         		if($class_id!='' && $section_id!='')
                 $class_config_id = AcademicClassConfiguration::where(['class_id'=>$class_id,'section_id'=>$section_id])->pluck('id')->first();
         	}
@@ -2888,9 +2888,7 @@ class APIConfigurationsController extends Controller
                     $schoolusers->save();
             	}
             }
-            $inserted_records++;
-            exit;
-           
+            $inserted_records++;          
         }
 
         if($inserted_records>0) //check empty array

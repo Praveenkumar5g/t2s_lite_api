@@ -481,14 +481,25 @@ class APICommunicationController extends Controller
                 'last_seen'=>$user->last_login
             ]);
             $visible_to = UserGroups::where('id',$group_id)->pluck('class_config')->first();
-            $communication_id_list = Communications::whereIn('group_id',$group_id);
+            // only chat messages list
+            $chat_id_list = Communications::whereIn('group_id',$group_id);
             if($visible_to!='')
-                $communication_id_list =$communication_id_list->Where('visible_to', 'like', '%' .$visible_to. '%')->orWhere('visible_to','all');
+                $chat_id_list =$chat_id_list->Where(['visible_to'=>'all','communication_type'=>1])->orWhere('visible_to', 'like', '%' .$visible_to. '%');
             
             if($user->user_role == Config::get('app.Parent_role'))
-                $communication_id_list =$communication_id_list->whereNull('message_status')->orWhere('message_status',2);
+                $chat_id_list =$chat_id_list->whereNull('message_status')->orWhere('message_status',2);
 
-            $communication_id_list =$communication_id_list->pluck('id')->toArray();
+            $chat_id_list =$chat_id_list->pluck('id')->toArray();
+
+            // remaining chat messages list
+            $remaining_id_list =  Communications::whereIn('group_id',$group_id)->where('communication_type','!=',1);
+            
+            if($user->user_role == Config::get('app.Parent_role'))
+                $remaining_id_list =$remaining_id_list->whereNull('message_status')->orWhere('message_status',2);
+
+            $remaining_id_list =$remaining_id_list->pluck('id')->toArray();
+
+            $communication_id_list = array_merge($chat_id_list,$remaining_id_list);
 
             $get_class_config= UserGroups::where('id',$request->group_id)->pluck('class_config')->first();
             $newsevents_id_list = NewsEvents::Where('visible_to', 'like', '%' .$get_class_config. '%')->orWhere('visible_to','all');

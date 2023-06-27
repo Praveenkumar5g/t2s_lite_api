@@ -1606,7 +1606,7 @@ class APICommunicationController extends Controller
                 $student_details = UserStudents::select('id','first_name')->where('id',$student_id)->get()->first();
                 $parent_details = UserParents::select('first_name','user_category')->where('id',$value)->get()->first();
                 $user_category = $parent_details->user_category == 1?'F/O':($parent_details->user_category == 2?'M/O':'G/O');
-                $student_list = ([
+                $student_list[]= ([
                     'id'=>$student_id,
                     'name'=>$student_details->first_name.' '.$user_category.' '.$parent_details->first_name
                 ]); 

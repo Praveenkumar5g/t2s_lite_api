@@ -591,18 +591,15 @@ class APICommunicationController extends Controller
                         }
                         else if($message_details->distribution_type==7)
                         {
-                            $student_details = UserStudents::whereIn('id',explode(',',$message_details->visible_to))->get()->toArray();
+                            $student_ids = explode(',',$message_details->visible_to);
                             $student_parent_names = [];
-                            if($value['communication_id'] == 639)
+                            foreach($student_ids as $student_key => $student_value)
                             {
-                                echo '<pre>';print_r($student_details);exit;
-                            }
-                            foreach($student_details as $student_key => $student_value)
-                            {
-                                $parent_id = UserStudentsMapping::where(['student'=>$student_value['id']])->pluck('parent')->toArray();
+                                $student_details = UserStudents::whereIn('id',$student_value)->get()->first();
+                                $parent_id = UserStudentsMapping::where(['student'=>$student_details->id])->pluck('parent')->toArray();
                                 $parent_details = UserParents::where('id',$parent_id)->get()->first();
                                 $user_category = ($parent_details->user_category == Config::get('app.Father'))?'F/O':($parent_details->user_category == Config::get('app.Mother')?'M/O':'G/O');
-                                $student_parent_names[] = $student_value['first_name'].' '. $user_category.'  '.$parent_details->first_name;
+                                $student_parent_names[] = $student_details->first_name.' '. $user_category.'  '.$parent_details->first_name;
                             }
 
                             if(!empty($student_parent_names))

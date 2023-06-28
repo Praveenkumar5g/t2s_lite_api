@@ -602,7 +602,7 @@ class APICommunicationController extends Controller
                             }
 
                             if(!empty($student_parent_names))
-                                $visibility = 'Visible to '.implode(',',$student_parent_names);     
+                                $visibility = 'Visible to '.implode(',',$student_details);     
                             else
                                 $visibility = 'Visible to Everyone';                
                         }                

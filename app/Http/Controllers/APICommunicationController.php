@@ -595,7 +595,7 @@ class APICommunicationController extends Controller
                             $student_parent_names = [];
                             foreach($student_ids as $student_key => $student_value)
                             {
-                                $student_details = UserStudents::whereIn('id',$student_value)->get()->first();
+                                $student_details = UserStudents::where('id',$student_value)->get()->first();
                                 $parent_id = UserStudentsMapping::where(['student'=>$student_details->id])->pluck('parent')->toArray();
                                 $parent_details = UserParents::where('id',$parent_id)->get()->first();
                                 $user_category = ($parent_details->user_category == Config::get('app.Father'))?'F/O':($parent_details->user_category == Config::get('app.Mother')?'M/O':'G/O');

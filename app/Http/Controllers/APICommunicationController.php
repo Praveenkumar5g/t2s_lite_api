@@ -480,8 +480,8 @@ class APICommunicationController extends Controller
                 'name'=>$userdetails->first_name,
                 'last_seen'=>$user->last_login
             ]);
-            $visible_to = UserGroups::where('id',$group_id)->pluck('class_config')->first();
-            echo $visible_to;exit;
+            $visible_to = UserGroups::where('id',$request->group_id)->pluck('class_config')->first();
+            echo '<pre>';print_r($group_id);exit;
             // only chat messages list
             $chat_id_list = Communications::whereIn('group_id',$group_id);
             if($visible_to!='')

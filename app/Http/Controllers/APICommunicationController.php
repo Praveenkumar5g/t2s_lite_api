@@ -481,9 +481,8 @@ class APICommunicationController extends Controller
                 'last_seen'=>$user->last_login
             ]);
             $visible_to = UserGroups::where('id',$request->group_id)->pluck('class_config')->first();
-            echo '<pre>';print_r($group_id);echo $visible_to;exit;
             // only chat messages list
-            $chat_id_list = Communications::whereIn('group_id',$group_id);
+            $chat_id_list = Communications::whereIn('groupf_id',$group_id);
             if($visible_to!='')
                 $chat_id_list =$chat_id_list->Where(['visible_to'=>'all','communication_type'=>1])->orWhere('visible_to', 'like', '%' .$visible_to. '%')->where('communication_type',1);
             

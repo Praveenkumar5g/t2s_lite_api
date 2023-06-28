@@ -2963,8 +2963,7 @@ class APIConfigurationsController extends Controller
 		}
 
 		// fetch all users mobile number under role staff,parent and management
-		$userslist = SchoolUsers::whereIn('user_role',[2,3,5])->where('school_profile_id',$user->school_profile_id)->get()->toArray();
-		// echo '<pre>';print_r($userslist);exit;
+		$userslist = SchoolUsers::whereIn('user_role',[3])->where('school_profile_id',$user->school_profile_id)->get()->toArray();
 		// get the common id to insert
 		if($user->user_role == Config::get('app.Admin_role'))//check role and get current user id
             $user_table_id = UserAdmin::where(['user_id'=>$user->user_id])->first();
@@ -3017,7 +3016,7 @@ class APIConfigurationsController extends Controller
 	      			// replace the mobile and password with corresponding value
             	$message = str_replace("*mobileno*",$value['user_mobile_number'],$templates->message);
             	$message = str_replace("*password*",$password,$message);
-
+            	// echo $message;exit;
             	// call send sms function
 			    $delivery_details = APISmsController::SendSMS($value['user_mobile_number'],$message,$templates->dlt_template_id);
 

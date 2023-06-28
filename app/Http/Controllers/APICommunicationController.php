@@ -653,7 +653,7 @@ class APICommunicationController extends Controller
                             'important'=>$message_details->important,//0-no,1-yes
                             'communication_type'=>($value['communication_type'] ==1)?$message_details->communication_type:3,//1-chat,2-homework,3-news and events
                             'caption'=>$message_details->caption_message,
-
+                            'distribution_type'=>$message_details->distribution_type,
                             'approval_status'=>($message_details->approval_status == null)?0:$message_details->approval_status,//0-waiting for approval,1-approval,2-denied
                             'read_count'=>(isset($readcount_data[$value['communication_type']]) && isset($readcount_data[$value['communication_type']][$value['communication_id']]))?$readcount_data[$value['communication_type']][$value['communication_id']]:0,
 

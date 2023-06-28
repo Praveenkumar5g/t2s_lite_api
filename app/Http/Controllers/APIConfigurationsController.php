@@ -1548,7 +1548,7 @@ class APIConfigurationsController extends Controller
 		{
 			$groupids = array_column($group_ids,'group_id');
 			$groupaccess = array_column($group_ids,'group_access','group_id');
-			$group_list = UserGroups::select('id','group_name','group_description','class_config')->where('group_type',2)->whereIn('id',$groupids);
+			$group_list = UserGroups::select('id','group_name','group_description','class_config')->where('grddoup_type',2)->whereIn('id',$groupids);
 			if($request->student_id!='')
 			{
 				$config_id = UserStudents::where('id',$request->student_id)->pluck('class_config')->first();

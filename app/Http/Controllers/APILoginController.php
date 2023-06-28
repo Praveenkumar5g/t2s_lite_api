@@ -346,6 +346,7 @@ class APILoginController extends Controller
 
             $user_table_id = UserParents::where(['user_id'=>$user->user_id])->first();
             $student_id = UserStudentsMapping::where(['parent'=>$user_table_id->id])->pluck('student')->first();
+            echo '<pre>';print_r($student_id);exit;
             $loginstudent_id = $student_id;
 
             $siblingstudent_ids = UserStudentsMapping::where(['parent'=>$user_table_id->id])->pluck('student')->toArray();

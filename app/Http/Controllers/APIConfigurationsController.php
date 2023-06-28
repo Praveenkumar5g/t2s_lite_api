@@ -1555,6 +1555,7 @@ class APIConfigurationsController extends Controller
 				$group_list = $group_list->where('class_config',$config_id);
 			}
 			$group_list = $group_list->get()->toArray(); //class groups
+			echo '<pre>';print_r($group_list);exit;
 			foreach ($group_list as $group_key => $group_value) {
 				$classteacher_name ='';
 				$classteacher_id = AcademicClassConfiguration::where('id',$group_value['class_config'])->pluck('class_teacher')->first();

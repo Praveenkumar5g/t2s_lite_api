@@ -596,9 +596,9 @@ class APICommunicationController extends Controller
                             foreach($student_details as $student_key => $student_value)
                             {
                                 $parent_id = UserStudentsMapping::where(['student'=>$student_value['id']])->pluck('parent')->toArray();
-                                $parent_details = UserParents::where('id',$parent_id)->get()->first();
-                                $user_category = ($parent_details->user_category == Config::get('app.Father'))?'F/O':($parent_details->user_category == Config::get('app.Mother')?'M/O':'G/O');
-                                $student_parent_names[] = $student_value['first_name'].' '. $user_category.'  '.$parent_details->first_name;
+                                // $parent_details = UserParents::where('id',$parent_id)->get()->first();
+                                // $user_category = ($parent_details->user_category == Config::get('app.Father'))?'F/O':($parent_details->user_category == Config::get('app.Mother')?'M/O':'G/O');
+                                $student_parent_names[] = $student_value['first_name'];
                             }
 
                             if(!empty($student_parent_names))
@@ -1604,11 +1604,11 @@ class APICommunicationController extends Controller
             foreach ($parent_ids as $key => $value) {
                 $student_id = UserStudentsMapping::where('parent',$value)->pluck('student')->first();
                 $student_details = UserStudents::select('id','first_name')->where('id',$student_id)->get()->first();
-                $parent_details = UserParents::select('first_name','user_category')->where('id',$value)->get()->first();
-                $user_category = $parent_details->user_category == 1?'F/O':($parent_details->user_category == 2?'M/O':'G/O');
+                // $parent_details = UserParents::select('first_name','user_category')->where('id',$value)->get()->first();
+                // $user_category = $parent_details->user_category == 1?'F/O':($parent_details->user_category == 2?'M/O':'G/O');
                 $student_list[]= ([
                     'id'=>$student_id,
-                    'name'=>$student_details->first_name.' '.$user_category.' '.$parent_details->first_name
+                    'name'=>$student_details->first_name
                 ]); 
             }
             return response()->json($student_list);

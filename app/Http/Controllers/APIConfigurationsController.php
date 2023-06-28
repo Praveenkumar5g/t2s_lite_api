@@ -2960,8 +2960,8 @@ class APIConfigurationsController extends Controller
 		}
 
 		// fetch all users mobile number under role staff,parent and management
-		$userslist = SchoolUsers::whereIn('user_role',[3])->where('school_profile_id',$user->school_profile_id)->where('id',70)->get()->toArray();
-		// echo '<pre>';print_r($userslist);
+		$userslist = SchoolUsers::whereIn('user_role',[3])->where('school_profile_id',$user->school_profile_id)->get()->toArray();
+		echo '<pre>';print_r($userslist);
 		// get the common id to insert
 		if($user->user_role == Config::get('app.Admin_role'))//check role and get current user id
             $user_table_id = UserAdmin::where(['user_id'=>$user->user_id])->first();

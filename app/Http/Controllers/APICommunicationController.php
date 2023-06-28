@@ -1605,7 +1605,7 @@ class APICommunicationController extends Controller
             foreach ($parent_ids as $key => $value) {
                 $student_id = UserStudentsMapping::where('parent',$value)->pluck('student')->first();
                 $student_details = UserStudents::select('id','first_name')->where('id',$student_id)->get()->first();
-                $parent_details = UserParents::select('first_name','user_category')->where('id',$value)->get()->first();
+                $parent_details = UserParents::select('first_name','user_category','id')->where('id',$value)->get()->first();
                 $user_category = $parent_details->user_category == 1?'F/O':($parent_details->user_category == 2?'M/O':'G/O');
                 $student_list[]= ([
                     'id'=>$parent_details->id,

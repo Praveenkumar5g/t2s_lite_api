@@ -591,7 +591,7 @@ class APICommunicationController extends Controller
                         }
                         else if($message_details->distribution_type==7)
                         {
-                            $student_ids = explode(',',$message_details->visible_to);
+                            $parents_ids = explode(',',$message_details->visible_to);
                             $student_parent_names = [];
                             foreach($parents_ids as $parents_key => $parents_value)
                             {

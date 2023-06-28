@@ -595,9 +595,9 @@ class APICommunicationController extends Controller
                             $student_parent_names = [];
                             foreach($student_ids as $student_key => $student_value)
                             {
-                                $student_details = UserStudents::where('id',$student_value)->get()->first();
-                                $parent_id = UserStudentsMapping::where(['student'=>$student_details->id])->pluck('parent')->toArray();
-                                $parent_details = UserParents::where('id',$parent_id)->get()->first();
+                                $parent_details = UserParents::where('id',$parents_value)->get()->first();
+                                $student_id = UserStudentsMapping::where(['parent'=>$parent_details->id])->pluck('student')->toArray();
+                                $student_details = UserStudents::where('id',$student_id)->get()->first();
                                 $user_category = ($parent_details->user_category == Config::get('app.Father'))?'F/O':($parent_details->user_category == Config::get('app.Mother')?'M/O':'G/O');
                                 $student_parent_names[] = $student_details->first_name.' '. $user_category.'  '.$parent_details->first_name;
                             }
@@ -1608,7 +1608,7 @@ class APICommunicationController extends Controller
                 $parent_details = UserParents::select('first_name','user_category')->where('id',$value)->get()->first();
                 $user_category = $parent_details->user_category == 1?'F/O':($parent_details->user_category == 2?'M/O':'G/O');
                 $student_list[]= ([
-                    'id'=>$student_id,
+                    'id'=>$parent_details->id,
                     'name'=>$student_details->first_name.' '.$user_category.' '.$parent_details->first_name
                 ]); 
             }

@@ -349,7 +349,6 @@ class APILoginController extends Controller
             $loginstudent_id = $student_id;
 
             $siblingstudent_ids = UserStudentsMapping::where(['parent'=>$user_table_id->id])->pluck('student')->toArray();
-            echo '<pre>';print_r($siblingstudent_ids);exit;
             $siblingstudent_details =[];
             if(!empty($siblingstudent_ids))
             {

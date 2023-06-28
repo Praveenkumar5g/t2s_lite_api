@@ -593,6 +593,10 @@ class APICommunicationController extends Controller
                         {
                             $student_details = UserStudents::whereIn('id',explode(',',$message_details->visible_to))->get()->toArray();
                             $student_parent_names = [];
+                            if($value['communication_id'] == 639)
+                            {
+                                echo '<pre>';print_r($student_details);exit;
+                            }
                             foreach($student_details as $student_key => $student_value)
                             {
                                 $parent_id = UserStudentsMapping::where(['student'=>$student_value['id']])->pluck('parent')->toArray();
@@ -602,7 +606,7 @@ class APICommunicationController extends Controller
                             }
 
                             if(!empty($student_parent_names))
-                                $visibility = 'Visible to '.implode(',',$student_details);     
+                                $visibility = 'Visible to '.implode(',',$student_parent_names);     
                             else
                                 $visibility = 'Visible to Everyone';                
                         }                

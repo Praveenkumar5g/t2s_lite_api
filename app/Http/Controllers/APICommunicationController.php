@@ -593,7 +593,7 @@ class APICommunicationController extends Controller
                         {
                             $student_ids = explode(',',$message_details->visible_to);
                             $student_parent_names = [];
-                            foreach($student_ids as $student_key => $student_value)
+                            foreach($parents_ids as $parents_key => $parents_value)
                             {
                                 $parent_details = UserParents::where('id',$parents_value)->get()->first();
                                 $student_id = UserStudentsMapping::where(['parent'=>$parent_details->id])->pluck('student')->toArray();

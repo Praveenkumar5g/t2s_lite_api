@@ -118,7 +118,7 @@ class PayfeesController extends Controller
 
         $all_years=[];
         $all_years = SchoolAcademicYears::where('school_profile_id',$user_data['school_profile_id'])->pluck('academic_year')->toArray();
-        return response()->json($all_years);
+        return response()->json(compact('all_years'));
     }
 
     // student payment history

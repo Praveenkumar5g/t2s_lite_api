@@ -349,7 +349,7 @@ class PayfeesController extends Controller
             {
                 /* Fetch the record from table which has student's class */
                 $pf_payment_gateway = PfPaymentGateway::whereRaw('FIND_IN_SET("'.$class_id.'",classes)')->first();
-                if(count($pf_payment_gateway) == 1)
+                if(!empty($pf_payment_gateway))
                 {
                     $result_array['cred_object'] = $pf_payment_gateway;
                     /* If sub_receipt is 'Y', the school follow different receipt patterns for each bank account */
@@ -390,7 +390,7 @@ class PayfeesController extends Controller
                 if(DB::connection('school_db')->getPdo()) {
                     /* Fetch records from pf_stu_details table for the student */
                     $pf_stu_fees = PfStuDetails::where('stu_id',$student_id)->pluck('amount','fee_stu_id')->toArray();
-                    if(count($pf_stu_fees) > 0){
+                    if(!empty($pf_stu_fees)){
                         /* Total fees configured for the student */
                         $academic_total_fees = array_sum($pf_stu_fees);
                         /* pf_stu_details IDs for the student */
@@ -414,7 +414,7 @@ class PayfeesController extends Controller
 
         $status_message = "";
         /* If past academic year fee pending */
-        if(count($academic_pending_fees) > 0){
+        if(!empty($academic_pending_fees)){
             foreach($academic_pending_fees as $batch_year=>$pending_fee){
                 $status_message = $status_message." : Academic Year - ".$batch_year.", Pending Fee - ".$pending_fee;
             }

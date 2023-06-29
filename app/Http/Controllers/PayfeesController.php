@@ -12,9 +12,11 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use App\Models\SchoolAcademicYears;
+use App\Models\PaymentApiConfig;
 use App\Models\PfSubComponents;
 use App\Models\SchoolDatabase;
 use App\Models\Configurations;
+use App\Models\PfMixedConfig;
 use App\Models\PfPaymentMode;
 use App\Models\PfTransaction;
 use App\Models\SchoolProfile;
@@ -365,8 +367,6 @@ class PayfeesController extends Controller
     {
         $user_data = auth()->user();
         try {
-
-            $config = ErpRegistration::where('school_profile_id',$user_data['school_profile_id'])->first();  
             $student_id = $request->get('student_id');
             $school_id = $user_data['school_profile_id'];
             $batches_array = SchoolAcademicYears::where('school_profile_id',$user_data['school_profile_id'])->pluck('academic_year')->toArray();

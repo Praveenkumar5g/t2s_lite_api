@@ -1717,7 +1717,7 @@ class APIConfigurationsController extends Controller
 		// Save last login in DB
         $user = auth()->user();
 
-        $staff_list = UserStaffs::select('id','first_name','mobile_number','user_category','user_status','dob','doj','employee_no','department');
+        $staff_list = UserStaffs::select('id','first_name','mobile_number','user_category','user_status','dob','doj','employee_no','department','profile_image');
         if(isset($request->search) && $request->search!='')
         {
         	$category = (strpos('teaching staff',strtolower($request->search)))?Config::get('app.Teaching_staff'):((strpos('non teaching staff',strtolower($request->search)))?Config::get('app.Non-Teaching_staff'):'');
@@ -1736,6 +1736,7 @@ class APIConfigurationsController extends Controller
             $staff_list[$key]['user_status'] = $value['user_status'];
             $staff_list[$key]['class'] = (!empty($classessections))?$classessections->classsectionName():'';
             $staff_list[$key]['designation'] = $value['user_category'];
+            $staff_list[$key]['profile_image'] = (isset($value['profile_image']))?$value['profile_image']:'';
         }
         return response()->json($staff_list);
 	}
@@ -3357,7 +3358,7 @@ class APIConfigurationsController extends Controller
 		// Save last login in DB
         $user = auth()->user();
 
-        $admin_list = UserAdmin::select('id','first_name','mobile_number','user_status','dob','doj','employee_no');
+        $admin_list = UserAdmin::select('id','first_name','mobile_number','user_status','dob','doj','employee_no','profile_image');
         if(isset($request->search) && $request->search!='')
         {
         	$admin_list = $admin_list->where('first_name', 'like', '%' . $request->search . '%')->orWhere('mobile_number', 'like', '%' . $request->search . '%')->orWhere('dob', 'like', '%' . $request->search . '%')->orWhere('doj', 'like', '%' . $request->search . '%')->orWhere('employee_no', 'like', '%' . $request->search . '%');
@@ -3369,6 +3370,7 @@ class APIConfigurationsController extends Controller
             $admin_list[$key]['employee_no'] = $value['employee_no'];
             $admin_list[$key]['user_status'] = $value['user_status'];
             $admin_list[$key]['designation'] = 'Admin';
+            $admin_list[$key]['profile_image'] = (isset($value['profile_image']))?$value['profile_image']:'';
         }
         return response()->json($admin_list);
 	}
@@ -3379,7 +3381,7 @@ class APIConfigurationsController extends Controller
 		// Save last login in DB
         $user = auth()->user();
 
-        $management_list = UserManagements::select('id','first_name','mobile_number','user_category','user_status','dob','doj','employee_no');
+        $management_list = UserManagements::select('id','first_name','mobile_number','user_category','user_status','dob','doj','employee_no','profile_image');
         if(isset($request->search) && $request->search!='')
         {
         	$category = (strpos('main head',strtolower($request->search)))?6:((strpos('chairman',strtolower($request->search)))?7:((strpos('principal',strtolower($request->search)))?8:((strpos('headmaster',strtolower($request->search)))?8:'')));
@@ -3395,7 +3397,7 @@ class APIConfigurationsController extends Controller
             $management_list[$key]['employee_no'] = $value['employee_no'];
             $management_list[$key]['user_status'] = $value['user_status'];
             $management_list[$key]['designation'] = $designation;
-            ;
+            $management_list[$key]['profile_image'] = (isset($value['profile_image']))?$value['profile_image']:'';
         }
         return response()->json($management_list);
 	}

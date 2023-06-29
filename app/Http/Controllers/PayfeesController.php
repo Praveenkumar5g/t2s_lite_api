@@ -93,10 +93,10 @@ class PayfeesController extends Controller
         $inclusive_detail='';
         $api_config = PaymentApiConfig::where('school_profile_id',$user_data['school_profile_id'])->first();
         $id = $request->get('student_id');
-        $student=UserStudents::where('id',$id)->first();
+        $student=UserStudents::where('isdfd',$id)->first();
        // dd($student);
         if(empty($student) == null){
-             return response()->json("Student Not available in this academic year!");
+             return response()->json(['status'=>true,'message'=>"Student Not available in this academic year!"]);
         }else{
             $payment_config_array=$this->getPaymentConfigDetails($user_data['school_profile_id'],$student->class_config);
           $payment_config = $payment_config_array['cred_object']; // Contains object of key and id of payment gateway

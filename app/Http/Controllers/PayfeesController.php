@@ -95,7 +95,7 @@ class PayfeesController extends Controller
         $id = $request->get('student_id');
         $student=UserStudents::where('id',$id)->first();
        // dd($student);
-        if(count($student) == null){
+        if(empty($student) == null){
              return response()->json("Student Not available in this academic year!");
         }else{
             $payment_config_array=$this->getPaymentConfigDetails($user_data['school_profile_id'],$student->class_config);

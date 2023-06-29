@@ -12,6 +12,7 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use App\Models\SchoolAcademicYears;
+use App\Models\PfPaymentGateway;
 use App\Models\PaymentApiConfig;
 use App\Models\PfSubComponents;
 use App\Models\SchoolDatabase;

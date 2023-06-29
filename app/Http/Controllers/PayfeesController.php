@@ -338,7 +338,7 @@ class PayfeesController extends Controller
         $result_array = array();
         $result_array['cred_object'] = $result_array['receipt_object'] = "";
         $payment_api_config = PaymentApiConfig::where('school_profile_id',$school_id)->first();
-        if(count($payment_api_config) == 1)
+        if(!empty($payment_api_config))
         {
             /* Set initial values as config db payment_api_config data in array */
             $result_array['cred_object'] = $payment_api_config; // Object for credentials

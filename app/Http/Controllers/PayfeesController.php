@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\DB;
 use App\Models\SchoolAcademicYears;
 use App\Models\PfSubComponents;
 use App\Models\SchoolDatabase;
+use App\Models\Configurations;
 use App\Models\PfPaymentMode;
 use App\Models\PfTransaction;
 use App\Models\SchoolProfile;

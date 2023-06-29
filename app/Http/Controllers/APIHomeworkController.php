@@ -73,6 +73,9 @@ class APIHomeworkController extends Controller
                         $class_config = UserStudents::where('id',$student_ids)->pluck('class_config')->first();
                         $group_id = UserGroups::where('class_config',$class_config)->pluck('id')->first();
                     }
+                    if($request->class_config !='') //get classs config and group id for parent
+                        $group_id = UserGroups::where('class_config',$request->class_config)->pluck('id')->first();
+
                     if($group_id !='')
                         $homework_details = $homework_details->where('group_id',$group_id)->where('approval_status',1);
                     else

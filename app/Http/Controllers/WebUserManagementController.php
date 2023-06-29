@@ -106,7 +106,22 @@ class WebUserManagementController extends Controller
                     $actionBtn = '<a href="'.url('usermanagement/editStudent?id='.$row['id']).'" class="edit btn btn-success btn-sm"><i class="fas fa-edit nav-icon"></i></a>';
                     return $actionBtn;
                 })
-                ->rawColumns(['edit_student'])
+                ->addColumn('unmap', function($row){
+                    $actionBtn = ' - ';
+                    if($row['father_id']!='' || $row['mother_id']!='' || $row['guardian_id']!='')
+                    {
+                        $parent_id = ($row['father_id']!='')?$row['father_id']:(($row['mother_id']!='')?$row['mother_id']:$row['guardian_id']);
+                        if($parent_id!='')
+                        {
+                            $check_sibilings = UserStudentsMapping::where('parent',$parent_id)->where('student','!=',$row['id'])->pluck('id')->first();
+                            if($check_sibilings!= '')
+                                $actionBtn = '<a href="'.url('usermanagement/studentunmapwithparent?id='.$row['id']).'" class="exit btn btn-success btn-sm"><i class="fas fa-sign-out-alt nav-icon" style="color:white"></i></a>';
+                        }
+                    }
+                    
+                    return $actionBtn;  
+                })
+                ->rawColumns(['edit_student','unmap'])
                 ->make(true);
         }
     }   
@@ -187,6 +202,8 @@ class WebUserManagementController extends Controller
                 $data['email_address'] = $request->father_email_address;
                 $data['user_category'] = 1;
 
+                if($profile_details['default_password_type'] != 'admission_number' && $profile_details['default_password_type'] != 'dob')
+                            $password ='';
                 if($profile_details['default_password_type'] == 'mobile_number' || $password == '')
                     $password = bcrypt($request->father_mobile_number);
                 
@@ -201,6 +218,8 @@ class WebUserManagementController extends Controller
                 $data['mobile_number'] = $request->mother_mobile_number;
                 $data['email_address'] = $request->mother_email_address;
                 $data['user_category'] = 2;
+                if($profile_details['default_password_type'] != 'admission_number' && $profile_details['default_password_type'] != 'dob')
+                            $password ='';
 
                 if($profile_details['default_password_type'] == 'mobile_number' || $password == '')
                     $password = bcrypt($request->mother_mobile_number);
@@ -217,6 +236,9 @@ class WebUserManagementController extends Controller
                 $data['mobile_number'] = $request->guardian_mobile_number;
                 $data['email_address'] = $request->guardian_email_address;
                 $data['user_category'] = 9;
+
+                if($profile_details['default_password_type'] != 'admission_number' && $profile_details['default_password_type'] != 'dob')
+                            $password ='';
 
                 if($profile_details['default_password_type'] == 'mobile_number' || $password == '')
                     $password = bcrypt($request->guardian_mobile_number);
@@ -250,11 +272,21 @@ class WebUserManagementController extends Controller
 
         // insert parent details in db
         $parent=[];
-        $parent_details = new UserParents;
-        $parent_details->created_by=$userall_id;
+        $parent_details = UserParents::where('mobile_number',$data['mobile_number'])->get()->first();
+        if(!empty($parent_details))
+        {
+            $parent_details->updated_by = $userall_id;
+            $parent_details->updated_time=Carbon::now()->timezone('Asia/Kolkata');
+        }
+        else
+        {
+            $parent_details = new UserParents;
+            $parent_details->created_by = $userall_id;
+            $parent_details->created_time=Carbon::now()->timezone('Asia/Kolkata');
+        }
+
         if($profile_image_path!='')
             $parent_details->profile_image = ($profile_image_path!='')?$profile_image_path:'';
-        $parent_details->created_time=Carbon::now()->timezone('Asia/Kolkata');
         $parent_details->mobile_number= $data['mobile_number'];
         $parent_details->user_category = $data['user_category'];
         $parent_details->first_name= $data['first_name'];
@@ -274,7 +306,9 @@ class WebUserManagementController extends Controller
         // add into group
         if($group_id!='')
         {
-            UserGroupsMapping::insert(['group_id'=>2,'user_table_id'=>$parent_id,'user_role'=>Config::get('app.Parent_role'),'user_status'=>1,'group_access'=>2]);
+            $check_exists = UserGroupsMapping::where(['group_id'=>2,'user_table_id'=>$parent_id,'user_role'=>Config::get('app.Parent_role'),'user_status'=>1])->get()->first();
+            if(empty($check_exists))
+                UserGroupsMapping::insert(['group_id'=>2,'user_table_id'=>$parent_id,'user_role'=>Config::get('app.Parent_role'),'user_status'=>1,'group_access'=>2]);
             UserGroupsMapping::insert(['group_id'=>$group_id,'user_table_id'=>$parent_id,'user_role'=>Config::get('app.Parent_role'),'user_status'=>1,'group_access'=>2]);
         }
         
@@ -336,10 +370,10 @@ class WebUserManagementController extends Controller
             'mother_email_address'=>isset($parentsdata[2])?$parentsdata[2]->email_id:'',
             'mother_name'=>isset($parentsdata[2])?$parentsdata[2]->first_name:'',
             'mother_id'=>isset($parentsdata[3])?$parentsdata[3]->id:0,
-            'guardian_mobile_number'=>isset($parentsdata[3])?$parentsdata[3]->mobile_number:'',
-            'guardian_email_address'=>isset($parentsdata[3])?$parentsdata[3]->email_id:'',
-            'guardian_name'=>isset($parentsdata[3])?$parentsdata[3]->first_name:'',
-            'guardian_id'=>isset($parentsdata[3])?$parentsdata[3]->id:0,
+            'guardian_mobile_number'=>isset($parentsdata[9])?$parentsdata[9]->mobile_number:'',
+            'guardian_email_address'=>isset($parentsdata[9])?$parentsdata[9]->email_id:'',
+            'guardian_name'=>isset($parentsdata[9])?$parentsdata[9]->first_name:'',
+            'guardian_id'=>isset($parentsdata[9])?$parentsdata[9]->id:0,
             'admission_number'=>isset($students->first_name)?$students->admission_number:'',
             'roll_no'=>isset($students->roll_number)?$students->roll_number:'',
             'dob'=>isset($students->dob)?date('d-m-Y',strtotime($students->dob)):null,
@@ -395,12 +429,11 @@ class WebUserManagementController extends Controller
             {
 
                 $student_details = UserStudents::where(['id'=>$request->student_id])->get()->first();
+                $old_group_id = UserGroups::where('class_config',$student_details->class_config)->pluck('id')->first();
                 if($student_details->class_config != $request->class_config)
                 {
-                    $old_group_id = UserGroups::where('class_config',$student_details->class_config)->pluck('id')->first();
                     $new_group_id = UserGroups::where('class_config',$request->class_section)->pluck('id')->first();
                 }
-
             } 
             else
                 $student_details = new UserStudents;
@@ -433,16 +466,27 @@ class WebUserManagementController extends Controller
                     UserGroupsMapping::insert(['group_id'=>$new_group_id,'user_table_id'=>$parent_value,'user_role'=>Config::get('app.Parent_role'),'user_status'=>1,'group_access'=>2]);
                 }
             }
-            $password = '';
-            if($profile_details['default_password_type'] == 'admission_number')
-                $password = bcrypt($request->admission_no);
-            else if($profile_details['default_password_type'] == 'dob')
-                $password = bcrypt(date('dmY',strtotime($request->dob)));
+            $new_user = '';
+            if(($request->father_id == 0 && $request->father_mobile_number!=''))
+                $new_user = 'yes';
+            if(($request->mother_id == 0 && $request->mother_mobile_number!=''))
+                $new_user = 'yes';
+            if(($request->guardian_id == 0 && $request->guardian_mobile_number!=''))
+                $new_user = 'yes';
+
+            $password ='';
+            if((isset($request->password_update) && $request->password_update!='') ||$new_user!='')
+            {
+                if($profile_details['default_password_type'] == 'admission_number')
+                    $password = bcrypt($request->admission_no);
+                else if($profile_details['default_password_type'] == 'dob')
+                    $password = bcrypt(date('dmY',strtotime($request->dob)));
+            }
 
             // insert parents details
-            if(isset($request->father_id) && $request->father_id > 0)
+            if(isset($request->father_id))
             {
-                $father_details = UserParents::where('id',$request->father_id)->get()->first();
+                $father_details = UserParents::where('mobile_number',$request->father_mobile_number)->get()->first();
                 if(!empty($father_details) || $request->father_mobile_number!='')
                 {
                     $data['photo'] = $profile_image_path;
@@ -450,15 +494,20 @@ class WebUserManagementController extends Controller
                     $data['mobile_number'] = $request->father_mobile_number;
                     $data['email_address'] = $request->father_email_address;
                     $data['user_category'] = 1;
-                    if($profile_details['default_password_type'] == 'mobile_number' || $password == '')
-                        $password = bcrypt($request->father_mobile_number);
-                    $this->edit_parent_details($data,$father_details,$student_id,$userall_id,$old_group_id,$new_group_id,$password);
+                    if((isset($request->password_update) && $request->password_update!='') ||$new_user!='')
+                    {
+                        if($profile_details['default_password_type'] != 'admission_number' && $profile_details['default_password_type'] != 'dob')
+                            $password ='';
+                        if($profile_details['default_password_type'] == 'mobile_number' || $password == '')
+                            $password = bcrypt($request->father_mobile_number);
+                    }
+                    $this->edit_parent_details($data,$father_details,$student_id,$userall_id,$old_group_id,$new_group_id,$password,$request->father_id);
                 }
             }
             // update or insert parents details
-            if(isset($request->mother_id)  && $request->mother_id > 0)
+            if(isset($request->mother_id))
             {
-                $mother_details = UserParents::where('id',$request->mother_id)->get()->first();
+                $mother_details = UserParents::where('mobile_number',$request->mother_mobile_number)->get()->first();
                 if(!empty($mother_details) || $request->mother_mobile_number!='' )
                 {
                     $data = [];
@@ -467,16 +516,21 @@ class WebUserManagementController extends Controller
                     $data['mobile_number'] = $request->mother_mobile_number;
                     $data['email_address'] = $request->mother_email_address;
                     $data['user_category'] = 2;
-                    if($profile_details['default_password_type'] == 'mobile_number' || $password == '')
-                        $password = bcrypt($request->mother_mobile_number);
-                    $this->edit_parent_details($data,$mother_details,$student_id,$userall_id,$old_group_id,$new_group_id,$password);
+                    if((isset($request->password_update) && $request->password_update!='') || $new_user!='')
+                    {
+                        if($profile_details['default_password_type'] != 'admission_number' && $profile_details['default_password_type'] != 'dob')
+                            $password ='';
+                        if($profile_details['default_password_type'] == 'mobile_number' || $password == '')
+                            $password = bcrypt($request->mother_mobile_number);
+                    }
+                    $this->edit_parent_details($data,$mother_details,$student_id,$userall_id,$old_group_id,$new_group_id,$password,$request->mother_id);
                 }
             }
 
-            if(isset($request->guardian_id)  && $request->guardian_id > 0)
+            if(isset($request->guardian_id))
             {
             // update or insert parents details
-                $guardian_details = UserParents::where('id',$request->guardian_id)->get()->first();
+                $guardian_details = UserParents::where('mobile_number',$request->guardian_mobile_number)->get()->first();
                 if(!empty($guardian_details) || $request->guardian_mobile_number!='' )
                 {
                     $data = [];
@@ -484,19 +538,25 @@ class WebUserManagementController extends Controller
                     $data['first_name'] = $request->guardian_name;
                     $data['mobile_number'] = $request->guardian_mobile_number;
                     $data['email_address'] = $request->guardian_email_address;
-                    $data['user_category'] = 3;
-                    if($profile_details['default_password_type'] == 'mobile_number' || $password == '')
-                        $password = bcrypt($request->guardian_mobile_number);
-                    $this->edit_parent_details($data,$guardian_details,$student_id,$userall_id,$old_group_id,$new_group_id,$password);
+                    $data['user_category'] = 9;
+                    if((isset($request->password_update) && $request->password_update!='') || $new_user!='')
+                    {   
+                        if($profile_details['default_password_type'] != 'admission_number' && $profile_details['default_password_type'] != 'dob')
+                            $password ='';
+
+                        if($profile_details['default_password_type'] == 'mobile_number' || $password == '')
+                            $password = bcrypt($request->guardian_mobile_number);
+                    }
+                    $this->edit_parent_details($data,$guardian_details,$student_id,$userall_id,$old_group_id,$new_group_id,$password,$request->guardian_id);
                 }
             }
-           return back()->with('success','Updated Successfully');
+            return back()->with('success','Updated Successfully');
         }
         return back()->with('error','Invalid Inputs');
     }
 
     // Edit parent details dependency function - onboarding
-    public function edit_parent_details($data,$details,$id,$userall_id,$old_group_id,$new_group_id,$password)
+    public function edit_parent_details($data,$details,$id,$userall_id,$old_group_id,$new_group_id,$password,$old_parent_id)
     {
         $image =$page='';
         $user = Session::get('user_data');
@@ -563,7 +623,8 @@ class WebUserManagementController extends Controller
             $schoolusers->school_profile_id=$user->school_profile_id;
             $schoolusers->user_id=$userparent_id;
             $schoolusers->user_mobile_number=$data['mobile_number'];
-            $schoolusers->user_password=$password;
+            if($password!='')
+                $schoolusers->user_password=$password;
             $schoolusers->user_email_id=$data['email_address'];
             $schoolusers->user_role=Config::get('app.Parent_role');
             $schoolusers->user_status=1;
@@ -581,7 +642,50 @@ class WebUserManagementController extends Controller
             $student_map->save();
             
             UserGroupsMapping::insert(['group_id'=>$new_group_id,'user_table_id'=>$details->id,'user_role'=>Config::get('app.Parent_role'),'user_status'=>1,'group_access'=>2]);
-            UserGroupsMapping::insert(['group_id'=>2,'user_table_id'=>$details->id,'user_role'=>Config::get('app.Parent_role'),'user_status'=>1,'group_access'=>2]);
+            
+            $check_exists = UserGroupsMapping::where(['group_id'=>2,'user_table_id'=>$details->id,'user_role'=>Config::get('app.Parent_role'),'user_status'=>1])->get()->first();
+            if(empty($check_exists))
+                UserGroupsMapping::insert(['group_id'=>2,'user_table_id'=>$details->id,'user_role'=>Config::get('app.Parent_role'),'user_status'=>1,'group_access'=>2]);
+        }
+        else
+        {
+            $check_old_groups = UserStudentsMapping::where('student',$id)->where('parent',$old_parent_id)->get()->first();
+            if(!empty($check_old_groups))
+                UserStudentsMapping::where('student',$id)->where('parent',$old_parent_id)->delete();
+            $check_old_class = UserStudents::where('id',$id)->pluck('class_config')->first();
+            if($check_old_class!='')
+            {
+                $check_other_child = UserStudentsMapping::where('parent',$old_parent_id)->pluck('student')->toArray();
+                if(!empty($check_other_child))
+                {
+                    $check_same_class = UserStudents::whereIn('id',$check_other_child)->where('id','!=',$id)->where('class_config',$check_old_class)->get()->first();
+                    if(empty($check_same_class))
+                    {
+                        $group_id = $new_group_id!=''?$new_group_id:$old_group_id;
+                        UserGroupsMapping::where('user_table_id',$old_parent_id)->where('group_id',$group_id)->where('user_role',Config::get('app.Parent_role'))->delete();
+                    }
+
+                }
+                else
+                    UserGroupsMapping::where('user_table_id',$old_parent_id)->where('user_role',Config::get('app.Parent_role'))->delete();
+            }
+
+
+            $check_exists = UserStudentsMapping::where('student',$id)->where('parent',$details->id)->pluck('id')->first();
+
+            if($check_exists=='')
+            {
+                // mapping the student and parent
+                $student_map = new UserStudentsMapping;
+                $student_map->student = $id;  
+                $student_map->parent = $details->id;
+                $student_map->created_by = $userall_id;
+                $student_map->created_time=Carbon::now()->timezone('Asia/Kolkata');
+                $student_map->save();
+            }
+            $group_id = $new_group_id!=''?$new_group_id:$old_group_id;
+            UserGroupsMapping::insert(['group_id'=>$group_id,'user_table_id'=>$details->id,'user_role'=>Config::get('app.Parent_role'),'user_status'=>1,'group_access'=>2]);
+
         }
     }
 
@@ -675,4 +779,172 @@ class WebUserManagementController extends Controller
         else
             echo '<prE>';print_r(['status'=>false,'message'=>'Please configure template details!...']);
     }
+
+    public function checkMobilenoexists(Request $request)
+    {
+        $flag = 0;
+        $tag = '';
+        if($request->father_mobile_number!='' && $flag == 0)
+        {
+            $tag = 'father';
+            $flag = UserParents::where('mobile_number',$request->father_mobile_number)->where('user_category',Config::get('app.Father'));
+            if(isset($request->father_id)!='')
+                $flag = $flag->where('id','!=',$request->father_id);
+
+            $flag = $flag->pluck('id')->first();
+        }
+
+        if($request->mother_mobile_number!='' && $flag == 0)
+        {
+            $tag = 'mother';
+            $flag = UserParents::where('mobile_number',$request->father_mobile_number)->where('user_category',Config::get('app.Mother'));
+            if(isset($request->mother_id)!='')
+                $flag = $flag->where('id','!=',$request->mother_id);
+
+            $flag = $flag->pluck('id')->first();
+        }
+
+        if($request->guardian_mobile_number!='' && $flag == 0)
+        {
+            $tag = 'guardian';
+            $flag = UserParents::where('mobile_number',$request->father_mobile_number)->where('user_category',Config::get('app.Guardian'));
+            if(isset($request->mother_id)!='')
+                $flag = $flag->where('id','!=',$request->guardian_id);
+
+            $flag = $flag->pluck('id')->first();
+        }
+
+        echo json_encode(['status'=>$flag,'tag'=>$tag]);
+    }
+
+    // unmap users
+    public function studentunmapwithparent(Request $request)
+    {
+        
+        $get_parents = UserStudentsMapping::where('student',$request->id)->pluck('parent')->toArray();
+        $check_old_class = UserStudents::where('id',$request->id)->pluck('class_config')->first();
+        if($check_old_class!='')
+        {
+            foreach ($get_parents as $key => $value) {
+                $check_other_child = UserStudentsMapping::where('parent',$value)->pluck('student')->toArray();
+                if(!empty($check_other_child))
+                {
+                    $check_same_class = UserStudents::whereIn('id',$check_other_child)->where('id','!=',$request->id)->where('class_config',$check_old_class)->get()->first();
+                    if(empty($check_same_class))
+                    {
+                        $group_id = UserGroups::where('class_config',$check_old_class)->pluck('id')->first();
+                        UserGroupsMapping::where('user_table_id',$value)->where('group_id',$group_id)->where('user_role',Config::get('app.Parent_role'))->delete();
+                    }
+                }
+                else
+                    UserGroupsMapping::where('user_table_id',$value)->where('user_role',Config::get('app.Parent_role'))->delete();
+            }
+        }
+        if(!empty($get_parents))
+            UserStudentsMapping::where('student',$request->id)->delete();
+        return back()->with('success','Unmapped Successfully');
+    }
+    // parent list
+    public function parents()
+    {
+        $data['class_configs'] = AcademicClassConfiguration::select('academic_class_configuration.id',DB::raw("CONCAT(c.class_name,'-',s.section_name) as class_section"))->join('academic_classes as c', 'c.id', '=', 'academic_class_configuration.class_id')->join('academic_sections as s', 's.id', '=', 'academic_class_configuration.section_id')->get()->toArray();
+        return view('UserManagement.parentlist',$data);
+    }
+
+    // get list of students details
+    public function getParent_list(Request $request)
+    {
+        $user_list =[];
+        if ($request->ajax()) {
+            $data = UserParents::join('user_students_mapping as p', 'user_parents.id', '=', 'p.parent')->leftjoin('user_students as s', 's.id', '=', 'p.student');
+
+            if($request->name!='')
+                $data = $data->where('s.first_name', 'like', '%' .$request->name. '%')->orwhere('up.first_name', 'like', '%' .$request->name. '%');
+           if($request->class_section!='')
+                $data = $data->where('s.class_config',$request->class_section);
+
+            if($request->admission_no!='')
+                $data = $data->where('s.admission_number', 'like', '%' .$request->admission_no. '%');
+            if($request->mobile_no!='')
+                $data = $data->where('user_parents.mobile_number', 'like', '%' .$request->mobile_no. '%');
+           
+            $data = $data->get(['user_parents.id','user_parents.user_id','s.first_name as student_name', 'p.parent', 'user_parents.mobile_number','user_parents.user_category','s.class_config','user_parents.first_name as parent_name','s.dob']);
+            $checked_records = [];
+            foreach ($data as $key => $value) {        
+                $user_list[$value->id]['id']=$value->id;    
+                $user_list[$value->id]['user_id']=$value->user_id;
+                $user_list[$value->id]['parent_name']=$value->parent_name;
+                $user_list[$value->id]['mobile_number']=$value->mobile_number;
+                $user_list[$value->id]['class_section']=$value->classsectionName();
+                if(!in_array($value->user_id,$checked_records))
+                {
+                    $user_list[$value->id]['dob1'] = '-';
+                    $user_list[$value->id]['dob2'] = '-';
+                    $user_list[$value->id]['dob3'] = '-';
+                }
+                if($user_list[$value->id]['dob1']=='-')
+                    $user_list[$value->id]['dob1'] = date('d-m-Y',strtotime($value->dob));
+                else if($user_list[$value->id]['dob2']=='-')
+                    $user_list[$value->id]['dob2'] = date('d-m-Y',strtotime($value->dob));
+                else if($user_list[$value->id]['dob3']=='-')
+                    $user_list[$value->id]['dob3'] = date('d-m-Y',strtotime($value->dob));
+                
+                array_push($checked_records,$value->user_id);
+                
+            }
+            return Datatables::of($user_list)->addIndexColumn()->make(true);
+        }
+    }  
+
+    public function unmappedstudents()
+    {
+        $data['class_configs'] = AcademicClassConfiguration::select('academic_class_configuration.id',DB::raw("CONCAT(c.class_name,'-',s.section_name) as class_section"))->join('academic_classes as c', 'c.id', '=', 'academic_class_configuration.class_id')->join('academic_sections as s', 's.id', '=', 'academic_class_configuration.section_id')->get()->toArray();
+        return view('UserManagement.unmapstudentlist',$data);
+    }
+
+    // get list of students details
+    public function getunmapStudent_list(Request $request)
+    {
+        $user_list =[];
+        if ($request->ajax()) {
+            $data = UserStudents::select('id','user_id','first_name as student_name','roll_number','admission_number','class_config','user_status','dob');
+
+            if($request->name!='')
+                $data = $data->where('first_name', 'like', '%' .$request->name. '%');
+           if($request->class_section!='')
+                $data = $data->where('class_config',$request->class_section);
+
+            if($request->admission_no!='')
+                $data = $data->where('admission_number', 'like', '%' .$request->admission_no. '%');
+           
+            $data = $data->orderBy('created_time','desc')->get();
+            $checked_records = [];
+
+            foreach ($data as $key => $value) {  
+
+                $check_unmapped = UserStudentsMapping::where('student',$value->id)->pluck('id')->first();
+                if($check_unmapped=='')
+                {
+                    $user_list[$value->id]['id']=$value->id;
+                    $user_list[$value->id]['user_id']=$value->user_id;
+                    $user_list[$value->id]['student_name']=$value->student_name;
+                    $user_list[$value->id]['roll_no']=$value->roll_number;
+                    $user_list[$value->id]['admission_number']=$value->admission_number;
+                    $user_list[$value->id]['dob']=date('d-m-Y',strtotime($value->dob));
+                    $user_list[$value->id]['class_config_id']=$value->class_config;
+                    $user_list[$value->id]['class_section']=$value->classsectionName();
+                    $user_list[$value->id]['student_status']=$value->user_status;
+                }
+            }
+
+            return Datatables::of($user_list)->addIndexColumn()
+                ->addColumn('edit_student', function($row){
+                    $actionBtn = '<a href="'.url('usermanagement/editStudent?id='.$row['id']).'" class="edit btn btn-success btn-sm"><i class="fas fa-edit nav-icon"></i></a>';
+                    return $actionBtn;
+                })
+                
+                ->rawColumns(['edit_student'])
+                ->make(true);
+        }
+    } 
 }

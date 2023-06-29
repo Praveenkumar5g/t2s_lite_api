@@ -95,18 +95,12 @@
 						                  	<tr>
 						                  		<th>S.No</th>
 							                    <th>Id</th>
-							                    <th>Name</th>
-							                    <th>Admission No</th>
-							                    <th>DOB</th>
+							                    <th>Parent Name</th>
+							                    <th>Mobile No</th>
 							                    <th>Class - Section</th>
-							                    <th>Father Name</th>
-							                    <th>Father Mobile No</th>
-							                    <th>Mother Name</th>
-							                    <th>Mother Mobile No</th>
-							                    <th>Guardian Name</th>
-							                    <th>Guardian Mobile No</th>
-							                    <th>Action</th>
-							                    <th>Unmap</th>
+							                    <th>DOB 1</th>
+							                    <th>DOB 2</th>
+							                    <th>DOB 3</th>
 						                  	</tr>
 		                  				</thead>
 		                			</table>
@@ -143,7 +137,7 @@
 		        "lengthChange": false,
 		         "autoWidth": false,
    		      	ajax: {
-		        	url : "{{url('usermanagement/getStudent_list')}}", 
+		        	url : "{{url('usermanagement/getParent_list')}}", 
 		        	method: 'POST',
 	                'headers': {
 	                   'X-CSRF-TOKEN': '{{ csrf_token() }}'
@@ -158,18 +152,12 @@
 			    columns: [
 		            {data: 'DT_RowIndex', name: 'DT_RowIndex'},
 		            {data: 'user_id', name: 'user_id'},
-		            {data: 'student_name', name: 'student_name'},
-		            {data: 'admission_number', name: 'admission_number'},
-		            {data: 'dob', name: 'dob'},
-		            {data: 'class_section', name: 'class_section'},
-		            {data: 'father_name', name: 'father_name'},
-		            {data: 'father_mobile_no', name: 'father_mobile_no'},
-		            {data: 'mother_name', name: 'mother_name'},
-		            {data: 'mother_mobile_no', name: 'mother_mobile_no'},
-		            {data: 'guardian_name', name: 'guardian_name'},
-		            {data: 'guardian_mobile_no', name: 'guardian_mobile_no'},
-		            {data: 'edit_student', name: 'edit_student'},
-		            {data: 'unmap', name: 'unmap'}
+		            {data: 'parent_name', name: 'parent_name'},
+		            {data: 'mobile_number', name: 'mobile_number'},
+		          	{data: 'class_section', name: 'class_section'},
+		            {data: 'dob1', name: 'dob1'},
+		            {data: 'dob2', name: 'dob2'},
+		            {data: 'dob3', name: 'dob3'},
 		        ],
 
 		    });
@@ -192,7 +180,7 @@
 			        "lengthChange": false,
 			        "autoWidth": false,
 			      	ajax: {
-			        	url : "{{url('usermanagement/getStudent_list')}}", 
+			        	url : "{{url('usermanagement/getParent_list')}}", 
 			        	method: 'POST',
 		                'headers': {
 		                   'X-CSRF-TOKEN': '{{ csrf_token() }}'
@@ -208,18 +196,12 @@
 				    columns: [
 			            {data: 'DT_RowIndex', name: 'DT_RowIndex'},
 			            {data: 'user_id', name: 'user_id'},
-			            {data: 'student_name', name: 'student_name'},
-			            {data: 'admission_number', name: 'admission_number'},
-			            {data: 'dob', name: 'dob'},
+			            {data: 'parent_name', name: 'parent_name'},
+			            {data: 'mobile_number', name: 'mobile_number'},
 			            {data: 'class_section', name: 'class_section'},
-			            {data: 'father_name', name: 'father_name'},
-			            {data: 'father_mobile_no', name: 'father_mobile_no'},
-			            {data: 'mother_name', name: 'mother_name'},
-			            {data: 'mother_mobile_no', name: 'mother_mobile_no'},
-			            {data: 'guardian_name', name: 'guardian_name'},
-			            {data: 'guardian_mobile_no', name: 'guardian_mobile_no'},
-			            {data: 'edit_student', name: 'edit_student'},
-		            	{data: 'unmap', name: 'unmap'}
+			            {data: 'dob1', name: 'dob1'},
+			            {data: 'dob2', name: 'dob2'},
+			            {data: 'dob3', name: 'dob3'},
 			        ],
 			        
 			    });

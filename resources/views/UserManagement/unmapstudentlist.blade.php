@@ -53,12 +53,7 @@
 												<input type="text" class="form-control form-control-1 input-sm" name="admission_no" id="admission_no" placeholder="Admission No">
 											</div>
 										</div>
-										<div class="form-group col-4">
-											<label>Mobile No </label>
-						                  	<div class="input-group">
-												<input type="text" class="form-control form-control-1 input-sm" name="mobile_no" id="mobile_no" placeholder="Mobile No">
-											</div>
-										</div>
+										
 										<div class="form-group col-4">
 											<label>Class - Section <span class="mandatory_field">*</span></label>
 						                  	<select class="custom-select input-group" id="class_section" name="class_section">
@@ -82,14 +77,6 @@
 								        </div>
 									</div><hr/>
 
-									<div class="row">
-										<div class="form-group col-12">
-											<a href="{{url('usermanagement/addStudents')}}" name="add_student" id="add_student" class="btn btn-info float-sm-right">
-								                Add Student
-								            </a>
-								        </div>
-									</div>
-
 		                			<table id="example2" class="table table-bordered table-hover table-striped">
 		                  				<thead>
 						                  	<tr>
@@ -99,14 +86,7 @@
 							                    <th>Admission No</th>
 							                    <th>DOB</th>
 							                    <th>Class - Section</th>
-							                    <th>Father Name</th>
-							                    <th>Father Mobile No</th>
-							                    <th>Mother Name</th>
-							                    <th>Mother Mobile No</th>
-							                    <th>Guardian Name</th>
-							                    <th>Guardian Mobile No</th>
 							                    <th>Action</th>
-							                    <th>Unmap</th>
 						                  	</tr>
 		                  				</thead>
 		                			</table>
@@ -143,7 +123,7 @@
 		        "lengthChange": false,
 		         "autoWidth": false,
    		      	ajax: {
-		        	url : "{{url('usermanagement/getStudent_list')}}", 
+		        	url : "{{url('usermanagement/getunmapStudent_list')}}", 
 		        	method: 'POST',
 	                'headers': {
 	                   'X-CSRF-TOKEN': '{{ csrf_token() }}'
@@ -162,14 +142,7 @@
 		            {data: 'admission_number', name: 'admission_number'},
 		            {data: 'dob', name: 'dob'},
 		            {data: 'class_section', name: 'class_section'},
-		            {data: 'father_name', name: 'father_name'},
-		            {data: 'father_mobile_no', name: 'father_mobile_no'},
-		            {data: 'mother_name', name: 'mother_name'},
-		            {data: 'mother_mobile_no', name: 'mother_mobile_no'},
-		            {data: 'guardian_name', name: 'guardian_name'},
-		            {data: 'guardian_mobile_no', name: 'guardian_mobile_no'},
 		            {data: 'edit_student', name: 'edit_student'},
-		            {data: 'unmap', name: 'unmap'}
 		        ],
 
 		    });
@@ -192,7 +165,7 @@
 			        "lengthChange": false,
 			        "autoWidth": false,
 			      	ajax: {
-			        	url : "{{url('usermanagement/getStudent_list')}}", 
+			        	url : "{{url('usermanagement/getunmapStudent_list')}}", 
 			        	method: 'POST',
 		                'headers': {
 		                   'X-CSRF-TOKEN': '{{ csrf_token() }}'
@@ -212,14 +185,7 @@
 			            {data: 'admission_number', name: 'admission_number'},
 			            {data: 'dob', name: 'dob'},
 			            {data: 'class_section', name: 'class_section'},
-			            {data: 'father_name', name: 'father_name'},
-			            {data: 'father_mobile_no', name: 'father_mobile_no'},
-			            {data: 'mother_name', name: 'mother_name'},
-			            {data: 'mother_mobile_no', name: 'mother_mobile_no'},
-			            {data: 'guardian_name', name: 'guardian_name'},
-			            {data: 'guardian_mobile_no', name: 'guardian_mobile_no'},
 			            {data: 'edit_student', name: 'edit_student'},
-		            	{data: 'unmap', name: 'unmap'}
 			        ],
 			        
 			    });

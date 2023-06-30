@@ -46,5 +46,7 @@ Route::group(['middleware' => 'auth.webcheck'], function ($router) {
     Route::post('/usermanagement/getParent_list',[WebUserManagementController::class,'getParent_list']);
     Route::get('/usermanagement/unmappedstudents',[WebUserManagementController::class,'unmappedstudents']);
     Route::post('/usermanagement/getunmapStudent_list',[WebUserManagementController::class,'getunmapStudent_list']);
+    Route::get('/usermanagement/welcome_message',[WebUserManagementController::class,'welcome_message']);
+    Route::post('usermanagement/send_welcome_message',[WebUserManagementController::class,'send_welcome_message']);
     /*user management -- Ends*/
 });

@@ -70,6 +70,14 @@
 							</a>
 						</li>
 					</ul>
+					<ul class="nav nav-treeview">
+						<li class="nav-item">
+							<a href="{{ url('usermanagement/welcome_message') }}" class="{{ Request::segment(count(request()->segments())) == 'welcome_message' ? 'nav-link active' : 'nav-link'}}">
+								<i class="fas fa-user nav-icon"></i>
+								<p>Send Welcome Message</p>
+							</a>
+						</li>
+					</ul>
 				</li>
 				<li class="nav-item {{ Request::segment(count(request()->segments())-1) == 'employee' ? 'menu-open' : ''}}">
 					<a href="#" class="{{ Request::segment(count(request()->segments())-1) == 'employee' ? 'nav-link active' : 'nav-link'}}">

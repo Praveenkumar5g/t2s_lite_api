@@ -991,6 +991,12 @@ class WebUserManagementController extends Controller
                 $userslist = $userslist->whereIn('user_role',$role);
             }
             $userslist = $userslist->get()->toArray();
+            if(!empty($userslist))
+            {
+
+                $newsusers_id = array_column($userslist,'user_id');
+                SchoolUsers::where('user_id',$newsusers_id)->where('school_profile_id',$user['school_profile_id'])->update(['new_user'=>0]);
+            }
         }
         else if($request->distribution_type == 2)
         {

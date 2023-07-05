@@ -129,6 +129,7 @@
 				$('#display_students, #display_staffs, #display_managements').prop("selected", false);
 				var distribution_type = $('#distribution_type').val();
 				var role = $('#role').val();
+				$('#display_distribution').show();
 				if(distribution_type == 3 && role == 5)
 				{
 					$('#display_managements,#display_distribution').show();

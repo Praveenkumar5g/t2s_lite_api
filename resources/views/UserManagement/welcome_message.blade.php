@@ -53,7 +53,7 @@
 								                    <option value="{{Config::get('app.Parent_role')}}">Parent</option>
 							                  	</select>
 											</div>
-											<div class="form-group col-4">
+											<div class="form-group col-4" id="display_distribution">
 												<label>Distrubution Type<span class="mandatory_field">*</span></label>
 							                  	<select class="custom-select input-group" id="distribution_type" name="distribution_type">
 							                  		<option value=''>Select Distribution Type</option>
@@ -143,6 +143,10 @@
 				{
 					$('#display_students').show();
 					$('#display_managements, #display_staffs').hide();
+				}
+				else if(role == 'all')
+				{
+					$('#display_managements, #display_staffs,#display_distribution,#display_students').hide();
 				}
 			});
 			$("#send_welcome_message").validate({

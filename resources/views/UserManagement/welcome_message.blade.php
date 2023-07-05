@@ -131,17 +131,17 @@
 				var role = $('#role').val();
 				if(distribution_type == 3 && role == 5)
 				{
-					$('#display_managements').show();
+					$('#display_managements,#display_distribution').show();
 					$('#display_students, #display_staffs').hide();
 				}
 				else if(distribution_type == 3 && role == 2)
 				{
-					$('#display_staffs').show();
+					$('#display_staffs,#display_distribution').show();
 					$('#display_managements, #display_students').hide();
 				}
 				else if(distribution_type == 3 && role == 3)
 				{
-					$('#display_students').show();
+					$('#display_students,#display_distribution').show();
 					$('#display_managements, #display_staffs').hide();
 				}
 				else if(role == 'all')

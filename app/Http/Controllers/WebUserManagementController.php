@@ -963,7 +963,7 @@ class WebUserManagementController extends Controller
         return view('UserManagement.welcome_message',$data);
     }
 
-     // send welcome message to users
+    // send welcome message to users
     public function send_welcome_message(Request $request)
     {
         $user = Session::get('user_data');
@@ -1032,14 +1032,15 @@ class WebUserManagementController extends Controller
         else if($request->distribution_type == 3)
         {
             $staffs = $managements = $parents = $school_list = $userslist = [];
-            if($request->role == 2 && !empty($request->staffs))
+            if($request->role == 2 && $request->staffs!='')
                 $staffs = UserStaffs::whereIn('id',$request->staffs)->where('user_status',1)->pluck('user_id')->toArray();
-            if($request->role == 3 && !empty($request->students))
+            if($request->role == 3 && $request->students!='')
             {
-                $parentid = UserStudentsMapping::where('student',$request->students)->pluck('parent')->first();
-                $parents = UserParents::whereIn('id',$parentid)->where('user_status',1)->pluck('user_id')->toArray();
+                $parentid = UserStudentsMapping::whereIn('student',$request->students)->pluck('parent')->toArray();
+                if(!empty($parentid))
+                    $parents = UserParents::whereIn('id',$parentid)->where('user_status',1)->pluck('user_id')->toArray();
             }
-            if($request->role == 5 && !empty($request->managements))
+            if($request->role == 5 && $request->managements!='')
                 $managements = UserManagements::whereIn('id',$request->managements)->where('user_status',1)->pluck('user_id')->toArray();
 
             $school_list = array_merge($staffs,$parents,$managements);
@@ -1070,6 +1071,11 @@ class WebUserManagementController extends Controller
                 if($value['user_role'] == 3)
                 {
                     $schoolusers = SchoolUsers::where(['user_role'=>$value['user_role'],'school_profile_id'=>$user->school_profile_id,'id'=>$value['id']]);
+
+                    $default_password_type = SchoolProfile::where('id',$user->school_profile_id)->pluck('default_password_type')->first();
+                    if($default_password_type == '')
+                        $default_password_type = 'mobile_number';
+
                     if($default_password_type == 'admission_number' || $default_password_type == 'dob')
                     {
                         $parent_id = UserParents::where('user_id',$value['user_id'])->pluck('id')->first();
@@ -1126,7 +1132,14 @@ class WebUserManagementController extends Controller
                 return back()->with('error','No Users!...');
             else
                 return back()->with('error','Please configure template details!...');
-        }   
+        }
+    }
+
+    public function getstudents(Request $request)
+    {
+        $parents= [];
+        $parents = UserStudents::select('id','first_name')->where('user_status',1)->whereIn('class_config',$request->classes)->get()->toArray();
+        echo json_encode($parents);
     }
 
 }

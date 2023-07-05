@@ -83,6 +83,16 @@
 								                    @endforeach
 							                  	</select>
 											</div>
+											<div class="form-group col-4" id="display_classes">
+												<label>Classes</label>
+							                  	<select class="select form-control form-control-1 input-sm input-group" id="classes" name="classes[]" multiple>
+							                  		<option value=''>Select Classes</option>
+								                    @foreach($class_configs as $class_key => $class_value)
+								                    	<option value="{{$class_value['id']}}">{{$class_value['class_section']}}</option>
+								                    @endforeach
+							                  	</select>
+											</div>
+
 											<div class="form-group col-4" id="display_students">
 												<label>Student</label>
 							                  	<select class="select form-control form-control-1 input-sm input-group" id="students" name="students[]" multiple>
@@ -123,8 +133,8 @@
 	<script src="{!! asset('assets/js/responsive.bootstrap4.min.js') !!}"></script>
 	<script type="text/javascript">
 		$(document).ready(function(){
-			$('#display_managements, #display_students, #display_staffs').hide();
-			$('#managements, #staffs, #students').selectpicker();
+			$('#display_managements, #display_students, #display_staffs, #display_classes').hide();
+			$('#managements, #staffs, #students, #classes').selectpicker();
 			$('#distribution_type, #role').change(function(){
 				$('#display_students, #display_staffs, #display_managements').prop("selected", false);
 				var distribution_type = $('#distribution_type').val();
@@ -133,22 +143,41 @@
 				if(distribution_type == 3 && role == 5)
 				{
 					$('#display_managements,#display_distribution').show();
-					$('#display_students, #display_staffs').hide();
+					$('#display_students, #display_staffs, #display_classes').hide();
 				}
 				else if(distribution_type == 3 && role == 2)
 				{
 					$('#display_staffs,#display_distribution').show();
-					$('#display_managements, #display_students').hide();
+					$('#display_managements, #display_students, #display_classes').hide();
 				}
 				else if(distribution_type == 3 && role == 3)
 				{
-					$('#display_students,#display_distribution').show();
+					$('#display_classes,#display_distribution').show();
 					$('#display_managements, #display_staffs').hide();
 				}
 				else if(role == 'all')
 				{
-					$('#display_managements, #display_staffs,#display_distribution,#display_students').hide();
+					$('#display_managements, #display_staffs,#display_distribution,#display_students,#display_classes').hide();
 				}
+			});
+			$('#classes').change(function(){
+				$("#students option").remove();
+				
+				$.post("{{url('usermanagement/getstudents')}}", {classes:$('#classes').val()}, function(response){ 
+					var data = JSON.parse(response);
+					
+					$(data).each(function(  index, value ) {
+					  var option = $("<option></option>");
+					  $(option).val(value.id);
+					  $(option).html(value.first_name);
+					  $('#students').append(option);
+					});
+					$('#display_students').show();
+					$('#display_managements, #display_staffs').hide();
+					$('#students').selectpicker('refresh');
+				});
+
+				
 			});
 			$("#send_welcome_message").validate({
 				rules: {

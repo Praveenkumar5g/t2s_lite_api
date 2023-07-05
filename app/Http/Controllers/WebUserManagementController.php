@@ -967,7 +967,7 @@ class WebUserManagementController extends Controller
     public function send_welcome_message(Request $request)
     {
         $user = Session::get('user_data');
-
+        $userslist = [];
         if($user->user_role == Config::get('app.Admin_role'))//check role and get current user id
             $user_table_id = UserAdmin::where(['user_id'=>$user->user_id])->first();
         else if($user->user_role == Config::get('app.Management_role'))
@@ -1118,10 +1118,15 @@ class WebUserManagementController extends Controller
                 if(!empty($smslogs))
                     Smslogs::insert($smslogs); // store log in db.
             }
-            return (['status'=>true,'message'=>'SMS sent Successfully!...']);
+            return back()->with('success','SMS sent Successfully!...');
         }
         else
-            return (['status'=>false,'message'=>'Please configure template details!...']);    
+        {
+            if(empty($userslist))
+                return back()->with('error','No Users!...');
+            else
+                return back()->with('error','Please configure template details!...');
+        }   
     }
 
 }

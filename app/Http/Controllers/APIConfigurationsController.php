@@ -3401,4 +3401,27 @@ class APIConfigurationsController extends Controller
         }
         return response()->json($management_list);
 	}
+
+	// Check admission number already exists
+	public function check_admission_unique(Request $request)
+	{
+		// Save last login in DB
+        $user = auth()->user();
+
+        $admission_no = $request->admission_no;
+        if($admission_no !='')
+        {
+        	$check_exists = UserStudents::where('admission_number',$admission_no);
+        	if($request->id!='')
+        		$check_exists = $check_exists->where('id','!=',$request->id);
+        	$check_exists = $check_exists->get()->toArray();
+
+        	if(!empty($check_exists))
+        		return response()->json(['status'=>false,'message'=>'Given admission number already exists']);
+        	else
+        		return response()->json(['status'=>true]);
+        }
+        else
+        	return response()->json(['status'=>false,'message'=>'Admission number is required!...']);
+	}
 }

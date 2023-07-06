@@ -59,8 +59,8 @@
 							                  		<option value=''>Select Distribution Type</option>
 								                    <option value="1">New Users</option>
 								                    <option value="2">Not Installed Users</option>
-								                    <option value="3">Individual User</option>
-								                    <option value="4">All</option>
+								                    <option value="3" class ="hide_all">Individual User</option>
+								                    <option value="4" class ="hide_all">All</option>
 							                  	</select>
 											</div>
 											<div class="form-group col-4" id="display_managements">
@@ -109,6 +109,7 @@
 												<button type="submit" name="add" id="add" class="btn btn-primary">
 									                Send Message
 									            </button>
+									            <div id='loader'></div>
 									        </div>&nbsp;&nbsp;
 									        <div class="form-group">
 												<a href="{{url('usermanagement/students')}}" class="btn btn-success">
@@ -139,25 +140,25 @@
 				$('#display_students, #display_staffs, #display_managements').prop("selected", false);
 				var distribution_type = $('#distribution_type').val();
 				var role = $('#role').val();
-				$('#display_distribution').show();
+				$('.hide_all').show();
 				if(distribution_type == 3 && role == 5)
 				{
-					$('#display_managements,#display_distribution').show();
+					$('#display_managements,.hide_all').show();
 					$('#display_students, #display_staffs, #display_classes').hide();
 				}
 				else if(distribution_type == 3 && role == 2)
 				{
-					$('#display_staffs,#display_distribution').show();
+					$('#display_staffs,.hide_all').show();
 					$('#display_managements, #display_students, #display_classes').hide();
 				}
 				else if(distribution_type == 3 && role == 3)
 				{
-					$('#display_classes,#display_distribution').show();
+					$('#display_classes,.hide_all').show();
 					$('#display_managements, #display_staffs').hide();
 				}
 				else if(role == 'all')
 				{
-					$('#display_managements, #display_staffs,#display_distribution,#display_students,#display_classes').hide();
+					$('#display_managements, #display_staffs,.hide_all,#display_students,#display_classes').hide();
 				}
 			});
 			$('#classes').change(function(){
@@ -233,6 +234,7 @@
 			    },
 			    submitHandler: function(form) {
 			    	form.submit();
+			    	$('#loader').show();
 			    }
 			})
 			return false;

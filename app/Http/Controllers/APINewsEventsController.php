@@ -9,6 +9,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Models\AcademicClassConfiguration;
 use App\Models\CommunicationRecipients;
 use App\Models\NewsEventsAttachments;
 use App\Models\NewsEventAcceptStatus;
@@ -289,7 +290,7 @@ class APINewsEventsController extends Controller
                 if(!empty($class_section_names))
                     $visibility = implode(',',$class_section_names);   
             }
-            
+
             // array formated to display news
             $data = ([
                 'id'=>$value['id'],

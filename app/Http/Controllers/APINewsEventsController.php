@@ -282,7 +282,7 @@ class APINewsEventsController extends Controller
             if($value['visible_to']!='all' && $value['visible_to']!='')
             {
                 $class_section_names = $class_sections = [];
-                $class_sections = AcademicClassConfiguration::whereIn('id',value(',',$value['visible_to']))->get()->toArray();
+                $class_sections = AcademicClassConfiguration::whereIn('id',explode(',',$value['visible_to']))->get()->toArray();
                 if(!empty($class_sections))
                 {
                     foreach($class_sections as $class_sec_key => $class_sec_value)

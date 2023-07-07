@@ -277,6 +277,19 @@ class APINewsEventsController extends Controller
                     }
                 }
             }
+            $visibility ='';
+            if($value['visible_to']!='all' && $value['visible_to']!='')
+            {
+                $class_sections = AcademicClassConfiguration::whereIn('id',value(',',$value['visible_to']))->get();
+                $class_section_names = [];
+                foreach($class_sections as $class_sec_key => $class_sec_value)
+                {
+                    $class_section_names[] = $class_sec_value->classsectionName();
+                }
+                if(!empty($class_section_names))
+                    $visibility = implode(',',$class_section_names);   
+            }
+            
             // array formated to display news
             $data = ([
                 'id'=>$value['id'],
@@ -285,6 +298,7 @@ class APINewsEventsController extends Controller
                 'title'=>$value['title'],
                 'images'=>$images,
                 'description'=>$value['description'],
+                'visibility'=>$visibility,
                 'important'=>($value['important'] == 'N')?'no':'yes',
                 'addon_images'=>$addon_images,
                 'addon_description'=>($value['addon_description']!='')?unserialize($value['addon_description']):null,

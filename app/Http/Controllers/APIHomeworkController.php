@@ -418,7 +418,7 @@ class APIHomeworkController extends Controller
         $userall_id = UserAll::where(['user_table_id'=>$user_table_id,'user_role'=>$user->user_role])->pluck('id')->first();
         $student_id = UserStudentsMapping::where('parent',$user_table_id)->pluck('student')->first();
 
-        $homework_status = HomeworkParentStatus::where('notification_id',$request->notification_id)->where('student',$student_id)->get()->first();
+        $homework_status = HomeworkParentStatus::where('notification_id',$request->notification_id)->where('student',$request->student_id)->get()->first();
         if(empty($homework_status))
         {
             $homework_status = new HomeworkParentStatus;
@@ -434,7 +434,7 @@ class APIHomeworkController extends Controller
         $homework_status->notification_id=$request->notification_id;
         $homework_status->parent=$user_table_id;
         $homework_status->status=$request->status;//1-completed,2-not completed
-        $homework_status->student=$student_id;
+        $homework_status->student=$request->student_id;
         $homework_status->reason=$request->reason;
        
         $homework_status->save();

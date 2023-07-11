@@ -1399,6 +1399,7 @@ class APICommunicationController extends Controller
                     'name' => $list['user_details']->first_name,
                     'mobile_number' => $list['user_details']->mobile_number,
                     'designation' => ($value->user_role == Config::get('app.Parent_role') &&$category!='')?$category:$list['user_category'],
+                    'profile_image'=>$list['user_details']->profile_image,
                     'last_login'=>$last_login,
                     'app_status'=>$app_status,
                     'user_role'=>$value->user_role,

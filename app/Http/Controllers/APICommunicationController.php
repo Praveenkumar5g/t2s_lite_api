@@ -483,11 +483,12 @@ class APICommunicationController extends Controller
             $visible_to = UserGroups::where('id',$request->group_id)->pluck('class_config')->first();
             // only chat messages list
             $chat_id_list = Communications::whereIn('group_id',$group_id);
-            if($visible_to!='')
-                $chat_id_list =$chat_id_list->Where(['visible_to'=>'all','communication_type'=>1])->orWhere('visible_to', 'like', '%' .$visible_to. ',%')->where('communication_type',1);
             
             if($user->user_role == Config::get('app.Parent_role'))
                 $chat_id_list =$chat_id_list->whereNull('message_status')->orWhere('message_status',2);
+            
+            if($visible_to!='')
+                $chat_id_list =$chat_id_list->Where(['visible_to'=>'all','communication_type'=>1])->orWhere('visible_to', 'like', '%' .$visible_to. ',%')->where('communication_type',1);
 
             $chat_id_list =$chat_id_list->pluck('id')->toArray();
 

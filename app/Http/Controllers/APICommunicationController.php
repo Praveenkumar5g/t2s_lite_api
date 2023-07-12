@@ -476,6 +476,7 @@ class APICommunicationController extends Controller
         $unreadmessages = 0;
         if(!empty($userdetails) && !empty($group_id))
         {
+            $class_messages = $student_messages = [];
             $user_details = ([
                 'name'=>$userdetails->first_name,
                 'last_seen'=>$user->last_login
@@ -485,16 +486,15 @@ class APICommunicationController extends Controller
             $chat_id_list = Communications::whereIn('group_id',$group_id);
             
             if($user->user_role == Config::get('app.Parent_role'))
+            {
                 $chat_id_list =$chat_id_list->whereNull('message_status')->orWhere('message_status',2);
-            
-            $chat_id_list =$chat_id_list->Where(['visible_to'=>'all','communication_type'=>1]);
 
-            if($visible_to!='')
-                $chat_id_list =$chat_id_list->orWhere('visible_to', 'like', '%' .$visible_to. ',%')->orWhere('visible_to', 'like', '%' .$userdetails->id. ',%')->where('communication_type',1);
-            
-            $chat_id_list =$chat_id_list->orWhere('visible_to', 'like', '%' .$userdetails->id. ',%')->where('communication_type',1);
+                $class_messages = Communications::where('group_id',2)->Where('visible_to', 'like', '%' .$visible_to. ',%')->where('communication_type',1)->where('distribution_type',6)->pluck('id')->toArray();
 
-            $chat_id_list =$chat_id_list->pluck('id')->toArray();
+                $student_messages = Communications::where('group_id',$request->group_id)->Where('visible_to', 'like', '%' .$userdetails->id. ',%')->where('distribution_type',7)->where('communication_type',1)->pluck('id')->toArray();
+            }
+            
+            $chat_id_list =$chat_id_list->Where(['visible_to'=>'all','communication_type'=>1])->pluck('id')->toArray();
 
             // remaining chat messages list
             $remaining_id_list =  Communications::whereIn('group_id',$group_id)->where('communication_type','!=',1);
@@ -504,7 +504,7 @@ class APICommunicationController extends Controller
 
             $remaining_id_list =$remaining_id_list->pluck('id')->toArray();
 
-            $communication_id_list = array_merge($chat_id_list,$remaining_id_list);
+            $communication_id_list = array_merge($chat_id_list,$remaining_id_list,$class_messages,$student_messages);
 
             $get_class_config= UserGroups::where('id',$request->group_id)->pluck('class_config')->first();
             $newsevents_id_list = NewsEvents::Where('visible_to', 'like', '%' .$get_class_config. '%')->orWhere('visible_to','all');

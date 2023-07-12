@@ -487,7 +487,7 @@ class APICommunicationController extends Controller
             if($user->user_role == Config::get('app.Parent_role'))
                 $chat_id_list =$chat_id_list->whereNull('message_status')->orWhere('message_status',2);
             
-            $chat_id_list =$chat_id_list->Where(['visible_to'=>'all','communication_type'=>1]);
+            $chat_id_list =$chat_id_list->Where(['vdisible_to'=>'all','communication_type'=>1]);
 
             if($visible_to!='')
                 $chat_id_list =$chat_id_list->orWhere('visible_to', 'like', '%' .$visible_to. ',%')->orWhere('visible_to', 'like', '%' .$userdetails->id. ',%')->where('communication_type',1);

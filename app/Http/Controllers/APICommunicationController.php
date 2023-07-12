@@ -1618,12 +1618,15 @@ class APICommunicationController extends Controller
                 $student_ids_list = UserStudentsMapping::where('parent',$value)->pluck('student')->toArray();
                 $class_config = UserGroups::where('id',$request->group_id)->pluck('class_config')->first();
                 $student_details = UserStudents::select('id','first_name')->whereIn('id',$student_ids_list)->where('class_config',$class_config)->get()->first();
-                $parent_details = UserParents::select('first_name','user_category','id')->where('id',$value)->get()->first();
-                $user_category = $parent_details->user_category == 1?'F/O':($parent_details->user_category == 2?'M/O':'G/O');
-                $student_list[] = ([
-                    'id'=>$parent_details->id,
-                    'name'=>$student_details->first_name.' '.$user_category.' '.$parent_details->first_name
-                ]); 
+                if(!empty($student_details))
+                {                    
+                    $parent_details = UserParents::select('first_name','user_category','id')->where('id',$value)->get()->first();
+                    $user_category = $parent_details->user_category == 1?'F/O':($parent_details->user_category == 2?'M/O':'G/O');
+                    $student_list[] = ([
+                        'id'=>$parent_details->id,
+                        'name'=>$student_details->first_name.' '.$user_category.' '.$parent_details->first_name
+                    ]); 
+                }
             }
             return response()->json($student_list);
         }

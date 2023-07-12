@@ -1563,6 +1563,7 @@ class APIConfigurationsController extends Controller
 				$approval_pending = count(Communications::select('id')->where('group_id',$group_value['id'])->whereNull('approval_status')->get()->toArray());
 
 				$parent_ids = UserGroupsMapping::where(['user_role'=>Config::get('app.Parent_role'),'group_id'=>$group_value['id']])->pluck('user_table_id')->toArray();
+				$all_user_count = UserGroupsMapping::where(['group_id'=>$group_value['id']])->pluck('user_table_id')->toArray();
 				$parent_online = 0;
 				if(!empty($parent_ids))
 				{
@@ -1603,6 +1604,7 @@ class APIConfigurationsController extends Controller
 					$classteacher_group[$group_key]['class_config'] = $group_value['class_config'];
 					$classteacher_group[$group_key]['classteacher']=($groupaccess[$group_value['id']] == 1)?'yes':'no';
 					$classteacher_group[$group_key]['total_parent_count'] =(!empty($parent_ids))?count($parent_ids):0;
+					$classteacher_group[$group_key]['all_user_count'] =(!empty($all_user_count))?count($all_user_count):0;
 					$classteacher_group[$group_key]['subject_list']= $subject_list;
 					$classteacher_group[$group_key]['uploaded_homeworks_count']=(!empty($approved_subject_homeworks))?count($approved_subject_homeworks):0;
 
@@ -1619,6 +1621,7 @@ class APIConfigurationsController extends Controller
 					$staff_group[$group_key]['class_config'] = $group_value['class_config'];
 					$staff_group[$group_key]['classteacher']=($groupaccess[$group_value['id']] == 1)?'yes':'no';
 					$staff_group[$group_key]['total_parent_count'] =(!empty($parent_ids))?count($parent_ids):0;
+					$staff_group[$group_key]['all_user_count'] =(!empty($all_user_count))?count($all_user_count):0;
 					$staff_group[$group_key]['subject_list']= $subject_list;
 					$staff_group[$group_key]['uploaded_homeworks_count']=(!empty($approved_subject_homeworks))?count($approved_subject_homeworks):0;
 				}
@@ -1714,7 +1717,7 @@ class APIConfigurationsController extends Controller
 		// Save last login in DB
         $user = auth()->user();
 
-        $staff_list = UserStaffs::select('id','first_name','mobile_number','user_category','user_status','dob','doj','employee_no','department');
+        $staff_list = UserStaffs::select('id','first_name','mobile_number','user_category','user_status','dob','doj','employee_no','department','profile_image');
         if(isset($request->search) && $request->search!='')
         {
         	$category = (strpos('teaching staff',strtolower($request->search)))?Config::get('app.Teaching_staff'):((strpos('non teaching staff',strtolower($request->search)))?Config::get('app.Non-Teaching_staff'):'');
@@ -1733,6 +1736,7 @@ class APIConfigurationsController extends Controller
             $staff_list[$key]['user_status'] = $value['user_status'];
             $staff_list[$key]['class'] = (!empty($classessections))?$classessections->classsectionName():'';
             $staff_list[$key]['designation'] = $value['user_category'];
+            $staff_list[$key]['profile_image'] = (isset($value['profile_image']))?$value['profile_image']:'';
         }
         return response()->json($staff_list);
 	}
@@ -3354,7 +3358,7 @@ class APIConfigurationsController extends Controller
 		// Save last login in DB
         $user = auth()->user();
 
-        $admin_list = UserAdmin::select('id','first_name','mobile_number','user_status','dob','doj','employee_no');
+        $admin_list = UserAdmin::select('id','first_name','mobile_number','user_status','dob','doj','employee_no','profile_image');
         if(isset($request->search) && $request->search!='')
         {
         	$admin_list = $admin_list->where('first_name', 'like', '%' . $request->search . '%')->orWhere('mobile_number', 'like', '%' . $request->search . '%')->orWhere('dob', 'like', '%' . $request->search . '%')->orWhere('doj', 'like', '%' . $request->search . '%')->orWhere('employee_no', 'like', '%' . $request->search . '%');
@@ -3366,6 +3370,7 @@ class APIConfigurationsController extends Controller
             $admin_list[$key]['employee_no'] = $value['employee_no'];
             $admin_list[$key]['user_status'] = $value['user_status'];
             $admin_list[$key]['designation'] = 'Admin';
+            $admin_list[$key]['profile_image'] = (isset($value['profile_image']))?$value['profile_image']:'';
         }
         return response()->json($admin_list);
 	}
@@ -3376,7 +3381,7 @@ class APIConfigurationsController extends Controller
 		// Save last login in DB
         $user = auth()->user();
 
-        $management_list = UserManagements::select('id','first_name','mobile_number','user_category','user_status','dob','doj','employee_no');
+        $management_list = UserManagements::select('id','first_name','mobile_number','user_category','user_status','dob','doj','employee_no','profile_image');
         if(isset($request->search) && $request->search!='')
         {
         	$category = (strpos('main head',strtolower($request->search)))?6:((strpos('chairman',strtolower($request->search)))?7:((strpos('principal',strtolower($request->search)))?8:((strpos('headmaster',strtolower($request->search)))?8:'')));
@@ -3392,8 +3397,31 @@ class APIConfigurationsController extends Controller
             $management_list[$key]['employee_no'] = $value['employee_no'];
             $management_list[$key]['user_status'] = $value['user_status'];
             $management_list[$key]['designation'] = $designation;
-            ;
+            $management_list[$key]['profile_image'] = (isset($value['profile_image']))?$value['profile_image']:'';
         }
         return response()->json($management_list);
+	}
+
+	// Check admission number already exists
+	public function check_admission_unique(Request $request)
+	{
+		// Save last login in DB
+        $user = auth()->user();
+
+        $admission_no = $request->admission_no;
+        if($admission_no !='')
+        {
+        	$check_exists = UserStudents::where('admission_number',$admission_no);
+        	if($request->id!='')
+        		$check_exists = $check_exists->where('id','!=',$request->id);
+        	$check_exists = $check_exists->get()->toArray();
+
+        	if(!empty($check_exists))
+        		return response()->json(['status'=>false,'message'=>'Given admission number already exists']);
+        	else
+        		return response()->json(['status'=>true]);
+        }
+        else
+        	return response()->json(['status'=>false,'message'=>'Admission number is required!...']);
 	}
 }

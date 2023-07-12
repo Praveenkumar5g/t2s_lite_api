@@ -487,8 +487,12 @@ class APICommunicationController extends Controller
             if($user->user_role == Config::get('app.Parent_role'))
                 $chat_id_list =$chat_id_list->whereNull('message_status')->orWhere('message_status',2);
             
+            $student_ids_list = UserStudentsMapping::where('parent',$userdetails->id)->pluck('student')->toArray();
+            $class_config = UserGroups::where('id',$request->group_id)->pluck('class_config')->first();
+            $student_id = UserStudents::whereIn('id',$student_ids_list)->where('class_config',$class_config)->pluck('id')->first();
+
             if($visible_to!='')
-                $chat_id_list =$chat_id_list->Where(['visible_to'=>'all','communication_type'=>1])->orWhere('visible_to', 'like', '%' .$visible_to. ',%')->orWhere('visible_to', 'like', '%' .$userdetails->id. ',%')->where('communication_type',1);
+                $chat_id_list =$chat_id_list->Where(['visible_to'=>'all','communication_type'=>1])->orWhere('visible_to', 'like', '%' .$visible_to. ',%')->orWhere('visible_to', 'like', '%' .$student_id. ',%')->where('communication_type',1);
 
             $chat_id_list =$chat_id_list->pluck('id')->toArray();
 
@@ -1614,10 +1618,10 @@ class APICommunicationController extends Controller
                 $student_ids_list = UserStudentsMapping::where('parent',$value)->pluck('student')->toArray();
                 $class_config = UserGroups::where('id',$request->group_id)->pluck('class_config')->first();
                 $student_details = UserStudents::select('id','first_name')->whereIn('id',$student_ids_list)->where('class_config',$class_config)->get()->first();
-                $parent_details = UserParents::select('first_name','user_category')->where('id',$value)->get()->first();
+                $parent_details = UserParents::select('first_name','user_category','id')->where('id',$value)->get()->first();
                 $user_category = $parent_details->user_category == 1?'F/O':($parent_details->user_category == 2?'M/O':'G/O');
                 $student_list[] = ([
-                    'id'=>$parent_details->id,
+                    'id'=>$student_details->id,
                     'name'=>$student_details->first_name.' '.$user_category.' '.$parent_details->first_name
                 ]); 
             }

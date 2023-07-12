@@ -1605,12 +1605,13 @@ class APICommunicationController extends Controller
             $parent_ids = UserGroupsMapping::where('group_id',$request->group_id)->where('user_role',Config::get('app.Parent_role'))->pluck('user_table_id')->toArray();
 
             foreach ($parent_ids as $key => $value) {
-                $student_id = UserStudentsMapping::where('parent',$value)->pluck('student')->first();
-                $student_details = UserStudents::select('id','first_name')->where('id',$student_id)->get()->first();
-                $parent_details = UserParents::select('first_name','user_category','id')->where('id',$value)->get()->first();
+                $student_ids_list = UserStudentsMapping::where('parent',$value)->pluck('student')->toArray();
+                $class_config = UserGroups::where('id',$request->group_id)->pluck('class_config')->first();
+                $student_details = UserStudents::select('id','first_name')->whereIn('id',$student_ids_list)->where('class_config',$class_config)->get()->first();
+                $parent_details = UserParents::select('first_name','user_category')->where('id',$value)->get()->first();
                 $user_category = $parent_details->user_category == 1?'F/O':($parent_details->user_category == 2?'M/O':'G/O');
-                $student_list[]= ([
-                    'id'=>$parent_details->id,
+                $student_list = ([
+                    'id'=>$student_details->id,
                     'name'=>$student_details->first_name.' '.$user_category.' '.$parent_details->first_name
                 ]); 
             }

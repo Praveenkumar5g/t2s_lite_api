@@ -583,7 +583,10 @@ class APICommunicationController extends Controller
                             $class_section_names = [];
                             foreach($class_sections as $class_sec_key => $class_sec_value)
                             {
-                                $class_section_names[] = $class_sec_value->classsectionName();
+                                if($class_sec_value!='')
+                                {
+                                    $class_section_names[] = $class_sec_value->classsectionName();
+                                }
                             }
                             if(!empty($class_section_names))
                                 $visibility = 'Visible to '.implode(',',$class_section_names);     
@@ -596,11 +599,14 @@ class APICommunicationController extends Controller
                             $student_parent_names = [];
                             foreach($parents_ids as $parents_key => $parents_value)
                             {
-                                $parent_details = UserParents::where('id',$parents_value)->get()->first();
-                                $student_id = UserStudentsMapping::where(['parent'=>$parent_details->id])->pluck('student')->toArray();
-                                $student_details = UserStudents::where('id',$student_id)->get()->first();
-                                $user_category = ($parent_details->user_category == Config::get('app.Father'))?'F/O':($parent_details->user_category == Config::get('app.Mother')?'M/O':'G/O');
-                                $student_parent_names[] = $student_details->first_name.' '. $user_category.'  '.$parent_details->first_name;
+                                if($parents_value!='')
+                                {
+                                    $parent_details = UserParents::where('id',$parents_value)->get()->first();
+                                    $student_id = UserStudentsMapping::where(['parent'=>$parent_details->id])->pluck('student')->toArray();
+                                    $student_details = UserStudents::where('id',$student_id)->get()->first();
+                                    $user_category = ($parent_details->user_category == Config::get('app.Father'))?'F/O':($parent_details->user_category == Config::get('app.Mother')?'M/O':'G/O');
+                                    $student_parent_names[] = $student_details->first_name.' '. $user_category.'  '.$parent_details->first_name;
+                                }
                             }
 
                             if(!empty($student_parent_names))
@@ -1611,7 +1617,7 @@ class APICommunicationController extends Controller
                 $parent_details = UserParents::select('first_name','user_category')->where('id',$value)->get()->first();
                 $user_category = $parent_details->user_category == 1?'F/O':($parent_details->user_category == 2?'M/O':'G/O');
                 $student_list[] = ([
-                    'id'=>$student_details->id,
+                    'id'=>$parent_details->id,
                     'name'=>$student_details->first_name.' '.$user_category.' '.$parent_details->first_name
                 ]); 
             }

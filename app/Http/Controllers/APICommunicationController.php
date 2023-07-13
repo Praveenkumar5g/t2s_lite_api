@@ -494,7 +494,6 @@ class APICommunicationController extends Controller
             else if($user->user_role == Config::get('app.Admin_role') || $user->user_role == Config::get('app.Management_role'))
             {
                 $student_messages = Communications::where('group_id',$request->group_id)->where('distribution_type',7)->where('communication_type',1)->pluck('id')->toArray();
-                echo '<pre>';print_r($student_messages);
             }
             if($visible_to!='')
                 $class_messages = Communications::where('group_id',2)->Where('visible_to', 'like', '%' .$visible_to. ',%')->where('communication_type',1)->where('distribution_type',6)->pluck('id')->toArray();
@@ -510,8 +509,7 @@ class APICommunicationController extends Controller
             $remaining_id_list =$remaining_id_list->pluck('id')->toArray();
 
             $communication_id_list = array_merge($chat_id_list,$remaining_id_list,$class_messages,$student_messages);
-            echo '<pre>';print_r($communication_id_list);
-            exit;
+
             $get_class_config= UserGroups::where('id',$request->group_id)->pluck('class_config')->first();
             $newsevents_id_list = NewsEvents::Where('visible_to', 'like', '%' .$get_class_config. '%')->orWhere('visible_to','all');
             if($user->user_role == Config::get('app.Parent_role'))

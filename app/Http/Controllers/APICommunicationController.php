@@ -243,8 +243,9 @@ class APICommunicationController extends Controller
                     $user_list = array_merge($user_list,$message_triggered_user);
 
                     $parent_ids =[];
-                    if(isset($request->visible_to) && !empty($request->visible_to)  && $value == 7 && $user->user_role != 2)//send message to specific students
-                        $parent_ids = UserStudentsMapping::whereIn('student',$request->visible_to)->pluck('parent')->toArray();
+                    // if(isset($request->visible_to) && !empty($request->visible_to)  && $value == 7 && $user->user_role != 2)//send message to specific students
+                    //     $parent_ids = UserStudentsMapping::whereIn('student',$request->visible_to)->pluck('parent')->toArray();
+                    $parent_ids = $request->visible_to;
                     if(!empty($parent_ids))
                     {
                         $user_ids = UserGroupsMapping::select('user_table_id','user_role')->whereIn('user_table_id',$parent_ids)->where('user_role',Config::get('app.Parent_role'))->where('group_id',$group_id)->where('user_status',Config::get('app.Group_Active'))->get()->toArray();
@@ -522,7 +523,7 @@ class APICommunicationController extends Controller
             // $read_count = CommunicationRecipients::select(DB::raw('count(*) as count'),'communication_id')->where(['message_status'=>Config::get('app.Read')])->groupBy('communication_id')->get()->toArray(); //get read count based on notification id.
             // $readcount_data = array_column($read_count,'count','communication_id');
             $notification_ids = CommunicationRecipients::where(function($query) use ($communication_id_list,$userdetails,$user) {
-                    $query->where(['user_tablqe_id'=>$userdetails->id,'user_role'=>$user->user_role,'communication_type'=>1])->whereIn('communication_id',$communication_id_list);
+                    $query->where(['user_table_id'=>$userdetails->id,'user_role'=>$user->user_role,'communication_type'=>1])->whereIn('communication_id',$communication_id_list);
                 })->orwhere(function($query) use ($userdetails,$user,$newsevents_id_list) {
                     $query->where(['user_table_id'=>$userdetails->id,'user_role'=>$user->user_role,'communication_type'=>2])->whereIn('communication_id',$newsevents_id_list);
                 })->orderBy('actioned_time')->get()->toArray(); //Fetch applicable notification ids from table for logged in user.

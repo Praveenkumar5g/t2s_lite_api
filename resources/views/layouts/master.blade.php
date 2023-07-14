@@ -17,7 +17,9 @@
 		<link rel="stylesheet" href="{!! asset('assets/css/responsive.bootstrap4.min.css') !!}">
 		<link rel="stylesheet" href="{!! asset('assets/css/buttons.bootstrap4.min.css') !!}">
 		<link rel="stylesheet" href="{!! asset('assets/css/custom.min.css') !!}">
-		<link rel='stylesheet' href='https://cdn.jsdelivr.net/npm/sweetalert2@7.12.15/dist/sweetalert2.min.css'></link>  
+		<link rel='stylesheet' href='https://cdn.jsdelivr.net/npm/sweetalert2@7.12.15/dist/sweetalert2.min.css'></link>
+
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.13.1/css/bootstrap-select.css" />
 	</head>
 	<body class="hold-transition sidebar-mini layout-fixed">
 		<div class="wrapper">
@@ -55,7 +57,8 @@
 		<script type="text/javascript" src="{!! asset('assets/js/jquery.validate.min.js') !!}"></script>
 		<script type="text/javascript" src="{!! asset('assets/js/additional-methods.min.js') !!}"></script>
 		<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.3.0/js/bootstrap-datepicker.min.js"></script>
-		<script src="https://cdn.jsdelivr.net/npm/sweetalert2@7.12.15/dist/sweetalert2.all.min.js"></script>  
+		<script src="https://cdn.jsdelivr.net/npm/sweetalert2@7.12.15/dist/sweetalert2.all.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.13.1/js/bootstrap-select.min.js"></script> 
 		<script type="text/javascript">
 			$.ajaxSetup({
 			    headers: {

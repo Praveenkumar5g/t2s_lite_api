@@ -17,11 +17,15 @@ use App\Models\AcademicSections;
 use App\Models\SchoolDatabase;
 use App\Models\SchoolProfile;
 use App\Models\UserStudents;
+use App\Models\Smstemplates;
 use Illuminate\Http\Request;
 use App\Models\SchoolUsers;
 use App\Models\UserParents;
+use App\Models\UserStaffs;
 use App\Models\UserGroups;
 use App\Models\UserAdmin;
+use App\Models\Appusers;
+use App\Models\Smslogs;
 use App\Models\UserAll;
 use Carbon\Carbon;
 use DataTables;
@@ -115,7 +119,7 @@ class WebUserManagementController extends Controller
                         {
                             $check_sibilings = UserStudentsMapping::where('parent',$parent_id)->where('student','!=',$row['id'])->pluck('id')->first();
                             if($check_sibilings!= '')
-                                $actionBtn = '<a href="'.url('usermanagement/studentunmapwithparent?id='.$row['id']).'" class="exit btn btn-success btn-sm"><i class="fas fa-sign-out-alt nav-icon" style="color:white"></i></a>';
+                                $actionBtn = '<a href="javascript:void(0);" data-id='.$row['id'].' class="exit btn btn-success btn-sm unmapping" id="unmap"><i class="fas fa-sign-out-alt nav-icon" style="color:white"></i></a>';
                         }
                     }
                     
@@ -842,7 +846,7 @@ class WebUserManagementController extends Controller
         }
         if(!empty($get_parents))
             UserStudentsMapping::where('student',$request->id)->delete();
-        return back()->with('success','Unmapped Successfully');
+        echo true;
     }
     // parent list
     public function parents()
@@ -947,4 +951,195 @@ class WebUserManagementController extends Controller
                 ->make(true);
         }
     } 
+
+    
+    // send welcome message to users
+    public function welcome_message(Request $request)
+    {
+        $data['managements'] = UserManagements::select('id','first_name')->where('user_status',1)->get()->toArray();
+        $data['staffs'] = UserStaffs::select('id','first_name')->where('user_status',1)->get()->toArray();
+        $data['parents'] = UserStudents::select('id','first_name')->where('user_status',1)->get()->toArray();
+        $data['class_configs'] = AcademicClassConfiguration::select('academic_class_configuration.id',DB::raw("CONCAT(c.class_name,'-',s.section_name) as class_section"))->join('academic_classes as c', 'c.id', '=', 'academic_class_configuration.class_id')->join('academic_sections as s', 's.id', '=', 'academic_class_configuration.section_id')->get()->toArray();
+        return view('UserManagement.welcome_message',$data);
+    }
+
+    // send welcome message to users
+    public function send_welcome_message(Request $request)
+    {
+        $user = Session::get('user_data');
+        $userslist = [];
+        if($user->user_role == Config::get('app.Admin_role'))//check role and get current user id
+            $user_table_id = UserAdmin::where(['user_id'=>$user->user_id])->first();
+        else if($user->user_role == Config::get('app.Management_role'))
+            $user_table_id = UserManagements::where(['user_id'=>$user->user_id])->first();
+        else if($user->user_role == Config::get('app.Staff_role'))
+            $user_table_id = UserStaffs::where(['user_id'=>$user->user_id])->first();
+        else if($user->user_role == Config::get('app.Parent_role'))
+            $user_table_id = UserParents::where(['user_id'=>$user->user_id])->first();//fetch id from user all table to store notification triggered user
+        $userall_id = UserAll::where(['user_table_id'=>$user_table_id->id,'user_role'=>$user->user_role])->pluck('id')->first();
+
+        $templates = Smstemplates::whereRaw('LOWER(`label_name`) LIKE ? ',['%'.trim(strtolower("welcome_message")).'%'])->where('status',1)->first();
+        if($request->distribution_type == 1)
+        {
+            // fetch all users mobile number under role staff,parent and management
+            $userslist = SchoolUsers::where('school_profile_id',$user->school_profile_id)->where('new_user',1);
+            if($request->role=='all')
+                $userslist = $userslist->whereIn('user_role',[Config::get('app.Management_role'),Config::get('app.Parent_role'),Config::get('app.Staff_role')]);
+            else
+            {
+                $role[] = $request->role;
+                $userslist = $userslist->whereIn('user_role',$role);
+            }
+            $userslist = $userslist->get()->toArray();
+            if(!empty($userslist))
+            {
+
+                $newsusers_id = array_column($userslist,'user_id');
+                SchoolUsers::where('user_id',$newsusers_id)->where('school_profile_id',$user['school_profile_id'])->update(['new_user'=>0]);
+            }
+        }
+        else if($request->distribution_type == 2)
+        {
+            $staffs_list = $managements_list = $parents_list = $school_list = $userslist = [];
+            $app_installed_users_ids = Appusers::where('active_status',1)->pluck('loginid')->toArray();
+            $staffs = UserAll::whereNotIn('id',$app_installed_users_ids)->where('user_role',Config::get('app.Staff_role'))->pluck('id')->toArray();
+
+            $managements = UserAll::whereNotIn('id',$app_installed_users_ids)->where('user_role',Config::get('app.Management_role'))->pluck('id')->toArray();
+
+            $parents = UserAll::whereNotIn('id',$app_installed_users_ids)->where('user_role',Config::get('app.Parent_role'))->pluck('id')->toArray();
+            
+            if($request->role=='all')
+            {
+                $staffs_list = UserStaffs::whereIn('id',$staffs)->where('user_status',1)->pluck('user_id')->toArray();
+                $parents_list = UserParents::whereIn('id',$parents)->where('user_status',1)->pluck('user_id')->toArray();
+                $managements_list = UserManagements::whereIn('id',$managements)->where('user_status',1)->pluck('user_id')->toArray();
+            }
+            else
+            {
+                if($request->role == 2 && !empty($staffs))
+                    $staffs_list = UserStaffs::whereIn('id',$staffs)->where('user_status',1)->pluck('user_id')->toArray();
+                if($request->role == 3 && !empty($parents))
+                    $parents_list = UserParents::whereIn('id',$parents)->where('user_status',1)->pluck('user_id')->toArray();
+                if($request->role == 5 && !empty($managements))
+                    $managements_list = UserManagements::whereIn('id',$managements)->where('user_status',1)->pluck('user_id')->toArray();
+            }
+            $school_list = array_merge($school_list,$staffs_list,$parents_list,$managements_list);
+            
+            if(!empty($school_list))
+                    $userslist = SchoolUsers::whereIn('user_id',$school_list)->where('school_profile_id',$user->school_profile_id)->get()->toArray();
+            
+        }
+        else if($request->distribution_type == 3)
+        {
+            $staffs = $managements = $parents = $school_list = $userslist = [];
+            if($request->role == 2 && $request->staffs!='')
+                $staffs = UserStaffs::whereIn('id',$request->staffs)->where('user_status',1)->pluck('user_id')->toArray();
+            if($request->role == 3 && $request->students!='')
+            {
+                $parentid = UserStudentsMapping::whereIn('student',$request->students)->pluck('parent')->toArray();
+                if(!empty($parentid))
+                    $parents = UserParents::whereIn('id',$parentid)->where('user_status',1)->pluck('user_id')->toArray();
+            }
+            if($request->role == 5 && $request->managements!='')
+                $managements = UserManagements::whereIn('id',$request->managements)->where('user_status',1)->pluck('user_id')->toArray();
+
+            $school_list = array_merge($staffs,$parents,$managements);
+            if(!empty($school_list))
+                $userslist = SchoolUsers::whereIn('user_id',$school_list)->where('school_profile_id',$user->school_profile_id)->get()->toArray();
+        }
+        else if($request->distribution_type == 4)
+        {
+            $userslist = SchoolUsers::where('school_profile_id',$user->school_profile_id);
+            if($request->role=='all')
+            {
+                // fetch all users mobile number under role staff,parent and management
+                $userslist = $userslist->whereIn('user_role',[Config::get('app.Management_role'),Config::get('app.Parent_role'),Config::get('app.Staff_role')]);
+            }
+            else
+            {
+                $role[]= $request->role;
+                // fetch all users mobile number under role staff,parent and management
+                $userslist = $userslist->whereIn('user_role',$role);
+            }
+
+            $userslist = $userslist->get()->toArray();
+        }
+
+        if(!empty($templates) && !empty($userslist)) //check empty condition
+        {
+            foreach ($userslist as $key => $value) {
+                if($value['user_role'] == 3)
+                {
+                    $schoolusers = SchoolUsers::where(['user_role'=>$value['user_role'],'school_profile_id'=>$user->school_profile_id,'id'=>$value['id']]);
+
+                    $default_password_type = SchoolProfile::where('id',$user->school_profile_id)->pluck('default_password_type')->first();
+                    if($default_password_type == '')
+                        $default_password_type = 'mobile_number';
+
+                    if($default_password_type == 'admission_number' || $default_password_type == 'dob')
+                    {
+                        $parent_id = UserParents::where('user_id',$value['user_id'])->pluck('id')->first();
+                        $mapped_student = UserStudentsMapping::where('parent',$parent_id)->pluck('student')->first();
+                        $student_details = UserStudents::where('id',$mapped_student)->get()->first();
+                    }
+
+                    if($default_password_type == 'mobile_number')
+                    {
+                        $password = $value['user_mobile_number'];
+                        $schoolusers = $schoolusers->update(['user_password'=>bcrypt($value['user_mobile_number'])]);
+                    }
+                    else if($default_password_type == 'admission_number')
+                    {
+                        $password = $student_details->admission_number;
+                        $schoolusers = $schoolusers->update(['user_password'=>bcrypt($student_details->admission_number)]);
+                    }
+                    else if($default_password_type == 'dob')
+                    {
+                        $password = date('dmY',strtotime($student_details->dob));
+                        $schoolusers = $schoolusers->update(['user_password'=>bcrypt($password)]);
+                    }
+                }
+                else
+                    $password =$value['user_mobile_number'];
+
+
+                    // replace the mobile and password with corresponding value
+                $message = str_replace("*mobileno*",$value['user_mobile_number'],$templates->message);
+                $message = str_replace("*password*",$password,$message);
+
+                // call send sms function
+                $delivery_details = APISmsController::SendSMS($value['user_mobile_number'],$message,$templates->dlt_template_id);
+
+                // store log in db.
+                $status = 0;
+                if(!empty($delivery_details) && isset($delivery_details['status']) && $delivery_details['status'] == 1)
+                    $status = 1;
+                $smslogs = ([
+                    'sms_description'=>$message,
+                    'sms_count'=>1,
+                    'mobile_number'=>$value['user_mobile_number'],
+                    'sent_by'=>$userall_id,
+                    'status'=>$status
+                ]);
+                if(!empty($smslogs))
+                    Smslogs::insert($smslogs); // store log in db.
+            }
+            return back()->with('success','SMS sent Successfully!...');
+        }
+        else
+        {
+            if(empty($userslist))
+                return back()->with('error','No Users!...');
+            else
+                return back()->with('error','Please configure template details!...');
+        }
+    }
+
+    public function getstudents(Request $request)
+    {
+        $parents= [];
+        $parents = UserStudents::select('id','first_name')->where('user_status',1)->whereIn('class_config',$request->classes)->get()->toArray();
+        echo json_encode($parents);
+    }
+
 }

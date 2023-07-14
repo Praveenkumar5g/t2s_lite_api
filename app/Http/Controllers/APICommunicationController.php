@@ -1030,10 +1030,18 @@ class APICommunicationController extends Controller
 
         // Get authorizated user details
         $user = auth()->user();
-        $message_details = Communications::where(['id'=>$request->notification_id])->get()->first();
+        if($request->communication_type != 3)
+            $message_details = Communications::where(['id'=>$request->notification_id])->get()->first();
+        else if($request->communication_type == 3)
+            $message_details = NewsEvents::where(['id'=>$request->notification_id])->get()->first();
         if(!empty($message_details))
         {
-            $delivery_details=CommunicationRecipients::where(['communication_id'=>$request->notification_id])->get();
+            $delivery_details=CommunicationRecipients::where(['communication_id'=>$request->notification_id]);
+            if($request->communication_type == 3)
+                $delivery_details=$delivery_details->where('communication_type',2);
+            else
+                $delivery_details=$delivery_details->where('communication_type',1);
+            $delivery_details=$delivery_details->get();
             if(!empty($delivery_details))
             {
                 $delivered_users=[];
@@ -1084,9 +1092,9 @@ class APICommunicationController extends Controller
                 }
                 echo json_encode(["delivered_users"=>$delivered_users]);exit();  
             }
-            return response()->json('No Recipients');exit();
+            return response()->json(['status'=>false,'message'=>'No Recipients']);exit();
         }
-        return response()->json('No Messages');
+        return response()->json(['status'=>false,'message'=>'No Messages']);
     }
 
     public function view_profile(Request $request)

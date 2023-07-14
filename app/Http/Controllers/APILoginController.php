@@ -75,6 +75,8 @@ class APILoginController extends Controller
         {
             if($request->user_role == Config::get('app.Management_role') && $request->school_profile_id !='' && $request->password!='')
                 $credentials['school_profile_id'] = $request->school_profile_id;
+            else if($request->user_role == Config::get('app.Parent_role') && $request->school_profile_id !='' && $request->password!='')
+                $credentials['school_profile_id'] = $request->school_profile_id;
             $user_status_all = SchoolUsers::where('user_role',$request->user_role)->where('user_mobile_number',$request->user_mobile_number)->get()->toArray();
             $credentials['user_status'] = 1;
             $flag=$user_status=0;
@@ -448,13 +450,18 @@ class APILoginController extends Controller
     {
         $school_names = [];
 
-        // get school profile id
-        $school_list = SchoolUsers::where('user_mobile_number',$request->mobile_number)->where('user_role',Config::get('app.Management_role'))->GroupBy('school_profile_id')->pluck('school_profile_id')->toArray();
+        if($request->user_role !='')
+        {
+            // get school profile id
+            $school_list = SchoolUsers::where('user_mobile_number',$request->mobile_number)->where('user_role',$request->user_role)->GroupBy('school_profile_id')->pluck('school_profile_id')->toArray();
 
-        if(!empty($school_list)) //check empty or not
-            $school_names = SchoolProfile::select('id','school_name')->whereIn('id',$school_list)->get()->toArray();//get all schools list
+            if(!empty($school_list)) //check empty or not
+                $school_names = SchoolProfile::select('id','school_name')->whereIn('id',$school_list)->get()->toArray();//get all schools list
 
-        return response()->json($school_names);//return school details
+            return response()->json($school_names);//return school details
+        }
+        else
+            return response()->json(['status'=>false,'message'=>'Role is required']);
     }
 
     // Change the user status to active /deactive

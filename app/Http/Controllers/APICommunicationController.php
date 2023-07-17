@@ -1060,25 +1060,28 @@ class APICommunicationController extends Controller
                     }
                     else if($value['user_role'] == Config::get('app.Parent_role'))
                     {
-                        $user_table_id = UserParents::where(['user_id'=>$data['user_details']->user_id])->first();//fetch id from user all table to store notification triggered user
-                        if(!empty($user_table_id))
+                        if(!empty($data['user_details']) && isset($data['user_details']->user_id))
                         {
-                            $config_id = UserGroups::where('id',$request->group_id)->pluck('class_config')->first();
-                            $user_category = UserCategories::where(['id'=>$user_table_id->user_category])->pluck('category_name')->first();
-                            $user_category = (strtolower($user_category) == 'father')?'F/O':((strtolower($user_category) == 'mother')?'M/O':'G/O');
-                            $student_id = UserStudentsMapping::where(['parent'=>$user_table_id->id])->pluck('student')->toArray();
-                            $student_name = UserStudents::whereIn('id',$student_id)->first();
+                            $user_table_id = UserParents::where(['user_id'=>$data['user_details']->user_id])->first();//fetch id from user all table to store notification triggered user
+                            if(!empty($user_table_id))
+                            {
+                                $config_id = UserGroups::where('id',$request->group_id)->pluck('class_config')->first();
+                                $user_category = UserCategories::where(['id'=>$user_table_id->user_category])->pluck('category_name')->first();
+                                $user_category = (strtolower($user_category) == 'father')?'F/O':((strtolower($user_category) == 'mother')?'M/O':'G/O');
+                                $student_id = UserStudentsMapping::where(['parent'=>$user_table_id->id])->pluck('student')->toArray();
+                                $student_name = UserStudents::whereIn('id',$student_id)->first();
 
-                            $category = $user_category.' '.$student_name->first_name;
-                            $class_section_details = AcademicClassConfiguration::where(['id'=>$student_name->class_config])->get()->first();
-                            if(isset($class_section_details['class_id']) && $class_section_details['class_id']!='')
-                                $class_name = AcademicClasses::where('id',$class_section_details['class_id'])->pluck('class_name')->first();
-                            if(isset($class_section_details['section_id']) && $class_section_details['section_id'])
-                                $section_name = AcademicSections::where('id',$class_section_details['section_id'])->pluck('section_name')->first();
-                            if($class_name != '' && $section_name!='')
-                                $class = $class_name." ".$section_name;
-                            else
-                                $class = '';
+                                $category = $user_category.' '.$student_name->first_name;
+                                $class_section_details = AcademicClassConfiguration::where(['id'=>$student_name->class_config])->get()->first();
+                                if(isset($class_section_details['class_id']) && $class_section_details['class_id']!='')
+                                    $class_name = AcademicClasses::where('id',$class_section_details['class_id'])->pluck('class_name')->first();
+                                if(isset($class_section_details['section_id']) && $class_section_details['section_id'])
+                                    $section_name = AcademicSections::where('id',$class_section_details['section_id'])->pluck('section_name')->first();
+                                if($class_name != '' && $section_name!='')
+                                    $class = $class_name." ".$section_name;
+                                else
+                                    $class = '';
+                            }
                         }
                     }
                     $delivered_users[$key]=([

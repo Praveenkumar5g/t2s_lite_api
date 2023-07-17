@@ -1045,6 +1045,7 @@ class APICommunicationController extends Controller
             if(!empty($delivery_details))
             {
                 $delivered_users=[];
+                $index=0;
                 foreach ($delivery_details as $key => $value) {
                     $class=$class_name = $section_name='';
                     $data= $this->user_details($value);
@@ -1084,14 +1085,18 @@ class APICommunicationController extends Controller
                             }
                         }
                     }
-                    $delivered_users[$key]=([
-                        'name'=>$data['user_details']->first_name,
-                        'designation'=>$category,
-                        'mobile_no'=>$data['user_details']->mobile_number,
-                        'message_status'=>$value['message_status'],//1-delivered,2-Read,3-Actioned,
-                        'view_time'=>$value['actioned_time'],
-                        'class'=>$class
-                    ]);
+                    if(!empty($data['user_details']) && isset($data['user_details']->user_id))
+                    {
+                        $delivered_users[$index]=([
+                            'name'=>$data['user_details']->first_name,
+                            'designation'=>$category,
+                            'mobile_no'=>$data['user_details']->mobile_number,
+                            'message_status'=>$value['message_status'],//1-delivered,2-Read,3-Actioned,
+                            'view_time'=>$value['actioned_time'],
+                            'class'=>$class
+                        ]);
+                        $index++;
+                    }
                 }
                 echo json_encode(["delivered_users"=>$delivered_users]);exit();  
             }

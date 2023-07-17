@@ -1560,7 +1560,10 @@ class APIConfigurationsController extends Controller
 				$classteacher_id = AcademicClassConfiguration::where('id',$group_value['class_config'])->pluck('class_teacher')->first();
 				if($classteacher_id!='')
 					$classteacher_name = UserStaffs::where('id',$classteacher_id)->pluck('first_name')->first();
-				$approval_pending = count(Communications::select('id')->where('group_id',$group_value['id'])->whereNull('approval_status')->get()->toArray());
+				$chat_count = $homework_count = 0;
+				$chat_count = count(Communications::select('id')->where('group_id',$group_value['id'])->whereNull('approval_status')->where('communication_type',1)->get()->toArray());
+				$homework_count = count(Communications::select('id')->where('group_id',$group_value['id'])->whereNull('approval_status')->where('communication_type',2)->where('actioned_time','>=',date("Y-m-d",strtotime(Carbon::now()->timezone('Asia/Kolkata'))))->get()->toArray());
+				$approval_pending = $chat_count+$homework_count;
 
 				$parent_ids = UserGroupsMapping::where(['user_role'=>Config::get('app.Parent_role'),'group_id'=>$group_value['id']])->pluck('user_table_id')->toArray();
 				$all_user_count = UserGroupsMapping::where(['group_id'=>$group_value['id']])->pluck('user_table_id')->toArray();

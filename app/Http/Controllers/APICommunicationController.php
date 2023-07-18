@@ -1072,12 +1072,15 @@ class APICommunicationController extends Controller
                                 $student_id = UserStudentsMapping::where(['parent'=>$user_table_id->id])->pluck('student')->toArray();
                                 $student_name = UserStudents::whereIn('id',$student_id)->first();
 
-                                $category = $user_category.' '.$student_name->first_name;
-                                $class_section_details = AcademicClassConfiguration::where(['id'=>$student_name->class_config])->get()->first();
-                                if(isset($class_section_details['class_id']) && $class_section_details['class_id']!='')
-                                    $class_name = AcademicClasses::where('id',$class_section_details['class_id'])->pluck('class_name')->first();
-                                if(isset($class_section_details['section_id']) && $class_section_details['section_id'])
-                                    $section_name = AcademicSections::where('id',$class_section_details['section_id'])->pluck('section_name')->first();
+                                $category = $user_category.' '.(isset($student_name->first_name)?$student_name->first_name:'');
+                                if(isset($student_name->class_config))
+                                {
+                                    $class_section_details = AcademicClassConfiguration::where(['id'=>$student_name->class_config])->get()->first();
+                                    if(isset($class_section_details['class_id']) && $class_section_details['class_id']!='')
+                                        $class_name = AcademicClasses::where('id',$class_section_details['class_id'])->pluck('class_name')->first();
+                                    if(isset($class_section_details['section_id']) && $class_section_details['section_id'])
+                                        $section_name = AcademicSections::where('id',$class_section_details['section_id'])->pluck('section_name')->first();
+                                }
                                 if($class_name != '' && $section_name!='')
                                     $class = $class_name." ".$section_name;
                                 else
@@ -1397,47 +1400,48 @@ class APICommunicationController extends Controller
             $group_users =$group_users->get();
         if(!empty($group_users))
         {
-            // echo '<pre>';print_r($group_users);exit;
             foreach ($group_users as $key => $value) {
                 $category = $app_status = $admission_no='';
 
                 $list = $this->user_details($value); //fetch individual user details
 
-                if($value->user_role == Config::get('app.Parent_role')) //for parent fetch student details
+                if(!empty($list))
                 {
-                    $user_category = UserCategories::where(['id'=>$list['user_details']->user_category])->pluck('category_name')->first(); //fetch parent category and student name
-                    $user_category = (strtolower($user_category) == 'father')?'F/O':((strtolower($user_category) == 'mother')?'M/O':'G/O');
-                    $class_config = UserGroups::where('id',$request->group_id)->pluck('class_config')->first();
-                    $student_ids_list = UserStudentsMapping::where(['parent'=>$list['user_details']->id])->pluck('student')->toArray();
-                    $student_id = UserStudents::whereIn('id',$student_ids_list);
+                    if($value->user_role == Config::get('app.Parent_role')) //for parent fetch student details
+                    {
+                        $user_category = UserCategories::where(['id'=>$list['user_details']->user_category])->pluck('category_name')->first(); //fetch parent category and student name
+                        $user_category = (strtolower($user_category) == 'father')?'F/O':((strtolower($user_category) == 'mother')?'M/O':'G/O');
+                        $class_config = UserGroups::where('id',$request->group_id)->pluck('class_config')->first();
+                        $student_ids_list = UserStudentsMapping::where(['parent'=>$list['user_details']->id])->pluck('student')->toArray();
+                        $student_id = UserStudents::whereIn('id',$student_ids_list);
 
-                    if($request->group_id!=2)
-                        $student_id =$student_id->where('class_config',$class_config);
+                        if($request->group_id!=2)
+                            $student_id =$student_id->where('class_config',$class_config);
 
-                    $student_id =$student_id->get()->toArray();
+                        $student_id =$student_id->get()->toArray();
 
-                    $student_name = implode(',',array_column($student_id,'first_name'));
-                    $category = $user_category.' '.$student_name; //combine category and name
-                    $admission_no = implode(',',array_column($student_id,'admission_number'));
+                        $student_name = implode(',',array_column($student_id,'first_name'));
+                        $category = $user_category.' '.$student_name; //combine category and name
+                        $admission_no = implode(',',array_column($student_id,'admission_number'));
+                    }
+                    //fetch id from user all table to store notification triggered user
+                    $userall_id = UserAll::where(['user_table_id'=>$list['user_details']->id,'user_role'=>$value['user_role']])->pluck('id')->first();
+                    $app_status = isset($player_details[$userall_id])?'Installed':'Not Installed';
+                    $last_login =  SchoolUsers::where('user_id',$list['user_details']->user_id)->pluck('last_login')->first();
+                    // user details
+                    $members_list[]=([
+                        'id'=>$list['user_details']->id,
+                        'name' => $list['user_details']->first_name,
+                        'mobile_number' => $list['user_details']->mobile_number,
+                        'designation' => ($value->user_role == Config::get('app.Parent_role') &&$category!='')?$category:$list['user_category'],
+                        'profile_image'=>($list['user_details']->profile_image!='' && $list['user_details']->profile_image!=null)?$list['user_details']->profile_image:'',
+                        'last_login'=>$last_login,
+                        'app_status'=>$app_status,
+                        'user_role'=>$value->user_role,
+                        'inactive_days'=>($last_login!= null)?round((time() - strtotime($last_login)) / (60 * 60 * 24)):0,
+                        'admission_no'=>$admission_no
+                    ]);
                 }
-
-                //fetch id from user all table to store notification triggered user
-                $userall_id = UserAll::where(['user_table_id'=>$list['user_details']->id,'user_role'=>$value['user_role']])->pluck('id')->first();
-                $app_status = isset($player_details[$userall_id])?'Installed':'Not Installed';
-                $last_login =  SchoolUsers::where('user_id',$list['user_details']->user_id)->pluck('last_login')->first();
-                // user details
-                $members_list[]=([
-                    'id'=>$list['user_details']->id,
-                    'name' => $list['user_details']->first_name,
-                    'mobile_number' => $list['user_details']->mobile_number,
-                    'designation' => ($value->user_role == Config::get('app.Parent_role') &&$category!='')?$category:$list['user_category'],
-                    'profile_image'=>($list['user_details']->profile_image!='' && $list['user_details']->profile_image!=null)?$list['user_details']->profile_image:'',
-                    'last_login'=>$last_login,
-                    'app_status'=>$app_status,
-                    'user_role'=>$value->user_role,
-                    'inactive_days'=>($last_login!= null)?round((time() - strtotime($last_login)) / (60 * 60 * 24)):0,
-                    'admission_no'=>$admission_no
-                ]);
             }
             $key_values = array_column($members_list, 'admission_no'); 
             array_multisort($key_values, SORT_ASC, $members_list);

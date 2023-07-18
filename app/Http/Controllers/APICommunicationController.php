@@ -1425,26 +1425,27 @@ class APICommunicationController extends Controller
                         $category = $user_category.' '.$student_name; //combine category and name
                         $admission_no = implode(',',array_column($student_id,'admission_number'));
                     }
-
-                    //fetch id from user all table to store notification triggered user
-                    $userall_id = UserAll::where(['user_table_id'=>$list['user_details']->id,'user_role'=>$value['user_role']])->pluck('id')->first();
-                    $app_status = isset($player_details[$userall_id])?'Installed':'Not Installed';
-                    $last_login =  SchoolUsers::where('user_id',$list['user_details']->user_id)->pluck('last_login')->first();
-                    // user details
-                    $members_list[]=([
-                        'id'=>$list['user_details']->id,
-                        'name' => $list['user_details']->first_name,
-                        'mobile_number' => $list['user_details']->mobile_number,
-                        'designation' => ($value->user_role == Config::get('app.Parent_role') &&$category!='')?$category:$list['user_category'],
-                        'profile_image'=>($list['user_details']->profile_image!='' && $list['user_details']->profile_image!=null)?$list['user_details']->profile_image:'',
-                        'last_login'=>$last_login,
-                        'app_status'=>$app_status,
-                        'user_role'=>$value->user_role,
-                        'inactive_days'=>($last_login!= null)?round((time() - strtotime($last_login)) / (60 * 60 * 24)):0,
-                        'admission_no'=>$admission_no
-                    ]);
+                    echo $list['user_details']->id;
+                    // //fetch id from user all table to store notification triggered user
+                    // $userall_id = UserAll::where(['user_table_id'=>$list['user_details']->id,'user_role'=>$value['user_role']])->pluck('id')->first();
+                    // $app_status = isset($player_details[$userall_id])?'Installed':'Not Installed';
+                    // $last_login =  SchoolUsers::where('user_id',$list['user_details']->user_id)->pluck('last_login')->first();
+                    // // user details
+                    // $members_list[]=([
+                    //     'id'=>$list['user_details']->id,
+                    //     'name' => $list['user_details']->first_name,
+                    //     'mobile_number' => $list['user_details']->mobile_number,
+                    //     'designation' => ($value->user_role == Config::get('app.Parent_role') &&$category!='')?$category:$list['user_category'],
+                    //     'profile_image'=>($list['user_details']->profile_image!='' && $list['user_details']->profile_image!=null)?$list['user_details']->profile_image:'',
+                    //     'last_login'=>$last_login,
+                    //     'app_status'=>$app_status,
+                    //     'user_role'=>$value->user_role,
+                    //     'inactive_days'=>($last_login!= null)?round((time() - strtotime($last_login)) / (60 * 60 * 24)):0,
+                    //     'admission_no'=>$admission_no
+                    // ]);
                 }
             }
+            exit();
             $key_values = array_column($members_list, 'admission_no'); 
             array_multisort($key_values, SORT_ASC, $members_list);
         }

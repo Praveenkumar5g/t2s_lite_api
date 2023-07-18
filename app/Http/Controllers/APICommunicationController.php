@@ -1072,12 +1072,15 @@ class APICommunicationController extends Controller
                                 $student_id = UserStudentsMapping::where(['parent'=>$user_table_id->id])->pluck('student')->toArray();
                                 $student_name = UserStudents::whereIn('id',$student_id)->first();
 
-                                $category = $user_category.' '.$student_name->first_name;
-                                $class_section_details = AcademicClassConfiguration::where(['id'=>$student_name->class_config])->get()->first();
-                                if(isset($class_section_details['class_id']) && $class_section_details['class_id']!='')
-                                    $class_name = AcademicClasses::where('id',$class_section_details['class_id'])->pluck('class_name')->first();
-                                if(isset($class_section_details['section_id']) && $class_section_details['section_id'])
-                                    $section_name = AcademicSections::where('id',$class_section_details['section_id'])->pluck('section_name')->first();
+                                $category = $user_category.' '.(isset($student_name->first_name)?$student_name->first_name:'');
+                                if(isset($student_name->class_config))
+                                {
+                                    $class_section_details = AcademicClassConfiguration::where(['id'=>$student_name->class_config])->get()->first();
+                                    if(isset($class_section_details['class_id']) && $class_section_details['class_id']!='')
+                                        $class_name = AcademicClasses::where('id',$class_section_details['class_id'])->pluck('class_name')->first();
+                                    if(isset($class_section_details['section_id']) && $class_section_details['section_id'])
+                                        $section_name = AcademicSections::where('id',$class_section_details['section_id'])->pluck('section_name')->first();
+                                }
                                 if($class_name != '' && $section_name!='')
                                     $class = $class_name." ".$section_name;
                                 else

@@ -1400,7 +1400,6 @@ class APICommunicationController extends Controller
             $group_users =$group_users->get();
         if(!empty($group_users))
         {
-            echo '<pre>';print_r($group_users);
             foreach ($group_users as $key => $value) {
                 $category = $app_status = $admission_no='';
 
@@ -1425,7 +1424,6 @@ class APICommunicationController extends Controller
                         $category = $user_category.' '.$student_name; //combine category and name
                         $admission_no = implode(',',array_column($student_id,'admission_number'));
                     }
-                    echo $list['user_details']->id.'<br/>';
                     // //fetch id from user all table to store notification triggered user
                     // $userall_id = UserAll::where(['user_table_id'=>$list['user_details']->id,'user_role'=>$value['user_role']])->pluck('id')->first();
                     // $app_status = isset($player_details[$userall_id])?'Installed':'Not Installed';
@@ -1445,7 +1443,6 @@ class APICommunicationController extends Controller
                     // ]);
                 }
             }
-            exit();
             $key_values = array_column($members_list, 'admission_no'); 
             array_multisort($key_values, SORT_ASC, $members_list);
         }

@@ -119,6 +119,7 @@ Route::group(['middleware' => 'auth.connect','prefix' => 'user'], function ($rou
     Route::post('/onboarding_fetch_single_parent',[APIConfigurationsController::class,'onboarding_fetch_single_parent']);
     Route::get('/onboarding_parent_list',[APIConfigurationsController::class,'onboarding_parent_list']);
     Route::post('/onboarding_edit_parent',[APIConfigurationsController::class,'onboarding_edit_parent']);
+    Route::post('/check_admission_unique',[APIConfigurationsController::class,'check_admission_unique']);
     /*Delete Configuration*/
     Route::post('/delete_division',[APIConfigurationsController::class,'delete_division']);
     Route::post('/delete_class',[APIConfigurationsController::class,'delete_class']);
@@ -158,7 +159,7 @@ Route::group(['middleware' => 'auth.connect','prefix' => 'user'], function ($rou
     Route::post('/homework_details_report',[APIHomeworkController::class,'homework_details_report']);
     Route::post('/delete_homework_attachment',[APIHomeworkController::class,'delete_homework_attachment']);
     Route::post('/list_homework_status',[APIHomeworkController::class,'list_homework_status']);
-
+    Route::post('/get_group_students',[APICommunicationController::class,'get_group_students']);
     /*News and Events -- Start*/
     Route::post('/store_news_events',[APINewsEventsController::class,'store_news_events']);
     Route::get('/mainscreen_view_newsevents',[APINewsEventsController::class,'mainscreen_view_newsevents']);
@@ -175,6 +176,6 @@ Route::group(['middleware' => 'auth.connect','prefix' => 'user'], function ($rou
     Route::get('/feesStructure',[PayfeesController::class,'feesStructure']);
     Route::get('/studentFees', [PayfeesController::class,'studentFees']);
     Route::get('/academicYear', [PayfeesController::class,'academicYear']);
-    Route::get('/studentPaymentHistory', [PayfeesController::class,'studentPaymentHistory']);
+    Route::get('/paymentHistory', [PayfeesController::class,'paymentHistory']);
     /*Payfees - Ends*/
 });

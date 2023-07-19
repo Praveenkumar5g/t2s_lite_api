@@ -9,6 +9,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Models\AcademicClassConfiguration;
 use App\Models\CommunicationRecipients;
 use App\Models\NewsEventsAttachments;
 use App\Models\NewsEventAcceptStatus;
@@ -238,7 +239,7 @@ class APINewsEventsController extends Controller
             $user_table_id = UserParents::where(['user_id'=>$user->user_id])->first();//fetch id from user all table to store notification triggered user
             $student_id = UserStudentsMapping::where(['parent'=>$user_table_id->id])->pluck('student')->toArray();
             $class_config = UserStudents::whereIn('id',$student_id)->pluck('class_config')->first();
-            $newsevents=$newsevents->where('visible_to','all')->orWhere('visible_to', 'like', '%' .$class_config. '%');
+            $newsevents=$newsevents->where(['visible_to'=>'all','module_type'=>1])->orWhere('visible_to', 'like', '%' .$class_config. '%')->where('module_type',1);
         }
         $newsevents = $newsevents->orderBy('published_time','DESC')->get()->toArray();//fetch all the news data
         $latest = $olddata = [];
@@ -277,6 +278,22 @@ class APINewsEventsController extends Controller
                     }
                 }
             }
+            $visibility ='';
+            if($value['visible_to']!='all' && $value['visible_to']!='')
+            {
+                $class_section_names = $class_sections = [];
+                $class_sections = AcademicClassConfiguration::whereIn('id',explode(',',$value['visible_to']))->get();
+                if(!empty($class_sections))
+                {
+                    foreach($class_sections as $class_sec_key => $class_sec_value)
+                    {
+                        $class_section_names[] = $class_sec_value->classsectionName();
+                    }
+                    if(!empty($class_section_names))
+                        $visibility = implode(',',$class_section_names);   
+                }
+            }
+
             // array formated to display news
             $data = ([
                 'id'=>$value['id'],
@@ -285,6 +302,7 @@ class APINewsEventsController extends Controller
                 'title'=>$value['title'],
                 'images'=>$images,
                 'description'=>$value['description'],
+                'visibility'=>$visibility,
                 'important'=>($value['important'] == 'N')?'no':'yes',
                 'addon_images'=>$addon_images,
                 'addon_description'=>($value['addon_description']!='')?unserialize($value['addon_description']):null,
@@ -478,7 +496,7 @@ class APINewsEventsController extends Controller
             $user_table_id = UserParents::where(['user_id'=>$user->user_id])->first();//fetch id from user all table to store notification triggered user
             $student_id = UserStudentsMapping::where(['parent'=>$user_table_id->id])->pluck('student')->toArray();
             $class_config = UserStudents::whereIn('id',$student_id)->pluck('class_config')->first();
-            $newsevents=$newsevents->where('visible_to','all')->orWhere('visible_to', 'like', '%' .$class_config. '%');
+            $newsevents=$newsevents->where('visible_to','all')->orWhere('visible_to', 'like', '%' .$class_config. '%')->where('module_type',2);
         }
         $newsevents=$newsevents->orderBy('event_date','DESC')->get()->toArray();//fetch all the news data
         $upcoming_events = $completed_events = [];
@@ -498,6 +516,23 @@ class APINewsEventsController extends Controller
                 $count_result = array_column($count_result,'count','accept_status');
             else
                 $count_result = [];
+
+            $visibility ='';
+            if($value['visible_to']!='all' && $value['visible_to']!='')
+            {
+                $class_section_names = $class_sections = [];
+                $class_sections = AcademicClassConfiguration::whereIn('id',explode(',',$value['visible_to']))->get();
+                if(!empty($class_sections))
+                {
+                    foreach($class_sections as $class_sec_key => $class_sec_value)
+                    {
+                        $class_section_names[] = $class_sec_value->classsectionName();
+                    }
+                    if(!empty($class_section_names))
+                        $visibility = implode(',',$class_section_names);   
+                }
+            }
+
             // array formated to display news
             $data = ([
                 'id'=>$value['id'],
@@ -507,6 +542,7 @@ class APINewsEventsController extends Controller
                 'title'=>$value['title'],
                 'images'=>$images,
                 'description'=>$value['description'],
+                'visibility'=>$visibility,
                 'important'=>($value['important'] == 'N')?'no':'yes',
                 'youtube_link'=>$value['youtube_link'],
                 'accept_status'=>0,

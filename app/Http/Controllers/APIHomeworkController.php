@@ -73,6 +73,9 @@ class APIHomeworkController extends Controller
                         $class_config = UserStudents::where('id',$student_ids)->pluck('class_config')->first();
                         $group_id = UserGroups::where('class_config',$class_config)->pluck('id')->first();
                     }
+                    if($request->class_config !='') //get classs config and group id for parent
+                        $group_id = UserGroups::where('class_config',$request->class_config)->pluck('id')->first();
+
                     if($group_id !='')
                         $homework_details = $homework_details->where('group_id',$group_id)->where('approval_status',1);
                     else
@@ -415,7 +418,7 @@ class APIHomeworkController extends Controller
         $userall_id = UserAll::where(['user_table_id'=>$user_table_id,'user_role'=>$user->user_role])->pluck('id')->first();
         $student_id = UserStudentsMapping::where('parent',$user_table_id)->pluck('student')->first();
 
-        $homework_status = HomeworkParentStatus::where('notification_id',$request->notification_id)->where('student',$student_id)->get()->first();
+        $homework_status = HomeworkParentStatus::where('notification_id',$request->notification_id)->where('student',$request->student_id)->get()->first();
         if(empty($homework_status))
         {
             $homework_status = new HomeworkParentStatus;
@@ -431,7 +434,7 @@ class APIHomeworkController extends Controller
         $homework_status->notification_id=$request->notification_id;
         $homework_status->parent=$user_table_id;
         $homework_status->status=$request->status;//1-completed,2-not completed
-        $homework_status->student=$student_id;
+        $homework_status->student=$request->student_id;
         $homework_status->reason=$request->reason;
        
         $homework_status->save();

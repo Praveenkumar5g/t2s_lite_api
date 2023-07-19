@@ -585,6 +585,13 @@ class WebUserManagementController extends Controller
             $page = 'new';
             $details = new UserParents;
         }
+
+        if(!empty($details) && isset($details->mobile_number) && $details->mobile_number != $data['mobile_number'])
+        {
+            $check_old_groups = UserStudentsMapping::where('student',$id)->where('parent',$old_parent_id)->get()->first();
+            if(!empty($check_old_groups))
+                UserStudentsMapping::where('student',$id)->where('parent',$old_parent_id)->delete();        
+        }
         
         //save parent details
         if($data['first_name']!='')

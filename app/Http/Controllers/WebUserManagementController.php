@@ -590,7 +590,25 @@ class WebUserManagementController extends Controller
         {
             $check_old_groups = UserStudentsMapping::where('student',$id)->where('parent',$old_parent_id)->get()->first();
             if(!empty($check_old_groups))
-                UserStudentsMapping::where('student',$id)->where('parent',$old_parent_id)->delete();        
+                UserStudentsMapping::where('student',$id)->where('parent',$old_parent_id)->delete();  
+
+            $check_old_class = UserStudents::where('id',$id)->pluck('class_config')->first();
+            if($check_old_class!='')
+            {
+                $check_other_child = UserStudentsMapping::where('parent',$old_parent_id)->pluck('student')->toArray();
+                if(!empty($check_other_child))
+                {
+                    $check_same_class = UserStudents::whereIn('id',$check_other_child)->where('id','!=',$id)->where('class_config',$check_old_class)->get()->first();
+                    if(empty($check_same_class))
+                    {
+                        $group_id = $new_group_id!=''?$new_group_id:$old_group_id;
+                        UserGroupsMapping::where('user_table_id',$old_parent_id)->where('group_id',$group_id)->where('user_role',Config::get('app.Parent_role'))->delete();
+                    }
+
+                }
+                else
+                    UserGroupsMapping::where('user_table_id',$old_parent_id)->where('user_role',Config::get('app.Parent_role'))->delete();
+            }      
         }
         
         //save parent details

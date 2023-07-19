@@ -492,12 +492,14 @@ class APICommunicationController extends Controller
 
                 $student_messages = Communications::where('group_id',$request->group_id)->Where('visible_to', 'like', '%' .$userdetails->id. ',%')->where('distribution_type',7)->where('communication_type',1)->pluck('id')->toArray();
             }
-            else if($user->user_role == Config::get('app.Admin_role') || $user->user_role == Config::get('app.Management_role'))
+            else if($user->user_role == Config::get('app.Admin_role') || $user->user_role == Config::get('app.Management_role') || $user->user_role == config::get('app.Staff_role'))
             {
                 $student_messages = Communications::where('group_id',$request->group_id)->where('distribution_type',7)->where('communication_type',1)->pluck('id')->toArray();
             }
             if($visible_to!='')
                 $class_messages = Communications::where('group_id',2)->Where('visible_to', 'like', '%' .$visible_to. ',%')->where('communication_type',1)->where('distribution_type',6)->pluck('id')->toArray();
+            else if($request->group_id == 2)
+                $class_messages = Communications::where('group_id',2)->where('communication_type',1)->where('distribution_type',6)->pluck('id')->toArray();
             
             $chat_id_list =$chat_id_list->Where(['visible_to'=>'all','communication_type'=>1])->pluck('id')->toArray();
 
@@ -526,6 +528,8 @@ class APICommunicationController extends Controller
                     $query->where(['user_table_id'=>$userdetails->id,'user_role'=>$user->user_role,'communication_type'=>1])->whereIn('communication_id',$communication_id_list);
                 })->orwhere(function($query) use ($userdetails,$user,$newsevents_id_list) {
                     $query->where(['user_table_id'=>$userdetails->id,'user_role'=>$user->user_role,'communication_type'=>2])->whereIn('communication_id',$newsevents_id_list);
+                })->orwhere(function($query) use ($userdetails,$user,$communication_id_list) {
+                    $query->where(['user_table_id'=>$userdetails->id,'user_role'=>$user->user_role,'communication_type'=>4])->whereIn('communication_id',$communication_id_list);
                 })->orderBy('actioned_time')->get()->toArray(); //Fetch applicable notification ids from table for logged in user.
             $read_count = CommunicationRecipients::select(DB::raw('count(*) as count'),'communication_id','communication_type')->where(['message_status'=>Config::get('app.Read')])->groupBy('communication_id','communication_type')->get()->toArray(); //get read count based on notification id.
             // $readcount_data = array_column($read_count,'count','communication_id');

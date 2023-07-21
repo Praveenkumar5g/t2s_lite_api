@@ -209,19 +209,6 @@ class WebUserManagementController extends Controller
                 $data['mobile_number'] = $request->father_mobile_number;
                 $data['email_address'] = $request->father_email_address;
                 $data['user_category'] = 1;
-                if($new_user == '' && $password =='')
-                    {
-                        $schoolusers = SchoolUsers::where(['user_mobile_number'=>$request->father_mobile_number,'school_profile_id'=>$user->school_profile_id])->get()->first();
-                        if(empty($schoolusers))
-                        {
-                            if($profile_details['default_password_type'] == 'admission_number')
-                                $password = bcrypt($request->admission_no);
-                            else if($profile_details['default_password_type'] == 'dob')
-                                $password = bcrypt(date('dmY',strtotime($request->dob)));
-                            else
-                                $password = bcrypt($request->father_mobile_number);
-                        }
-                    }
                 if($profile_details['default_password_type'] != 'admission_number' && $profile_details['default_password_type'] != 'dob')
                             $password ='';
                 if($profile_details['default_password_type'] == 'mobile_number' || $password == '')
@@ -238,21 +225,6 @@ class WebUserManagementController extends Controller
                 $data['mobile_number'] = $request->mother_mobile_number;
                 $data['email_address'] = $request->mother_email_address;
                 $data['user_category'] = 2;
-                
-                if($new_user == '' && $password =='')
-                {
-                    $schoolusers = SchoolUsers::where(['mobile_number'=>$request->fathemother_mobile_numberr_mobile_number,'school_profile_id'=>$user->school_profile_id])->get()->first();
-                    if(empty($schoolusers))
-                    {
-                        if($profile_details['default_password_type'] == 'admission_number')
-                            $password = bcrypt($request->admission_no);
-                        else if($profile_details['default_password_type'] == 'dob')
-                            $password = bcrypt(date('dmY',strtotime($request->dob)));
-                        else
-                            $password = bcrypt($request->mother_mobile_number);
-                    }
-                }
-
                 if($profile_details['default_password_type'] != 'admission_number' && $profile_details['default_password_type'] != 'dob')
                             $password ='';
 
@@ -271,20 +243,6 @@ class WebUserManagementController extends Controller
                 $data['mobile_number'] = $request->guardian_mobile_number;
                 $data['email_address'] = $request->guardian_email_address;
                 $data['user_category'] = 9;
-                if($new_user == '' && $password =='')
-                {
-                    $schoolusers = SchoolUsers::where(['mobile_number'=>$request->guardian_mobile_number,'school_profile_id'=>$user->school_profile_id])->get()->first();
-                    if(empty($schoolusers))
-                    {
-                        if($profile_details['default_password_type'] == 'admission_number')
-                            $password = bcrypt($request->admission_no);
-                        else if($profile_details['default_password_type'] == 'dob')
-                            $password = bcrypt(date('dmY',strtotime($request->dob)));
-                        else
-                            $password = bcrypt($request->guardian_mobile_number);
-                    }
-                }
-
                 if($profile_details['default_password_type'] != 'admission_number' && $profile_details['default_password_type'] != 'dob')
                             $password ='';
 
@@ -542,6 +500,19 @@ class WebUserManagementController extends Controller
                     $data['mobile_number'] = $request->father_mobile_number;
                     $data['email_address'] = $request->father_email_address;
                     $data['user_category'] = 1;
+                    if($new_user == '' && $password =='')
+                    {
+                        $schoolusers = SchoolUsers::where(['user_mobile_number'=>$request->father_mobile_number,'school_profile_id'=>$user->school_profile_id])->get()->first();
+                        if(empty($schoolusers))
+                        {
+                            if($profile_details['default_password_type'] == 'admission_number')
+                                $password = bcrypt($request->admission_no);
+                            else if($profile_details['default_password_type'] == 'dob')
+                                $password = bcrypt(date('dmY',strtotime($request->dob)));
+                            else
+                                $password = bcrypt($request->father_mobile_number);
+                        }
+                    }
                     if((isset($request->password_update) && $request->password_update!='') ||$new_user!='')
                     {
                         if($profile_details['default_password_type'] != 'admission_number' && $profile_details['default_password_type'] != 'dob')
@@ -564,6 +535,21 @@ class WebUserManagementController extends Controller
                     $data['mobile_number'] = $request->mother_mobile_number;
                     $data['email_address'] = $request->mother_email_address;
                     $data['user_category'] = 2;
+                    
+                    if($new_user == '' && $password =='')
+                    {
+                        $schoolusers = SchoolUsers::where(['mobile_number'=>$request->fathemother_mobile_numberr_mobile_number,'school_profile_id'=>$user->school_profile_id])->get()->first();
+                        if(empty($schoolusers))
+                        {
+                            if($profile_details['default_password_type'] == 'admission_number')
+                                $password = bcrypt($request->admission_no);
+                            else if($profile_details['default_password_type'] == 'dob')
+                                $password = bcrypt(date('dmY',strtotime($request->dob)));
+                            else
+                                $password = bcrypt($request->mother_mobile_number);
+                        }
+                    }
+
                     if((isset($request->password_update) && $request->password_update!='') || $new_user!='')
                     {
                         if($profile_details['default_password_type'] != 'admission_number' && $profile_details['default_password_type'] != 'dob')
@@ -587,6 +573,19 @@ class WebUserManagementController extends Controller
                     $data['mobile_number'] = $request->guardian_mobile_number;
                     $data['email_address'] = $request->guardian_email_address;
                     $data['user_category'] = 9;
+                    if($new_user == '' && $password =='')
+                    {
+                        $schoolusers = SchoolUsers::where(['mobile_number'=>$request->guardian_mobile_number,'school_profile_id'=>$user->school_profile_id])->get()->first();
+                        if(empty($schoolusers))
+                        {
+                            if($profile_details['default_password_type'] == 'admission_number')
+                                $password = bcrypt($request->admission_no);
+                            else if($profile_details['default_password_type'] == 'dob')
+                                $password = bcrypt(date('dmY',strtotime($request->dob)));
+                            else
+                                $password = bcrypt($request->guardian_mobile_number);
+                        }
+                    }
                     if((isset($request->password_update) && $request->password_update!='') || $new_user!='')
                     {   
                         if($profile_details['default_password_type'] != 'admission_number' && $profile_details['default_password_type'] != 'dob')

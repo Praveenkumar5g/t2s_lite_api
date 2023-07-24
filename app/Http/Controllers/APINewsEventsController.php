@@ -334,7 +334,7 @@ class APINewsEventsController extends Controller
         $user->save();
         $newsevents = NewsEvents::where(['published'=>'Y','status'=>1,'attachments'=>'Y']);
         if($user->user_role == Config::get('app.Parent_role'))
-        {
+        { 
             if($request->student_id =='')
             {
                 $user_table_id = UserParents::where(['user_id'=>$user->user_id])->first();//fetch id from user all table to store notification triggered user

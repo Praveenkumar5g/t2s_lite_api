@@ -336,6 +336,7 @@ class APINewsEventsController extends Controller
         if($user->user_role == Config::get('app.Parent_role'))
         {
             if($request->student_id =='')
+            {
                 $user_table_id = UserParents::where(['user_id'=>$user->user_id])->first();//fetch id from user all table to store notification triggered user
                 $student_id = UserStudentsMapping::where(['parent'=>$user_table_id->id])->pluck('student')->toArray();
             }

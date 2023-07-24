@@ -334,10 +334,15 @@ class APICommunicationController extends Controller
                     }
                     else if($message->group_id>=3) //if staff and class group notification message
                     {
-                        $group_name = UserGroups::where('id',$message->group_id)->pluck('group_name')->first();
-                        $user->user_table_id = $user_table_id;
-                        $details = $this->user_details($user);
-                        $chat_message = "A new message from ".$details['user_details']->first_name." in ".$group_name;
+                        if($message->communication_type == 4) //for birthday 
+                            $chat_message = $message->chat_message;
+                        else
+                        {
+                            $group_name = UserGroups::where('id',$message->group_id)->pluck('group_name')->first();
+                            $user->user_table_id = $user_table_id;
+                            $details = $this->user_details($user);
+                            $chat_message = "A new message from ".$details['user_details']->first_name." in ".$group_name;
+                        }
                     }
                     else
                         $chat_message = 'A new message is avaliable';
@@ -1659,5 +1664,91 @@ class APICommunicationController extends Controller
         {
             return response()->json(['status'=>false,'message'=>'Group id is missing!...']);
         }
+    }
+
+    
+    // birthday student list
+    public function birthday_student_list(Request $request)
+    {
+        // Check authentication
+        $user = auth()->user();
+        $student_list = [];
+        $date = now();
+        $text = "Dear *wardname*, the school wishes you a very happy birthday and a progressive year ahead.";
+        $student_details = UserStudents::select('id','first_name','class_config')->whereMonth('dob', '=', $date->month)->whereDay('dob', '=', $date->day);
+        if($user->user_role == Config::get('app.Staff_role'))    
+            $text = 'Dear *wardname*, Happy Birthday';
+
+        if($request->class_config!='')
+            $student_details =$student_details->where('class_config',$request->class_config);
+
+        $student_details = $student_details->get()->toArray();
+
+        foreach($student_details as $key => $value)
+        {
+            $class_sec_value = AcademicClassConfiguration::where('id',$value['class_config'])->get()->first();
+            $student_list[$key] = ([
+                'id'=>$value['id'],
+                'first_name'=>$value['first_name'],
+                'class_section'=>$class_sec_value->classsectionName()
+            ]);
+        }
+
+        return response()->json(['text'=>$text,'student_list'=>$student_list]);
+
+    }
+
+    // Store birthday Message input
+    public function store_birthday_message(Request $request)
+    {
+        // Validate form
+        if ($validator->fails()) {
+            return response()->json($validator->errors());
+        }
+
+        // Get authorizated user details
+        $user = auth()->user();
+
+        if($user->user_role == Config::get('app.Admin_role'))//check role and get current user id
+            $user_table_id = UserAdmin::where(['user_id'=>$user->user_id])->pluck('id')->first();
+        else if($user->user_role == Config::get('app.Management_role'))
+            $user_table_id = UserManagements::where(['user_id'=>$user->user_id])->pluck('id')->first();
+        else if($user->user_role == Config::get('app.Staff_role'))
+            $user_table_id = UserStaffs::where(['user_id'=>$user->user_id])->pluck('id')->first();
+
+        $userall_id = UserAll::where(['user_table_id'=>$user_table_id,'user_role'=>$user->user_role])->pluck('id')->first();
+        $visible_to = $request->visible_to;
+        foreach ($visible_to as $key => $value) {
+            $student_detail = UserStudents::where('id',$value)->get()->first();
+            $group_id = UserGroups::where('class_config',$student_detail->class_config)->pluck('id')->first();
+            $parent_id = UserStudentsMapping::where('student',$student_detail->id)->pluck('parent')->first();
+            $message = str_replace("*wardname*",$student_detail->first_name,$request->chat_message);
+            // Insert communication message in notification log tables(School DB)
+            $communications = new Communications;
+            $communications->chat_message=$message;
+            if(isset($request->visible_to))
+                $communications->visible_to=$value.',';
+            $communications->distribution_type=3; //1-Class,2-Group,3-Everyone,4-Staff,5-Parent
+            $communications->message_category=1; //1-Text,2-Image with caption,3-Image Only,4-Document,5-Audio,6-Video,7-Quotes,8-Management Speaks,9-Circular,10-Study Material;
+            $communications->actioned_by=$userall_id;
+            $communications->created_by=$userall_id;
+            $communications->actioned_time=Carbon::now()->timezone('Asia/Kolkata');
+            $communications->created_time=Carbon::now()->timezone('Asia/Kolkata');
+            $communications->group_id=$group_id;
+            $communications->communication_type=4; //default 4 - birthday alert
+            $communications->attachments='N'; // Default attachment no
+            $communications->approval_status=1;//1-Approval,2-Denied
+
+            $communications->save();
+            $notification_id = $communications->id;
+            
+            $user_list = UserGroupsMapping::select('user_table_id','user_role')->where(['user_table_id'=>$parent_id,'user_role'=>Config::get('app.Parent_role'),'user_status'=>Config::get('app.Group_Active')])->where('group_id',$group_id)->get()->toArray();
+
+            if(!empty($user_list))
+                $this->insert_receipt_log(array_unique($user_list, SORT_REGULAR),$notification_id,$user_table_id);
+
+        }        
+
+        return response()->json(['message'=>'Notification inserted Successfully!...']);
     }
 }

@@ -83,6 +83,8 @@ class WebLoginController extends Controller
                 Session::put('user_data',Auth::user());
                 if($request->menu === 'salary')
                     return redirect()->intended('employee/salarydetails'); //redirect to salary upload page
+                else if($request->menu === 'students' || $request->menu === 'parents')
+                    return redirect()->intended('/usermanagement/students');
                 else
                 {
                     Session::flush();

@@ -1701,11 +1701,6 @@ class APICommunicationController extends Controller
     // Store birthday Message input
     public function store_birthday_message(Request $request)
     {
-        // Validate form
-        if ($validator->fails()) {
-            return response()->json($validator->errors());
-        }
-
         // Get authorizated user details
         $user = auth()->user();
 

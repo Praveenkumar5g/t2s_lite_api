@@ -242,7 +242,7 @@ class APINewsEventsController extends Controller
                 $student_id = UserStudentsMapping::where(['parent'=>$user_table_id->id])->pluck('student')->toArray();
             }
             else
-                $student_id = $request->student_id;
+                $student_id[] = $request->student_id;
             $class_config = UserStudents::whereIn('id',$student_id)->pluck('class_config')->first();
             $newsevents=$newsevents->where(['visible_to'=>'all','module_type'=>1])->orWhere('visible_to', 'like', '%' .$class_config. '%')->where('module_type',1);
         }
@@ -341,7 +341,7 @@ class APINewsEventsController extends Controller
                 $student_id = UserStudentsMapping::where(['parent'=>$user_table_id->id])->pluck('student')->toArray();
             }
             else
-                $student_id = $request->student_id;
+                $student_id[] = $request->student_id;
             $class_config = UserStudents::whereIn('id',$student_id)->pluck('class_config')->first();
             $newsevents=$newsevents->where('visible_to','all')->orWhere('visible_to', 'like', '%' .$class_config. '%');
         }
@@ -509,7 +509,7 @@ class APINewsEventsController extends Controller
                 $student_id = UserStudentsMapping::where(['parent'=>$user_table_id->id])->pluck('student')->toArray();
             }
             else
-                $student_id = $request->student_id;
+                $student_id[] = $request->student_id;
             $class_config = UserStudents::whereIn('id',$student_id)->pluck('class_config')->first();
             $newsevents=$newsevents->where('visible_to','all')->orWhere('visible_to', 'like', '%' .$class_config. '%')->where('module_type',2);
         }

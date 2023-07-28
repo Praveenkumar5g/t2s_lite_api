@@ -227,7 +227,7 @@ class APINewsEventsController extends Controller
     }
 
     //View Main screen news and events 
-    public function mainscreen_view_newsevents()
+    public function mainscreen_view_newsevents(Request $request)
     {
         // Check authenticate user.
         $user = auth()->user();
@@ -326,7 +326,7 @@ class APINewsEventsController extends Controller
     }
 
     // view all the images in gallery tap
-    public function view_all_images()
+    public function view_all_images(Request $request)
     {
         // Check authenticate user.
         $user = auth()->user();
@@ -494,7 +494,7 @@ class APINewsEventsController extends Controller
 
 
     //View Main screen news and events 
-    public function mainscreen_view_allevents()
+    public function mainscreen_view_allevents(Request $request)
     {
         // Check authenticate user.
         $user = auth()->user();

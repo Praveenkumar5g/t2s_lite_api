@@ -335,7 +335,10 @@ class APICommunicationController extends Controller
                     else if($message->group_id>=3) //if staff and class group notification message
                     {
                         if($message->communication_type == 4) //for birthday 
-                            $chat_message = $message->chat_message;
+                        {
+                            $role = ($user->user_role == Config::get('app.Admin_role'))?'Admin':($user->user_role == Config::get('Management_role')?"Management":"Class Teacher");
+                            $chat_message = $role.' sent birthday wishes';
+                        }
                         else
                         {
                             $group_name = UserGroups::where('id',$message->group_id)->pluck('group_name')->first();
@@ -1665,9 +1668,8 @@ class APICommunicationController extends Controller
             return response()->json(['status'=>false,'message'=>'Group id is missing!...']);
         }
     }
-
     
-    // birthday student list
+     // birthday student list
     public function birthday_student_list(Request $request)
     {
         // Check authentication
@@ -1677,12 +1679,17 @@ class APICommunicationController extends Controller
         $text = "Dear *wardname*, the school wishes you a very happy birthday and a progressive year ahead.";
         $student_details = UserStudents::select('id','first_name','class_config')->whereMonth('dob', '=', $date->month)->whereDay('dob', '=', $date->day);
         if($user->user_role == Config::get('app.Staff_role'))    
-            $text = 'Dear *wardname*, Happy Birthday';
+            $text = 'Dear *wardname*, the school wishes you a very happy birthday and a progressive year ahead.';
 
         if($request->class_config!='')
             $student_details =$student_details->where('class_config',$request->class_config);
 
         $student_details = $student_details->get()->toArray();
+        $visible_to_users =[];
+        $visible_to = Communications::select('visible_to')->whereDate('actioned_time', Carbon::today())->where('communication_type',4)->where('approval_status',1)->get()->toArray(); 
+
+        if(!empty($visible_to))
+            $visible_to_users = array_column($visible_to,'visible_to');
 
         foreach($student_details as $key => $value)
         {
@@ -1690,7 +1697,9 @@ class APICommunicationController extends Controller
             $student_list[$key] = ([
                 'id'=>$value['id'],
                 'first_name'=>$value['first_name'],
-                'class_section'=>$class_sec_value->classsectionName()
+                'class_section'=>$class_sec_value->classsectionName(),
+                'image'=>$value['profile_image'],
+                'sent_status'=>in_array($value['id'].',',$visible_to_users)?1:0
             ]);
         }
 
@@ -1737,7 +1746,11 @@ class APICommunicationController extends Controller
             $communications->save();
             $notification_id = $communications->id;
             
-            $user_list = UserGroupsMapping::select('user_table_id','user_role')->where(['user_table_id'=>$parent_id,'user_role'=>Config::get('app.Parent_role'),'user_status'=>Config::get('app.Group_Active')])->where('group_id',$group_id)->get()->toArray();
+            $user_list = UserGroupsMapping::select('user_table_id','user_role')->where(['user_table_id'=>$parent_id,'user_role'=>Config::get('app.Parent_role'),'user_status'=>Config::get('app.Group_Active')])->where('group_id',$group_id)->get()->toArray(); //for wishes for parent
+
+            $user_ids = UserGroupsMapping::select('user_table_id','user_role')->where(['user_table_id'=>$user_table_id,'user_role'=>$user->user_role,'user_status'=>Config::get('app.Group_Active')])->where('group_id',$group_id)->get()->toArray(); //message copy for sender
+
+            $user_list = array_merge($user_list,$user_ids);
 
             if(!empty($user_list))
                 $this->insert_receipt_log(array_unique($user_list, SORT_REGULAR),$notification_id,$user_table_id);

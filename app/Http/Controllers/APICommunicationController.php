@@ -1669,7 +1669,7 @@ class APICommunicationController extends Controller
         }
     }
     
-     // birthday student list
+    // birthday student list
     public function birthday_student_list(Request $request)
     {
         // Check authentication
@@ -1677,7 +1677,7 @@ class APICommunicationController extends Controller
         $student_list = [];
         $date = now();
         $text = "Dear *wardname*, the school wishes you a very happy birthday and a progressive year ahead.";
-        $student_details = UserStudents::select('id','first_name','class_config')->whereMonth('dob', '=', $date->month)->whereDay('dob', '=', $date->day);
+        $student_details = UserStudents::select('id','first_name','class_config','profile_image')->whereMonth('dob', '=', $date->month)->whereDay('dob', '=', $date->day);
         if($user->user_role == Config::get('app.Staff_role'))    
             $text = 'Dear *wardname*, the school wishes you a very happy birthday and a progressive year ahead.';
 

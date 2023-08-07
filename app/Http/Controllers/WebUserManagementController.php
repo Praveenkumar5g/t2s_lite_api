@@ -492,7 +492,7 @@ class WebUserManagementController extends Controller
             // insert parents details
             if(isset($request->father_id))
             {
-                $father_details = UserParents::where('mobile_number',$request->father_mobile_number)->get()->first();
+                $father_details = UserParents::where('id',$request->father_id)->get()->first();
                 if(!empty($father_details) || $request->father_mobile_number!='')
                 {
                     $data['photo'] = $profile_image_path;
@@ -530,7 +530,7 @@ class WebUserManagementController extends Controller
             // update or insert parents details
             if(isset($request->mother_id))
             {
-                $mother_details = UserParents::where('mobile_number',$request->mother_mobile_number)->get()->first();
+                $mother_details = UserParents::where('id',$request->mother_id)->get()->first();
                 if(!empty($mother_details) || $request->mother_mobile_number!='' )
                 {
                     $data = [];
@@ -572,7 +572,7 @@ class WebUserManagementController extends Controller
             if(isset($request->guardian_id))
             {
             // update or insert parents details
-                $guardian_details = UserParents::where('mobile_number',$request->guardian_mobile_number)->get()->first();
+                $guardian_details = UserParents::where('id',$request->guardian_id)->get()->first();
                 if(!empty($guardian_details) || $request->guardian_mobile_number!='' )
                 {
                     $data = [];

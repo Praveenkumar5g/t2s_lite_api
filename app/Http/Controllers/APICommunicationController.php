@@ -1722,6 +1722,32 @@ class APICommunicationController extends Controller
 
         $userall_id = UserAll::where(['user_table_id'=>$user_table_id,'user_role'=>$user->user_role])->pluck('id')->first();
         $visible_to = $request->visible_to;
+
+        if($user->user_role == Config::get('app.Management_role') || $user->user_role == Config::get('app.Admin_role'))
+        {
+            $admincommunications = new Communications;
+            $admincommunications->chat_message='Birthday wishes sent to students';
+            if(isset($request->visible_to))
+                $admincommunications->visible_to=implode(',',$visible_to).',';
+            $admincommunications->distribution_type=5; //1-Class,2-Group,3-Everyone,4-Staff,5-Parent
+            $admincommunications->message_category=1; //1-Text,2-Image with caption,3-Image Only,4-Document,5-Audio,6-Video,7-Quotes,8-Management Speaks,9-Circular,10-Study Material;
+            $admincommunications->actioned_by=$userall_id;
+            $admincommunications->created_by=$userall_id;
+            $admincommunications->actioned_time=Carbon::now()->timezone('Asia/Kolkata');
+            $admincommunications->created_time=Carbon::now()->timezone('Asia/Kolkata');
+            $admincommunications->group_id=2;
+            $admincommunications->communication_type=4; //default 4 - birthday alert
+            $admincommunications->attachments='N'; // Default attachment no
+            $admincommunications->approval_status=1;//1-Approval,2-Denied
+
+            $admincommunications->save();
+            $adminnotification_id = $admincommunications->id;
+
+            $main_group = UserGroupsMapping::select('user_table_id','user_role')->where(['user_table_id'=>$user_table_id,'user_role'=>$user->user_role,'user_status'=>Config::get('app.Group_Active')])->where('group_id',2)->get()->toArray(); //message copy in main group
+            if(!empty($main_group))
+                $this->insert_receipt_log(array_unique($main_group, SORT_REGULAR),$adminnotification_id,$user_table_id);
+        }
+
         foreach ($visible_to as $key => $value) {
             $student_detail = UserStudents::where('id',$value)->get()->first();
             $group_id = UserGroups::where('class_config',$student_detail->class_config)->pluck('id')->first();
@@ -1732,7 +1758,7 @@ class APICommunicationController extends Controller
             $communications->chat_message=$message;
             if(isset($request->visible_to))
                 $communications->visible_to=$value.',';
-            $communications->distribution_type=3; //1-Class,2-Group,3-Everyone,4-Staff,5-Parent
+            $communications->distribution_type=5; //1-Class,2-Group,3-Everyone,4-Staff,5-Parent
             $communications->message_category=1; //1-Text,2-Image with caption,3-Image Only,4-Document,5-Audio,6-Video,7-Quotes,8-Management Speaks,9-Circular,10-Study Material;
             $communications->actioned_by=$userall_id;
             $communications->created_by=$userall_id;

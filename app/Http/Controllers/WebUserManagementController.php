@@ -570,7 +570,7 @@ class WebUserManagementController extends Controller
             }
 
             if(isset($request->guardian_id))
-            {
+            { 
             // update or insert parents details
                 $guardian_details = UserParents::where('id',$request->guardian_id)->get()->first();
                 if(!empty($guardian_details) || $request->guardian_mobile_number!='' )

@@ -509,8 +509,12 @@ class APICommunicationController extends Controller
             
             $chat_id_list =$chat_id_list->Where(['visible_to'=>'all','communication_type'=>1])->pluck('id')->toArray();
 
+            $remove_duplciate_bd_alert = [];
+            if($request->group_id> 5)
+                $remove_duplciate_bd_alert = Communications::where('group_id',2)->where('communication_type',4)->pluck('id')->toArray();
+            
             // remaining chat messages list
-            $remaining_id_list =  Communications::whereIn('group_id',$group_id)->where('communication_type','!=',1);
+            $remaining_id_list =  Communications::whereIn('group_id',$group_id)->where('communication_type','!=',1)->whereNotIn('id',$remove_duplciate_bd_alert);
             
             if($user->user_role == Config::get('app.Parent_role'))
                 $remaining_id_list =$remaining_id_list->whereNull('message_status')->orWhere('message_status',2);

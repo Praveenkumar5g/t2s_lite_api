@@ -567,7 +567,7 @@ class APILoginController extends Controller
         if($user->user_role == Config::get('app.Admin_role'))//check role and get current user id
             $user_table_id = UserAdmin::where(['user_id'=>$user->user_id])->get()->first();
         else if($user->user_role == Config::get('app.Management_role'))
-            $user_table_id = UserManagements::where(['user_id'=>$user->user_id])->get()->first();
+            $user_table_id = UserManagements::where(['usser_id'=>$user->user_id])->get()->first();
         else if($user->user_role == Config::get('app.Staff_role'))
             $user_table_id = UserStaffs::where(['user_id'=>$user->user_id])->get()->first();
         else if($user->user_role == Config::get('app.Parent_role'))

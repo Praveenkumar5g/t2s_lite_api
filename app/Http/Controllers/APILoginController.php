@@ -482,7 +482,7 @@ class APILoginController extends Controller
 
         if($request->mobile_number!='')
         {
-            $schoolusers = SchoolUsers::where('user_mobile_number',$request->mobile_number)->where('user_role',$request->user_role)->get()->first();
+            $schoolusers = SchoolUsers::where('user_mobile_number',$request->mobile_number)->where('user_role',$request->user_role)->where('school_profile_id',$user->school_profile_id)->get()->first();
             if($request->group_id == '' && (strtolower($request->app_deactivation)=='yes' || $request->status == 1))
             {
                 // update the status

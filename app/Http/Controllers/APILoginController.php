@@ -453,7 +453,7 @@ class APILoginController extends Controller
         if($request->user_role !='')
         {
             // get school profile id
-            $school_list = SchoolUsers::where('user_mobile_number',$request->mobile_number)->where('user_role',$request->user_role)->GroupBy('school_profile_id')->pluck('school_profile_id')->toArray();
+            $school_list = SchoolUsers::where('user_mobile_number',$request->mobile_number)->where('user_role',$request->user_role)->where('user_status',1)->GroupBy('school_profile_id')->pluck('school_profile_id')->toArray();
 
             if(!empty($school_list)) //check empty or not
                 $school_names = SchoolProfile::select('id','school_name')->whereIn('id',$school_list)->get()->toArray();//get all schools list
@@ -491,15 +491,14 @@ class APILoginController extends Controller
             }
 
             $user_table_id = $this->get_user_table_id($schoolusers);
-            if($request->group_id == '' && (strtolower($request->app_deactivation)=='yes'  || $request->status == 1))
+            if($request->group_id == '' && (strtolower($request->app_deactivation)=='yes'  || $request->status == 1) && !empty($user_table_id))
             {
                 
                 $user_table_id->user_status=$request->status;
                 $user_table_id->save();
             }
-
-            // Update status to all the groups 
-            $groups = UserGroupsMapping::where(['user_table_id'=>$user_table_id->id,'user_role'=>$request->user_role]);
+            if(!empty($user_table_id))// Update status to all the groups 
+                $groups = UserGroupsMapping::where(['user_table_id'=>$user_table_id->id,'user_role'=>$request->user_role]);
 
             if($request->group_id != '')
                 $groups = $groups->where('group_id',$request->group_id);

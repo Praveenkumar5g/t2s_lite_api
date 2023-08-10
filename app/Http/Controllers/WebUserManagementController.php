@@ -209,8 +209,10 @@ class WebUserManagementController extends Controller
                 $data['mobile_number'] = $request->father_mobile_number;
                 $data['email_address'] = $request->father_email_address;
                 $data['user_category'] = 1;
+
                 if($profile_details['default_password_type'] != 'admission_number' && $profile_details['default_password_type'] != 'dob')
                             $password ='';
+
                 if($profile_details['default_password_type'] == 'mobile_number' || $password == '')
                     $password = bcrypt($request->father_mobile_number);
                 
@@ -225,6 +227,7 @@ class WebUserManagementController extends Controller
                 $data['mobile_number'] = $request->mother_mobile_number;
                 $data['email_address'] = $request->mother_email_address;
                 $data['user_category'] = 2;
+
                 if($profile_details['default_password_type'] != 'admission_number' && $profile_details['default_password_type'] != 'dob')
                             $password ='';
 
@@ -243,6 +246,7 @@ class WebUserManagementController extends Controller
                 $data['mobile_number'] = $request->guardian_mobile_number;
                 $data['email_address'] = $request->guardian_email_address;
                 $data['user_category'] = 9;
+
                 if($profile_details['default_password_type'] != 'admission_number' && $profile_details['default_password_type'] != 'dob')
                             $password ='';
 
@@ -278,6 +282,7 @@ class WebUserManagementController extends Controller
 
         // insert parent details in db
         $parent=[];
+
         $parent_details = UserParents::where('mobile_number',$data['mobile_number'])->get()->first();
         if(!empty($parent_details))
         {
@@ -304,10 +309,15 @@ class WebUserManagementController extends Controller
 
         $parent_id = $parent_details->id;
 
-        // generate and update staff id in db 
-        $userparent_id = $profile_details['school_code'].substr($profile_details['active_academic_year'], -2).'P'.sprintf("%04s", $parent_id);
-        $parent_details->user_id = $userparent_id;
-        $parent_details->save(); 
+        if(empty($parent_details))
+        {
+            // generate and update staff id in db 
+            $userparent_id = $profile_details['school_code'].substr($profile_details['active_academic_year'], -2).'P'.sprintf("%04s", $parent_id);
+            $parent_details->user_id = $userparent_id;
+            $parent_details->save(); 
+        }
+        else
+            $userparent_id = $parent_details->user_id;
 
         // add into group
         if($group_id!='')
@@ -318,19 +328,24 @@ class WebUserManagementController extends Controller
             UserGroupsMapping::insert(['group_id'=>$group_id,'user_table_id'=>$parent_id,'user_role'=>Config::get('app.Parent_role'),'user_status'=>1,'group_access'=>2]);
         }
         
-        //make an entry in user all table
-        $user_all = new UserAll;
-        $user_all->user_table_id=$parent_details->id;
-        $user_all->user_role=Config::get('app.Parent_role');
-        $user_all->save(); 
-                
-        // insert record in school user table
-        $schoolusers = new SchoolUsers;
+        if(empty($parent_details))
+        {
+            //make an entry in user all table
+            $user_all = new UserAll;
+            $user_all->user_table_id=$parent_details->id;
+            $user_all->user_role=Config::get('app.Parent_role');
+            $user_all->save(); 
+        }
+        $schoolusers = SchoolUsers::where(['user_id'=>$userparent_id,'school_profile_id'=>$user_data->school_profile_id])->get()->first();
+        if(empty($schoolusers))
+            $schoolusers = new SchoolUsers;
 
         $schoolusers->school_profile_id=$user_data->school_profile_id;
         $schoolusers->user_id=$userparent_id;
         $schoolusers->user_mobile_number=$data['mobile_number'];
-        $schoolusers->user_password=$password;
+        if($password!='' && empty($schoolusers))
+            $schoolusers->user_password=$password;
+        $schoolusers->user_email_id=$data['email_address'];
         $schoolusers->user_role=Config::get('app.Parent_role');
         $schoolusers->user_status=1;
         $schoolusers->save();

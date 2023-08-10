@@ -474,6 +474,7 @@ class APILoginController extends Controller
         $school_profile = SchoolProfile::where('id',$user->school_profile_id)->first(); //get school profile details from corresponding school
         $academic_year = $school_profile->active_academic_year;
         $config_school = SchoolDatabase::where('school_id', $user->school_profile_id)->where('academic_year',$academic_year)->get()->first();
+        echo '<pre>';print_r($config_school);exit;
         Config::set('database.connections.school_db.host',$config_school->school_db_host);
         Config::set('database.connections.school_db.username',$config_school->school_db_user);
         Config::set('database.connections.school_db.password',$config_school->school_db_pass);

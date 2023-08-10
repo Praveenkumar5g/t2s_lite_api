@@ -151,6 +151,11 @@ Route::group(['middleware' => 'auth.connect','prefix' => 'user'], function ($rou
     Route::get('/approval_action_required',[APICommunicationController::class,'approval_action_required']);
     Route::post('/group_participants',[APICommunicationController::class,'group_participants']);
     Route::post('/image_list',[APICommunicationController::class,'image_list']);
+
+    /*Birthday Alert*/
+    Route::post('/birthday_student_list',[APICommunicationController::class,'birthday_student_list']);
+    Route::post('store_birthday_message',[APICommunicationController::class,'store_birthday_message']);
+    /*Birthday Alert*/
     
     Route::post('/homework',[APIHomeworkController::class,'homework']);
     Route::post('/store_homework', [APIHomeworkController::class, 'store_homework']); 

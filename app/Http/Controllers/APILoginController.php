@@ -474,7 +474,6 @@ class APILoginController extends Controller
         $school_profile = SchoolProfile::where('id',$user->school_profile_id)->first(); //get school profile details from corresponding school
         $academic_year = $school_profile->active_academic_year;
         $config_school = SchoolDatabase::where('school_id', $user->school_profile_id)->where('academic_year',$academic_year)->get()->first();
-        echo '<pre>';print_r($config_school);exit;
         Config::set('database.connections.school_db.host',$config_school->school_db_host);
         Config::set('database.connections.school_db.username',$config_school->school_db_user);
         Config::set('database.connections.school_db.password',$config_school->school_db_pass);
@@ -492,16 +491,14 @@ class APILoginController extends Controller
             }
 
             $user_table_id = $this->get_user_table_id($schoolusers);
-            if($request->group_id == '' && (strtolower($request->app_deactivation)=='yes'  || $request->status == 1))
+            if($request->group_id == '' && (strtolower($request->app_deactivation)=='yes'  || $request->status == 1) && !empty($user_table_id))
             {
-                echo '<pre>';print_r($schoolusers);
-                print_r($request->status);exit;
+                
                 $user_table_id->user_status=$request->status;
                 $user_table_id->save();
             }
-
-            // Update status to all the groups 
-            $groups = UserGroupsMapping::where(['user_table_id'=>$user_table_id->id,'user_role'=>$request->user_role]);
+            if(!empty($user_table_id))// Update status to all the groups 
+                $groups = UserGroupsMapping::where(['user_table_id'=>$user_table_id->id,'user_role'=>$request->user_role]);
 
             if($request->group_id != '')
                 $groups = $groups->where('group_id',$request->group_id);
@@ -568,13 +565,11 @@ class APILoginController extends Controller
         if($user->user_role == Config::get('app.Admin_role'))//check role and get current user id
             $user_table_id = UserAdmin::where(['user_id'=>$user->user_id])->get()->first();
         else if($user->user_role == Config::get('app.Management_role'))
-            $user_table_id = UserManagements::where(['usser_id'=>$user->user_id])->get()->first();
+            $user_table_id = UserManagements::where(['user_id'=>$user->user_id])->get()->first();
         else if($user->user_role == Config::get('app.Staff_role'))
             $user_table_id = UserStaffs::where(['user_id'=>$user->user_id])->get()->first();
         else if($user->user_role == Config::get('app.Parent_role'))
             $user_table_id = UserParents::where(['user_id'=>$user->user_id])->get()->first();//fetch id from user all table to store notification triggered user
-        echo '<pre>';
-        print_r($user_table_id);exit;
         return $user_table_id;
     }
 }

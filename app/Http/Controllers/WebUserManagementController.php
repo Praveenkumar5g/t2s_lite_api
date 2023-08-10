@@ -283,7 +283,7 @@ class WebUserManagementController extends Controller
         // insert parent details in db
         $parent=[];
 
-        $parent_details = UserParents::where('mobile_number',$data['mobile_number'])->get()->first();
+        $parent_details = $new_record = UserParents::where('mobile_number',$data['mobile_number'])->get()->first();
         if(!empty($parent_details))
         {
             $parent_details->updated_by = $userall_id;
@@ -309,7 +309,7 @@ class WebUserManagementController extends Controller
 
         $parent_id = $parent_details->id;
 
-        if(empty($parent_details))
+        if(empty($new_record))
         {
             // generate and update staff id in db 
             $userparent_id = $profile_details['school_code'].substr($profile_details['active_academic_year'], -2).'P'.sprintf("%04s", $parent_id);

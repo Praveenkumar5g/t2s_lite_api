@@ -336,14 +336,14 @@ class WebUserManagementController extends Controller
             $user_all->user_role=Config::get('app.Parent_role');
             $user_all->save(); 
         }
-        $schoolusers = SchoolUsers::where(['user_id'=>$userparent_id,'school_profile_id'=>$user_data->school_profile_id])->get()->first();
+        $schoolusers = $check_exists_login = SchoolUsers::where(['user_id'=>$userparent_id,'school_profile_id'=>$user_data->school_profile_id])->get()->first();
         if(empty($schoolusers))
             $schoolusers = new SchoolUsers;
 
         $schoolusers->school_profile_id=$user_data->school_profile_id;
         $schoolusers->user_id=$userparent_id;
         $schoolusers->user_mobile_number=$data['mobile_number'];
-        if($password!='' && empty($schoolusers))
+        if($password!='' && empty($check_exists_login))
             $schoolusers->user_password=$password;
         $schoolusers->user_email_id=$data['email_address'];
         $schoolusers->user_role=Config::get('app.Parent_role');

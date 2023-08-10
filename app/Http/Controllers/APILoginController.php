@@ -493,7 +493,7 @@ class APILoginController extends Controller
             $user_table_id = $this->get_user_table_id($schoolusers);
             if($request->group_id == '' && (strtolower($request->app_deactivation)=='yes'  || $request->status == 1))
             {
-                echo '<pre>';print_r($user_table_id);
+                echo '<pre>';print_r($schoolusers);
                 print_r($request->status);exit;
                 $user_table_id->user_status=$request->status;
                 $user_table_id->save();

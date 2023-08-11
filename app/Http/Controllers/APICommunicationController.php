@@ -1823,6 +1823,11 @@ class APICommunicationController extends Controller
     public function get_class_list()
     {
         $classes = AcademicClasses::select('id','class_name')->get()->toArray();
+        foreach ($classes as $key => $value) {
+            $config_ids = AcademicClassConfiguration::where('class_id',$value)->pluck('id')->toArray();
+            $group_ids = UserGroups::whereIn('class_config',$config_ids)->pluck('id')->toArray();
+            $classes[$key]['total_users'] = count(UserGroupsMapping::whereIn('group_id',$group_ids)->pluck('user_table_id')->toArray());
+        }
         return response()->json(compact('classes'));
     }
 }

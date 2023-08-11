@@ -513,7 +513,7 @@ class APICommunicationController extends Controller
                 $student_messages = Communications::where('group_id',$request->group_id)->where('distribution_type',7)->where('communication_type',1)->pluck('id')->toArray();
             }
             if($visible_to!='')
-                $class_messages = Communications::where('group_id',2)->Where('visible_to', 'like', '%' .$visible_to. ',%')->where('communication_type',1)->where('distribution_type',6)->pluck('id')->toArray();
+                $class_messages = Communications::where('group_id',2)->Where('visible_to', 'like', '%' .$visible_to. ',%')->where('communication_type',1)->where('distribution_type',6)->orWhere('distribution_type',8)->pluck('id')->toArray();
             else if($request->group_id == 2)
                 $class_messages = Communications::where('group_id',2)->where('communication_type',1)->where('distribution_type',6)->pluck('id')->toArray();
             
@@ -635,7 +635,7 @@ class APICommunicationController extends Controller
                             {
                                 if($classes_value!='')
                                 {
-                                    $classes_names[] = $classnames[$classes_vale];
+                                    $classes_names[] = $classnames[$classes_value]['class_name'];
                                 }
                             }
                             if(!empty($classes_names))

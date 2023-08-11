@@ -334,10 +334,18 @@ class APICommunicationController extends Controller
                     }
                     else if($message->group_id>=3) //if staff and class group notification message
                     {
-                        $group_name = UserGroups::where('id',$message->group_id)->pluck('group_name')->first();
-                        $user->user_table_id = $user_table_id;
-                        $details = $this->user_details($user);
-                        $chat_message = "A new message from ".$details['user_details']->first_name." in ".$group_name;
+                        if($message->communication_type == 4) //for birthday 
+                        {
+                            $role = ($user->user_role == Config::get('app.Admin_role'))?'Admin':($user->user_role == Config::get('Management_role')?"Management":"Class Teacher");
+                            $chat_message = $role.' sent birthday wishes';
+                        }
+                        else
+                        {
+                            $group_name = UserGroups::where('id',$message->group_id)->pluck('group_name')->first();
+                            $user->user_table_id = $user_table_id;
+                            $details = $this->user_details($user);
+                            $chat_message = "A new message from ".$details['user_details']->first_name." in ".$group_name;
+                        }
                     }
                     else
                         $chat_message = 'A new message is avaliable';
@@ -503,8 +511,12 @@ class APICommunicationController extends Controller
             
             $chat_id_list =$chat_id_list->Where(['visible_to'=>'all','communication_type'=>1])->pluck('id')->toArray();
 
+            $remove_duplciate_bd_alert = [];
+            if($request->group_id> 5)
+                $remove_duplciate_bd_alert = Communications::where('group_id',2)->where('communication_type',4)->pluck('id')->toArray();
+            
             // remaining chat messages list
-            $remaining_id_list =  Communications::whereIn('group_id',$group_id)->where('communication_type','!=',1);
+            $remaining_id_list =  Communications::whereIn('group_id',$group_id)->where('communication_type','!=',1)->whereNotIn('id',$remove_duplciate_bd_alert);
             
             if($user->user_role == Config::get('app.Parent_role'))
                 $remaining_id_list =$remaining_id_list->whereNull('message_status')->orWhere('message_status',2);
@@ -1663,5 +1675,122 @@ class APICommunicationController extends Controller
         {
             return response()->json(['status'=>false,'message'=>'Group id is missing!...']);
         }
+    }
+    
+    // birthday student list
+    public function birthday_student_list(Request $request)
+    {
+        // Check authentication
+        $user = auth()->user();
+        $student_list = [];
+        $date = now();
+        $text = "Dear *wardname*, the school wishes you a very happy birthday and a progressive year ahead.";
+        $student_details = UserStudents::select('id','first_name','class_config','profile_image')->whereMonth('dob', '=', $date->month)->whereDay('dob', '=', $date->day);
+        if($user->user_role == Config::get('app.Staff_role'))    
+            $text = 'Dear *wardname*, the school wishes you a very happy birthday and a progressive year ahead.';
+
+        if($request->class_config!='')
+            $student_details =$student_details->where('class_config',$request->class_config);
+
+        $student_details = $student_details->get()->toArray();
+        $visible_to_users =[];
+        $visible_to = Communications::select('visible_to')->whereDate('actioned_time', Carbon::today())->where('communication_type',4)->where('approval_status',1)->get()->toArray(); 
+
+        if(!empty($visible_to))
+            $visible_to_users = array_column($visible_to,'visible_to');
+
+        foreach($student_details as $key => $value)
+        {
+            $class_sec_value = AcademicClassConfiguration::where('id',$value['class_config'])->get()->first();
+            $student_list[$key] = ([
+                'id'=>$value['id'],
+                'first_name'=>$value['first_name'],
+                'class_section'=>$class_sec_value->classsectionName(),
+                'image'=>$value['profile_image'],
+                'sent_status'=>in_array($value['id'].',',$visible_to_users)?1:0
+            ]);
+        }
+
+        return response()->json(['text'=>$text,'student_list'=>$student_list]);
+
+    }
+
+    // Store birthday Message input
+    public function store_birthday_message(Request $request)
+    {
+        // Get authorizated user details
+        $user = auth()->user();
+
+        if($user->user_role == Config::get('app.Admin_role'))//check role and get current user id
+            $user_table_id = UserAdmin::where(['user_id'=>$user->user_id])->pluck('id')->first();
+        else if($user->user_role == Config::get('app.Management_role'))
+            $user_table_id = UserManagements::where(['user_id'=>$user->user_id])->pluck('id')->first();
+        else if($user->user_role == Config::get('app.Staff_role'))
+            $user_table_id = UserStaffs::where(['user_id'=>$user->user_id])->pluck('id')->first();
+
+        $userall_id = UserAll::where(['user_table_id'=>$user_table_id,'user_role'=>$user->user_role])->pluck('id')->first();
+        $visible_to = $request->visible_to;
+
+        if($user->user_role == Config::get('app.Management_role') || $user->user_role == Config::get('app.Admin_role'))
+        {
+            $admincommunications = new Communications;
+            $admincommunications->chat_message='Birthday wishes sent to students';
+            if(isset($request->visible_to))
+                $admincommunications->visible_to=implode(',',$visible_to).',';
+            $admincommunications->distribution_type=5; //1-Class,2-Group,3-Everyone,4-Staff,5-Parent
+            $admincommunications->message_category=1; //1-Text,2-Image with caption,3-Image Only,4-Document,5-Audio,6-Video,7-Quotes,8-Management Speaks,9-Circular,10-Study Material;
+            $admincommunications->actioned_by=$userall_id;
+            $admincommunications->created_by=$userall_id;
+            $admincommunications->actioned_time=Carbon::now()->timezone('Asia/Kolkata');
+            $admincommunications->created_time=Carbon::now()->timezone('Asia/Kolkata');
+            $admincommunications->group_id=2;
+            $admincommunications->communication_type=4; //default 4 - birthday alert
+            $admincommunications->attachments='N'; // Default attachment no
+            $admincommunications->approval_status=1;//1-Approval,2-Denied
+
+            $admincommunications->save();
+            $adminnotification_id = $admincommunications->id;
+
+            $main_group = UserGroupsMapping::select('user_table_id','user_role')->where(['user_table_id'=>$user_table_id,'user_role'=>$user->user_role,'user_status'=>Config::get('app.Group_Active')])->where('group_id',2)->get()->toArray(); //message copy in main group
+            if(!empty($main_group))
+                $this->insert_receipt_log(array_unique($main_group, SORT_REGULAR),$adminnotification_id,$user_table_id);
+        }
+
+        foreach ($visible_to as $key => $value) {
+            $student_detail = UserStudents::where('id',$value)->get()->first();
+            $group_id = UserGroups::where('class_config',$student_detail->class_config)->pluck('id')->first();
+            $parent_id = UserStudentsMapping::where('student',$student_detail->id)->pluck('parent')->first();
+            $message = str_replace("*wardname*",$student_detail->first_name,$request->chat_message);
+            // Insert communication message in notification log tables(School DB)
+            $communications = new Communications;
+            $communications->chat_message=$message;
+            if(isset($request->visible_to))
+                $communications->visible_to=$value.',';
+            $communications->distribution_type=5; //1-Class,2-Group,3-Everyone,4-Staff,5-Parent
+            $communications->message_category=1; //1-Text,2-Image with caption,3-Image Only,4-Document,5-Audio,6-Video,7-Quotes,8-Management Speaks,9-Circular,10-Study Material;
+            $communications->actioned_by=$userall_id;
+            $communications->created_by=$userall_id;
+            $communications->actioned_time=Carbon::now()->timezone('Asia/Kolkata');
+            $communications->created_time=Carbon::now()->timezone('Asia/Kolkata');
+            $communications->group_id=$group_id;
+            $communications->communication_type=4; //default 4 - birthday alert
+            $communications->attachments='N'; // Default attachment no
+            $communications->approval_status=1;//1-Approval,2-Denied
+
+            $communications->save();
+            $notification_id = $communications->id;
+            
+            $user_list = UserGroupsMapping::select('user_table_id','user_role')->where(['user_table_id'=>$parent_id,'user_role'=>Config::get('app.Parent_role'),'user_status'=>Config::get('app.Group_Active')])->where('group_id',$group_id)->get()->toArray(); //for wishes for parent
+
+            $user_ids = UserGroupsMapping::select('user_table_id','user_role')->where(['user_table_id'=>$user_table_id,'user_role'=>$user->user_role,'user_status'=>Config::get('app.Group_Active')])->where('group_id',$group_id)->get()->toArray(); //message copy for sender
+
+            $user_list = array_merge($user_list,$user_ids);
+
+            if(!empty($user_list))
+                $this->insert_receipt_log(array_unique($user_list, SORT_REGULAR),$notification_id,$user_table_id);
+
+        }        
+
+        return response()->json(['message'=>'Notification inserted Successfully!...']);
     }
 }

@@ -121,7 +121,7 @@ class APICommunicationController extends Controller
         if(isset($request->visible_to))
         {
             $visibleto_classes  = $request->visible_to; //section wise
-            if($value == 8) // class wise
+            if($request->distribution_type == 8) // class wise
                 $visibleto_classes = AcademicClassConfiguration::whereIn('class_id',$request->visible_to)->pluck('id')->toArray();
             $communications->visible_to=implode(',',$visibleto_classes).',';
         }

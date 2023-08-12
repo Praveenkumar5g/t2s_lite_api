@@ -518,7 +518,7 @@ class APICommunicationController extends Controller
                 $student_messages = Communications::where('group_id',$request->group_id)->where('distribution_type',7)->where('communication_type',1)->pluck('id')->toArray();
             }
             if($visible_to!='')
-                $class_messages = Communications::where('group_id',2)->where(['distribution_type'=>6,'communication_type'=>1])->orwhere(['distribution_type'=>8,'communication_type'=>1])->Where('visible_to', 'like', '%' .$visible_to. ',%')->pluck('id')->toArray();
+                $class_messages = Communications::where('group_id',2)->where(['distribution_type'=>6,'communication_type'=>1])->orwhere(['distribution_type'=>8,'communication_type'=>1])->whereRaw('FIND_IN_SET("'.$visible_to.'",visible_to)')->pluck('id')->toArray();
             else if($request->group_id == 2)
                 $class_messages = Communications::where('group_id',2)->where(['distribution_type'=>6,'communication_type'=>1])->orwhere(['distribution_type'=>8,'communication_type'=>1])->pluck('id')->toArray();
             
@@ -539,7 +539,7 @@ class APICommunicationController extends Controller
             $communication_id_list = array_merge($chat_id_list,$remaining_id_list,$class_messages,$student_messages);
 
             $get_class_config= UserGroups::where('id',$request->group_id)->pluck('class_config')->first();
-            $newsevents_id_list = NewsEvents::Where('visible_to', 'like', '%' .$get_class_config. '%')->orWhere('visible_to','all');
+            $newsevents_id_list = NewsEvents::whereRaw('FIND_IN_SET("'.$get_class_config.'",visible_to)')->orWhere('visible_to','all');
             if($user->user_role == Config::get('app.Parent_role'))
                 $newsevents_id_list =$newsevents_id_list->where('status',1);
 

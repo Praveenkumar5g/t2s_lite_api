@@ -518,9 +518,9 @@ class APICommunicationController extends Controller
                 $student_messages = Communications::where('group_id',$request->group_id)->where('distribution_type',7)->where('communication_type',1)->pluck('id')->toArray();
             }
             if($visible_to!='')
-                $class_messages = Communications::where('group_id',2)->Where('visible_to', 'like', '%' .$visible_to. ',%')->where('communication_type',1)->where('distribution_type',6)->orWhere('distribution_type',8)->pluck('id')->toArray();
+                $class_messages = Communications::where('group_id',2)->where(['distribution_type'=>6,'communication_type'=>1])->orwhere(['distribution_type'=>8,'communication_type'=>1])->Where('visible_to', 'like', '%' .$visible_to. ',%')->pluck('id')->toArray();
             else if($request->group_id == 2)
-                $class_messages = Communications::where('group_id',2)->where('communication_type',1)->where('distribution_type',6)->pluck('id')->toArray();
+                $class_messages = Communications::where('group_id',2)->where(['distribution_type'=>6,'communication_type'=>1])->orwhere(['distribution_type'=>8,'communication_type'=>1])->pluck('id')->toArray();
             
             $chat_id_list =$chat_id_list->Where(['visible_to'=>'all','communication_type'=>1])->pluck('id')->toArray();
 

@@ -119,7 +119,12 @@ class APICommunicationController extends Controller
         if(isset($request->important))
             $communications->important=$request->important;
         if(isset($request->visible_to))
-            $communications->visible_to=implode(',',$request->visible_to).',';
+        {
+            $visibleto_classes  = $request->visible_to; //section wise
+            if($value == 8) // class wise
+                $visibleto_classes = AcademicClassConfiguration::whereIn('class_id',$request->visible_to)->pluck('id')->toArray();
+            $communications->visible_to=implode(',',$visibleto_classes).',';
+        }
         $communications->distribution_type=$request->distribution_type; //1-Class,2-Group,3-Everyone,4-Staff,5-Parent
         $communications->message_category=$request->message_category; //1-Text,2-Image with caption,3-Image Only,4-Document,5-Audio,6-Video,7-Quotes,8-Management Speaks,9-Circular,10-Study Material;
         $communications->actioned_by=$userall_id;

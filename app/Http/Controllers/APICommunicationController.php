@@ -615,7 +615,7 @@ class APICommunicationController extends Controller
                             $visibility = 'Visible to Staffs';
                         else if($message_details->distribution_type==5)
                             $visibility = 'Visible to Parents';
-                        else if($message_details->distribution_type==6) //section wise
+                        else if($message_details->distribution_type==6 || $message_details->distribution_type==8)// 6-section wise,8-class wise 
                         {
                             $class_sections = AcademicClassConfiguration::whereIn('id',explode(',',$message_details->visible_to))->get();
                             $class_section_names = [];
@@ -628,23 +628,6 @@ class APICommunicationController extends Controller
                             }
                             if(!empty($class_section_names))
                                 $visibility = 'Visible to '.implode(',',$class_section_names);     
-                            else
-                                $visibility = 'Visible to Everyone';                
-                        }
-                        else if($message_details->distribution_type==8) //class wise
-                        {
-                            $classes = array_unique(AcademicClassConfiguration::whereIn('id',explode(',',$message_details->visible_to))->pluck('class_id')->toArray());
-                            $classnames = AcademicClasses::get()->toArray();
-                            $classes_names = [];
-                            foreach($classes as $classes_key => $classes_value)
-                            {
-                                if($classes_value!='')
-                                {
-                                    $classes_names[] = $classnames[$classes_value]['class_name'];
-                                }
-                            }
-                            if(!empty($classes_names))
-                                $visibility = 'Visible to '.implode(',',$classes_names);     
                             else
                                 $visibility = 'Visible to Everyone';                
                         }

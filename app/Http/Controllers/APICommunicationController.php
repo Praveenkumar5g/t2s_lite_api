@@ -537,7 +537,7 @@ class APICommunicationController extends Controller
             $remaining_id_list =$remaining_id_list->pluck('id')->toArray();
 
             $communication_id_list = array_merge($chat_id_list,$remaining_id_list,$class_messages,$student_messages);
-
+            echo '<pre>';print_r($communication_id_list);exit;
             $get_class_config= UserGroups::where('id',$request->group_id)->pluck('class_config')->first();
             $newsevents_id_list = NewsEvents::whereRaw('FIND_IN_SET("'.$get_class_config.'",visible_to)')->orWhere('visible_to','all');
             if($user->user_role == Config::get('app.Parent_role'))

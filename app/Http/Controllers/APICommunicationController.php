@@ -123,7 +123,7 @@ class APICommunicationController extends Controller
             $visibleto_classes  = $request->visible_to; //section wise
             if($request->distribution_type == 8) // class wise
                 $visibleto_classes = AcademicClassConfiguration::whereIn('class_id',$request->visible_to)->pluck('id')->toArray();
-            $communications->visible_to=implode(',',$visibleto_classes).',';
+            $communications->visible_to=','.implode(',',$visibleto_classes).',';
         }
         $communications->distribution_type=$request->distribution_type; //1-Class,2-Group,3-Everyone,4-Staff,5-Parent
         $communications->message_category=$request->message_category; //1-Text,2-Image with caption,3-Image Only,4-Document,5-Audio,6-Video,7-Quotes,8-Management Speaks,9-Circular,10-Study Material;
@@ -518,7 +518,7 @@ class APICommunicationController extends Controller
                 $student_messages = Communications::where('group_id',$request->group_id)->where('distribution_type',7)->where('communication_type',1)->pluck('id')->toArray();
             }
             if($visible_to!='')
-                $class_messages = Communications::where('group_id',2)->where(['distribution_type'=>6,'communication_type'=>1])->orwhere(['distribsution_type'=>8,'communication_type'=>1])->whereRaw('FIND_IN_SET("'.$visible_to.'",visible_to)')->pluck('id')->toArray();
+                $class_messages = Communications::where('group_id',2)->where(['distribution_type'=>6,'communication_type'=>1])->orwhere(['distribsution_type'=>8,'communication_type'=>1])->where('visible_to','like','%,'.$visible_to.',%')->pluck('id')->toArray();
             else if($request->group_id == 2)
                 $class_messages = Communications::where('group_id',2)->where(['distribution_type'=>6,'communication_type'=>1])->orwhere(['distribution_type'=>8,'communication_type'=>1])->pluck('id')->toArray();
             
@@ -537,9 +537,8 @@ class APICommunicationController extends Controller
             $remaining_id_list =$remaining_id_list->pluck('id')->toArray();
 
             $communication_id_list = array_merge($chat_id_list,$remaining_id_list,$class_messages,$student_messages);
-            echo '<pre>';print_r($class_messages);exit;
             $get_class_config= UserGroups::where('id',$request->group_id)->pluck('class_config')->first();
-            $newsevents_id_list = NewsEvents::whereRaw('FIND_IN_SET("'.$get_class_config.'",visible_to)')->orWhere('visible_to','all');
+            $newsevents_id_list = NewsEvents::where('visible_to','like','%,'.$get_class_config.',%')->orWhere('visible_to','all');
             if($user->user_role == Config::get('app.Parent_role'))
                 $newsevents_id_list =$newsevents_id_list->where('status',1);
 
@@ -1749,7 +1748,7 @@ class APICommunicationController extends Controller
             $admincommunications = new Communications;
             $admincommunications->chat_message='Birthday wishes sent to students';
             if(isset($request->visible_to))
-                $admincommunications->visible_to=implode(',',$visible_to).',';
+                $admincommunications->visible_to=','.implode(',',$visible_to).',';
             $admincommunications->distribution_type=5; //1-Class,2-Group,3-Everyone,4-Staff,5-Parent
             $admincommunications->message_category=1; //1-Text,2-Image with caption,3-Image Only,4-Document,5-Audio,6-Video,7-Quotes,8-Management Speaks,9-Circular,10-Study Material;
             $admincommunications->actioned_by=$userall_id;

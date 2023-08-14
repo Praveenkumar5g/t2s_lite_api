@@ -563,7 +563,6 @@ class APILoginController extends Controller
 
     public static function get_user_table_id($user)
     {
-        echo '<pre>';print_r($user);exit;
         if($user->user_role == Config::get('app.Admin_role'))//check role and get current user id
             $user_table_id = UserAdmin::where(['user_id'=>$user->user_id])->get()->first();
         else if($user->user_role == Config::get('app.Management_role'))

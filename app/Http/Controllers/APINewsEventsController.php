@@ -652,32 +652,32 @@ class APINewsEventsController extends Controller
 
             $userall_id = UserAll::select('user_table_id','user_role')->where('id',$value['created_by'])->get()->first();//get common id 
             $sender_details = $this->userDetails($userall_id);
-            $user = $designation = '';
+            $userdata = $designation = '';
             if(!empty($sender_details) && $userall_id->user_role == Config::get('app.Management_role'))
             {
-                $user = isset($management_categories[$sender_details['user_category']])?ucfirst($sender_details['first_name'])." ".$management_categories[$sender_details['user_category']]:ucfirst($sender_details['first_name']);
+                $userdata = isset($management_categories[$sender_details['user_category']])?ucfirst($sender_details['first_name'])." ".$management_categories[$sender_details['user_category']]:ucfirst($sender_details['first_name']);
                 $designation = 'Management';
             }
             else if(!empty($sender_details) && $userall_id->user_role == Config::get('app.Staff_role'))
             {
-                $user = ucfirst($sender_details['first_name']);
+                $userdata = ucfirst($sender_details['first_name']);
                 $designation = $staff_categories[$sender_details['user_category']];
             }
             else if(!empty($sender_details) && $userall_id->user_role == Config::get('app.Admin_role'))
             {
-                $user = ucfirst($sender_details['first_name']);
+                $userdata = ucfirst($sender_details['first_name']);
                 $designation = 'Admin';
             }
             else if(!empty($sender_details) && $userall_id->user_role == Config::get('app.Parent_role'))
             {
-                $user = ucfirst($sender_details['first_name']);
+                $userdata = ucfirst($sender_details['first_name']);
                 $designation = 'F/O Test';
             }
 
             // array formated to display news
             $data = ([
                 'id'=>$value['id'],
-                'user'=>$user,
+                'user'=>$userdata,
                 'designation'=>$designation,
                 'datetime'=>($value['published_time'] !=null)?$value['published_time']:null,
                 'news_events_category'=>$value['news_events_category'],

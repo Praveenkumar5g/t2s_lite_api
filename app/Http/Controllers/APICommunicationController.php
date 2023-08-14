@@ -519,9 +519,9 @@ class APICommunicationController extends Controller
             }
             if($visible_to!='')
             {
-                $class_wise = Communications::where('group_id',2)->where('visible_to','like','%,'.$visible_to.',%')->where(['distribution_type'=>6,'communication_type'=>1])->pluck('id')->toArray();
+                $class_wise = Communications::where('group_id',2)->where('visible_to','like','%,'.$visible_to.',%')->where(['distribution_type'=>8,'communication_type'=>1])->pluck('id')->toArray();
 
-                $section_wise = $class_wise = Communications::where('group_id',2)->where('visible_to','like','%,'.$visible_to.',%')->where(['distribution_type'=>8,'communication_type'=>1])->pluck('id')->toArray();
+                $section_wise = Communications::where('group_id',2)->where('visible_to','like','%,'.$visible_to.',%')->where(['distribution_type'=>6,'communication_type'=>1])->pluck('id')->toArray();
 
                 $class_messages = array_merge($class_wise,$section_wise);
             }

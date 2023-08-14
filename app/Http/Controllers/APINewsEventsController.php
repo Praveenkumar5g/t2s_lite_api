@@ -232,7 +232,6 @@ class APINewsEventsController extends Controller
     {
         // Check authenticate user.
         $user = auth()->user();
-        echo '<pre>';print_r($user);exit;
         $user->last_login = Carbon::now()->timezone('Asia/Kolkata');
         $user->save();
         $newsevents = NewsEvents::where(['published'=>'Y','status'=>1,'module_type'=>1]);
@@ -596,6 +595,7 @@ class APINewsEventsController extends Controller
     {
         // Check authenticate user.
         $user = auth()->user();
+        echo '<pre>';print_r($user);exit;
         $user->last_login = Carbon::now()->timezone('Asia/Kolkata');
         $user->save();
         $newsevents = NewsEvents::where(['published'=>'Y','status'=>1,'module_type'=>2]);

@@ -75,7 +75,7 @@ class APINewsEventsController extends Controller
             'published'=>'Y',
             'published_time'=>Carbon::now()->timezone('Asia/Kolkata'),
             'news_events_category'=>$request->news_events_category,
-            'visible_to'=>!empty($request->visible_to)?implode(',',$request->visible_to):'all',
+            'visible_to'=>!empty($request->visible_to)?','.implode(',',$request->visible_to):'all',
         ]);
         if(isset($request->youtube_link))
             $newsevents['youtube_link']=$request->youtube_link;

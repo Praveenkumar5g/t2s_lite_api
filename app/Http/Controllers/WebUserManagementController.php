@@ -328,7 +328,7 @@ class WebUserManagementController extends Controller
             UserGroupsMapping::insert(['group_id'=>$group_id,'user_table_id'=>$parent_id,'user_role'=>Config::get('app.Parent_role'),'user_status'=>1,'group_access'=>2]);
         }
         
-        if(empty($parent_details))
+        if(empty($new_record))
         {
             //make an entry in user all table
             $user_all = new UserAll;

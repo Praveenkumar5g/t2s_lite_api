@@ -134,7 +134,36 @@
 	<script src="{!! asset('assets/js/buttons.colVis.min.js') !!}"></script>
 	<script type="text/javascript">
 		$(document).ready(function(){
-	
+			$('#example2').on('click', 'a.unmapping', function (e) {
+		        swal({
+				  	title: "Are you sure?",
+				  	text: "Want to Unmap?",
+				  	type: "warning",
+				  	showCancelButton: true,
+				  	confirmButtonClass: "btn-danger",
+				  	confirmButtonText: "Yes",
+				  	cancelButtonText: "No",
+				}).then((result) => {
+					if(typeof(result.value) != 'undefined' && result.value == true)
+					{
+						$.get("{{url('usermanagement/studentunmapwithparent?id=')}}"+$(this).attr('data-id'),function(response){ 
+							if(response)
+							{
+								swal({
+								  	text: "Successfully Unmapped",
+								  	type: "Success",
+								  	showCancelButton: true,
+								  	confirmButtonClass: "btn-success",
+								  	confirmButtonText: "OK",
+								}).then((result) => {
+									window.location.href="{{url('usermanagement/students')}}";
+								});
+							}
+						})
+					}
+					
+				});
+		    });
 	    	$('#example2').DataTable({
 
 	    		processing: true,

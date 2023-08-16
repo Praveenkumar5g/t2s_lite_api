@@ -1556,14 +1556,21 @@ class APIConfigurationsController extends Controller
 			}
 			$group_list = $group_list->get()->toArray(); //class groups
 			foreach ($group_list as $group_key => $group_value) {
+				$approval_pending = $class_approval_pending = $section_approval_pending = 0;
 				$classteacher_name ='';
 				$classteacher_id = AcademicClassConfiguration::where('id',$group_value['class_config'])->pluck('class_teacher')->first();
 				if($classteacher_id!='')
 					$classteacher_name = UserStaffs::where('id',$classteacher_id)->pluck('first_name')->first();
 				$chat_count = $homework_count = 0;
-				$chat_count = count(Communications::select('id')->where('group_id',$group_value['id'])->whereNull('approval_status')->where('communication_type',1)->get()->toArray());
+				$chat_count = count(Communications::select('id')->where('group_id',$group_value['id'])->whereNull('approval_status')->where('communication_type',1)->where('distribution_type','!=',6)->where('distribution_type','!=',8)->get()->toArray());
 				$homework_count = count(Communications::select('id')->where('group_id',$group_value['id'])->whereNull('approval_status')->where('communication_type',2)->where('actioned_time','>=',date("Y-m-d",strtotime(Carbon::now()->timezone('Asia/Kolkata'))))->get()->toArray());
 				$approval_pending = $chat_count+$homework_count;
+
+				$class_approval_pending = count(Communications::where('group_id',2)->Where('visible_to', 'like', '%' .$group_value['class_config']. ',%')->where('communication_type',1)->where('distribution_type',8)->whereNull('approval_status')->pluck('id')->toArray());
+
+				$section_approval_pending = count(Communications::where('group_id',2)->Where('visible_to', 'like', '%' .$group_value['class_config']. ',%')->where('communication_type',1)->where('distribution_type',6)->whereNull('approval_status')->pluck('id')->toArray());
+
+				$approval_pending+=$class_approval_pending+$section_approval_pending;
 
 				$parent_ids = UserGroupsMapping::where(['user_role'=>Config::get('app.Parent_role'),'group_id'=>$group_value['id']])->pluck('user_table_id')->toArray();
 				$all_user_count = UserGroupsMapping::where(['group_id'=>$group_value['id']])->pluck('user_table_id')->toArray();

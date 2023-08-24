@@ -6,6 +6,7 @@ use App\Http\Controllers\APIConfigurationsController;
 use App\Http\Controllers\APICommunicationController;
 use App\Http\Controllers\APIRegistrationController;
 use App\Http\Controllers\APINewsEventsController;
+use App\Http\Controllers\APIAttendanceController;
 use App\Http\Controllers\APIHomeworkController;
 use App\Http\Controllers\APILoginController;
 use App\Http\Controllers\WelcomeController;

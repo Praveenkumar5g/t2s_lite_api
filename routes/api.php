@@ -177,6 +177,14 @@ Route::group(['middleware' => 'auth.connect','prefix' => 'user'], function ($rou
     Route::post('/store_liked_news',[APINewsEventsController::class,'store_liked_news']);//store liked data in db
     /*News and Events -- Ends*/
 
+    /*Attendance -- starts*/
+    Route::get('/attendance_maindashboard',[APIAttendanceController::class,'attendance_maindashboard']);//get overall attendance details for dashboard
+    Route::get('/attendance_class_section_listing',[APIAttendanceController::class,'attendance_class_section_listing']);//class and section wise listing with attendance details.
+    Route::post('/get_student_list',[APIAttendanceController::class,'get_student_list']);//get all student details from selected class,section
+    Route::post('/store_attendance',[APIAttendanceController::class,'store_attendance']); //store attendance entry details in db.
+    Route::post('/get_attendance',[APIAttendanceController::class,'get_attendance']);//get attendance entry details
+    /*Attendance -- ends*/
+
     /*Payfees -- starts*/
     Route::get('/feesStructure',[PayfeesController::class,'feesStructure']);
     Route::get('/studentFees', [PayfeesController::class,'studentFees']);

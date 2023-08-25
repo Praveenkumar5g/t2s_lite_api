@@ -558,7 +558,7 @@ class APICommunicationController extends Controller
 
             $get_class_config= UserGroups::where('id',$request->group_id)->pluck('class_config')->first();
 
-            $newsevents_id_list = NewsEvents::where(function($query) {
+            $newsevents_id_list = NewsEvents::where(function($query) use ($get_class_config){
                 $query->where('vissible_to','like','%,'.$get_class_config.',%')
                     ->orWhere('visible_to','all');
             });

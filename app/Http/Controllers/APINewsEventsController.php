@@ -245,7 +245,10 @@ class APINewsEventsController extends Controller
             else
                 $student_id[] = $request->student_id;
             $class_config = UserStudents::whereIn('id',$student_id)->pluck('class_config')->first();
-            $newsevents=$newsevents->where('status',1)->where(['visible_to'=>'all','module_type'=>1])->orWhere('visible_to', 'like', '%' .$class_config. '%')->where('module_type',1);
+            $newsevents = $newsevents->where(function($query) use ($class_config){
+                $query->where('visible_to','like','%,'.$class_config.',%')
+                    ->orWhere('visible_to','all');
+            })->where('status',1)->where('module_type',1);
         }
         $newsevents = $newsevents->orderBy('published_time','DESC')->get()->toArray();//fetch all the news data
         $latest = $olddata = [];
@@ -373,7 +376,10 @@ class APINewsEventsController extends Controller
             else
                 $student_id[] = $request->student_id;
             $class_config = UserStudents::whereIn('id',$student_id)->pluck('class_config')->first();
-            $newsevents=$newsevents->where('status',1)->where('visible_to','all')->orWhere('visible_to', 'like', '%' .$class_config. '%');
+            $newsevents = $newsevents->where(function($query) use ($class_config){
+                $query->where('visible_to','like','%,'.$class_config.',%')
+                    ->orWhere('visible_to','all');
+            })->where('status',1);
         }
 
         $newsevents = $newsevents->orderBy('published_time','DESC')->get()->toArray();//fetch all the images data
@@ -608,7 +614,11 @@ class APINewsEventsController extends Controller
             else
                 $student_id[] = $request->student_id;
             $class_config = UserStudents::whereIn('id',$student_id)->pluck('class_config')->first();
-            $newsevents=$newsevents->where('status',1)->where('visible_to','all')->orWhere('visible_to', 'like', '%' .$class_config. '%')->where('module_type',2);
+
+            $newsevents = $newsevents->where(function($query) use ($class_config){
+                $query->where('visible_to','like','%,'.$class_config.',%')
+                    ->orWhere('visible_to','all');
+            })->where('status',1)->where('module_type',2);
         }
         $newsevents=$newsevents->orderBy('event_date','DESC')->get()->toArray();//fetch all the news data
 

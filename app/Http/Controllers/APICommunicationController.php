@@ -511,7 +511,7 @@ class APICommunicationController extends Controller
             {
                 $chat_id_list =$chat_id_list->whereNull('message_status')->orWhere('message_status',2);
 
-                $student_messages = Communications::where('group_id',$request->group_id)->Where('visible_to', 'like', '%' .$userdetails->id. ',%')->where('distribution_type',7)->where('communication_type',1)->pluck('id')->toArray();
+                $student_messages = Communications::where('group_id',$request->group_id)->Where('visible_to', 'like', '%' .$userdetails->id. ',%')->where('distribution_type',7)->where('communication_type',1)->whereNull('message_status')->orWhere('message_status',2)->pluck('id')->toArray();
             }
             else if($user->user_role == Config::get('app.Admin_role') || $user->user_role == Config::get('app.Management_role') || $user->user_role == config::get('app.Staff_role'))
             {
@@ -519,9 +519,20 @@ class APICommunicationController extends Controller
             }
             if($visible_to!='')
             {
-                $class_wise = Communications::where('group_id',2)->where('visible_to','like','%,'.$visible_to.',%')->where(['distribution_type'=>8,'communication_type'=>1])->pluck('id')->toArray();
+                $class_wise = Communications::where('group_id',2)->where('visible_to','like','%,'.$visible_to.',%')->where(['distribution_type'=>8,'communication_type'=>1]);
 
-                $section_wise = Communications::where('group_id',2)->where('visible_to','like','%,'.$visible_to.',%')->where(['distribution_type'=>6,'communication_type'=>1])->pluck('id')->toArray();
+                $section_wise = Communications::where('group_id',2)->where('visible_to','like','%,'.$visible_to.',%')->where(['distribution_type'=>6,'communication_type'=>1]);
+
+
+                if($user->user_role == Config::get('app.Parent_role'))
+                {
+                    $class_wise = $class_wise->whereNull('message_status')->orWhere('message_status',2);
+                    $section_wise = $section_wise->whereNull('message_status')->orWhere('message_status',2);
+                }
+
+                $class_wise = $class_wise->pluck('id')->toArray();
+
+                $section_wise = $section_wise->pluck('id')->toArray();
 
                 $class_messages = array_merge($class_wise,$section_wise);
 
@@ -551,6 +562,10 @@ class APICommunicationController extends Controller
                 $newsevents_id_list =$newsevents_id_list->where('status',1);
 
             $newsevents_id_list =$newsevents_id_list->pluck('id')->toArray();
+
+            echo '<pre>';print_r($newsevents_id_list);
+            echo 'test';
+            print_r($communication_id_list);exit;
 
             // $notification_ids = CommunicationRecipients::where(['user_table_id'=>$userdetails->id,'user_role'=>$user->user_role])->whereIn('communication_id',$communication_id_list)->orderBy('actioned_time')->get()->toArray(); //Fetch applicable notification ids from table for logged in user.
 

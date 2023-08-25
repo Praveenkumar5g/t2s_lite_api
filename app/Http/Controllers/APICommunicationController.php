@@ -559,17 +559,13 @@ class APICommunicationController extends Controller
             $get_class_config= UserGroups::where('id',$request->group_id)->pluck('class_config')->first();
 
             $newsevents_id_list = NewsEvents::where(function($query) use ($get_class_config){
-                $query->where('vissible_to','like','%,'.$get_class_config.',%')
+                $query->where('visible_to','like','%,'.$get_class_config.',%')
                     ->orWhere('visible_to','all');
             });
             if($user->user_role == Config::get('app.Parent_role'))
                 $newsevents_id_list =$newsevents_id_list->where('status',1);
 
             $newsevents_id_list =$newsevents_id_list->pluck('id')->toArray();
-
-            echo '<pre>';print_r($newsevents_id_list);
-            echo 'test';
-            print_r($communication_id_list);exit;
 
             // $notification_ids = CommunicationRecipients::where(['user_table_id'=>$userdetails->id,'user_role'=>$user->user_role])->whereIn('communication_id',$communication_id_list)->orderBy('actioned_time')->get()->toArray(); //Fetch applicable notification ids from table for logged in user.
 

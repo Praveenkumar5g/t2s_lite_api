@@ -16,6 +16,7 @@ use App\Models\NewsEventAcceptStatus;
 use App\Models\UserStudentsMapping;
 use App\Models\UserGroupsMapping;
 use App\Models\UserManagements;
+use App\Models\UserCategories;
 use App\Models\SchoolProfile;
 use Illuminate\Http\Request;
 use App\Models\UserStudents;
@@ -74,7 +75,7 @@ class APINewsEventsController extends Controller
             'published'=>'Y',
             'published_time'=>Carbon::now()->timezone('Asia/Kolkata'),
             'news_events_category'=>$request->news_events_category,
-            'visible_to'=>!empty($request->visible_to)?implode(',',$request->visible_to):'all',
+            'visible_to'=>!empty($request->visible_to)?','.implode(',',$request->visible_to).',':'all',
         ]);
         if(isset($request->youtube_link))
             $newsevents['youtube_link']=$request->youtube_link;
@@ -227,7 +228,7 @@ class APINewsEventsController extends Controller
     }
 
     //View Main screen news and events 
-    public function mainscreen_view_newsevents()
+    public function mainscreen_view_newsevents(Request $request)
     {
         // Check authenticate user.
         $user = auth()->user();
@@ -236,10 +237,18 @@ class APINewsEventsController extends Controller
         $newsevents = NewsEvents::where(['published'=>'Y','status'=>1,'module_type'=>1]);
         if($user->user_role == Config::get('app.Parent_role'))
         {
-            $user_table_id = UserParents::where(['user_id'=>$user->user_id])->first();//fetch id from user all table to store notification triggered user
-            $student_id = UserStudentsMapping::where(['parent'=>$user_table_id->id])->pluck('student')->toArray();
+            if($request->student_id =='')
+            {                
+                $user_table_id = UserParents::where(['user_id'=>$user->user_id])->first();//fetch id from user all table to store notification triggered user
+                $student_id = UserStudentsMapping::where(['parent'=>$user_table_id->id])->pluck('student')->toArray();
+            }
+            else
+                $student_id[] = $request->student_id;
             $class_config = UserStudents::whereIn('id',$student_id)->pluck('class_config')->first();
-            $newsevents=$newsevents->where(['visible_to'=>'all','module_type'=>1])->orWhere('visible_to', 'like', '%' .$class_config. '%')->where('module_type',1);
+            $newsevents = $newsevents->where(function($query) use ($class_config){
+                $query->where('visible_to','like','%,'.$class_config.',%')
+                    ->orWhere('visible_to','all');
+            })->where('status',1)->where('module_type',1);
         }
         $newsevents = $newsevents->orderBy('published_time','DESC')->get()->toArray();//fetch all the news data
         $latest = $olddata = [];
@@ -247,6 +256,10 @@ class APINewsEventsController extends Controller
         $user_table_id = app('App\Http\Controllers\APILoginController')->get_user_table_id($user);
 
         $userall_id = UserAll::where(['user_table_id'=>$user_table_id->id,'user_role'=>$user->user_role])->pluck('id')->first();//get common id 
+
+        $management_categories = array_column(UserCategories::select('id','category_name')->where('user_role',Config::get('app.Management_role'))->get()->toArray(),'category_name','id');
+
+        $staff_categories = array_column(UserCategories::select('id','category_name')->where('user_role',Config::get('app.Staff_role'))->get()->toArray(),'category_name','id');
 
         // fetch all liked data
         $liked_news = NewsEventAcceptStatus::where('user_id',$userall_id)->where('accept_status',1)->pluck('news_event_id')->toArray();
@@ -293,10 +306,34 @@ class APINewsEventsController extends Controller
                         $visibility = implode(',',$class_section_names);   
                 }
             }
-
+            $userall_id = UserAll::select('user_table_id','user_role')->where('id',$value['created_by'])->get()->first();//get common id 
+            $sender_details = $this->userDetails($userall_id);
+            $user = $designation = '';
+            if(!empty($sender_details) && $userall_id->user_role == Config::get('app.Management_role'))
+            {
+                $user = isset($management_categories[$sender_details['user_category']])?ucfirst($sender_details['first_name'])." ".$management_categories[$sender_details['user_category']]:ucfirst($sender_details['first_name']);
+                $designation = 'Management';
+            }
+            else if(!empty($sender_details) && $userall_id->user_role == Config::get('app.Staff_role'))
+            {
+                $user = ucfirst($sender_details['first_name']);
+                $designation = $staff_categories[$sender_details['user_category']];
+            }
+            else if(!empty($sender_details) && $userall_id->user_role == Config::get('app.Admin_role'))
+            {
+                $user = ucfirst($sender_details['first_name']);
+                $designation = 'Admin';
+            }
+            else if(!empty($sender_details) && $userall_id->user_role == Config::get('app.Parent_role'))
+            {
+                $user = ucfirst($sender_details['first_name']);
+                $designation = 'F/O Test';
+            }
             // array formated to display news
             $data = ([
                 'id'=>$value['id'],
+                'user'=>$user,
+                'designation'=>$designation,
                 'news_events_category'=>$value['news_events_category'],
                 'datetime'=>($value['published_time'] !=null)?$value['published_time']:null,
                 'title'=>$value['title'],
@@ -321,26 +358,63 @@ class APINewsEventsController extends Controller
     }
 
     // view all the images in gallery tap
-    public function view_all_images()
+    public function view_all_images(Request $request)
     {
+        $images = [];
         // Check authenticate user.
         $user = auth()->user();
         $user->last_login = Carbon::now()->timezone('Asia/Kolkata');
         $user->save();
         $newsevents = NewsEvents::where(['published'=>'Y','status'=>1,'attachments'=>'Y']);
         if($user->user_role == Config::get('app.Parent_role'))
-        {
-            $user_table_id = UserParents::where(['user_id'=>$user->user_id])->first();//fetch id from user all table to store notification triggered user
-            $student_id = UserStudentsMapping::where(['parent'=>$user_table_id->id])->pluck('student')->toArray();
+        { 
+            if($request->student_id =='')
+            {
+                $user_table_id = UserParents::where(['user_id'=>$user->user_id])->first();//fetch id from user all table to store notification triggered user
+                $student_id = UserStudentsMapping::where(['parent'=>$user_table_id->id])->pluck('student')->toArray();
+            }
+            else
+                $student_id[] = $request->student_id;
             $class_config = UserStudents::whereIn('id',$student_id)->pluck('class_config')->first();
-            $newsevents=$newsevents->where('visible_to','all')->orWhere('visible_to', 'like', '%' .$class_config. '%');
+            $newsevents = $newsevents->where(function($query) use ($class_config){
+                $query->where('visible_to','like','%,'.$class_config.',%')
+                    ->orWhere('visible_to','all');
+            })->where('status',1);
         }
 
         $newsevents = $newsevents->orderBy('published_time','DESC')->get()->toArray();//fetch all the images data
 
+        $management_categories = array_column(UserCategories::select('id','category_name')->where('user_role',Config::get('app.Management_role'))->get()->toArray(),'category_name','id');
+
+        $staff_categories = array_column(UserCategories::select('id','category_name')->where('user_role',Config::get('app.Staff_role'))->get()->toArray(),'category_name','id');
+
         foreach ($newsevents as $key => $value) { //loop to format all the data in display formaat
             $image_ids = explode(',', $value['images']);//fetch main images
             $images_list = NewsEventsAttachments::where(['news_events_id'=>$value['id']])->whereIn('id',$image_ids)->get()->toArray();//fetch path and images name details from table.
+
+            $userall_id = UserAll::select('user_table_id','user_role')->where('id',$value['created_by'])->get()->first();//get common id 
+            $sender_details = $this->userDetails($userall_id);
+            $user = $designation = '';
+            if(!empty($sender_details) && $userall_id->user_role == Config::get('app.Management_role'))
+            {
+                $user = isset($management_categories[$sender_details['user_category']])?ucfirst($sender_details['first_name'])." ".$management_categories[$sender_details['user_category']]:ucfirst($sender_details['first_name']);
+                $designation = 'Management';
+            }
+            else if(!empty($sender_details) && $userall_id->user_role == Config::get('app.Staff_role'))
+            {
+                $user = ucfirst($sender_details['first_name']);
+                $designation = $staff_categories[$sender_details['user_category']];
+            }
+            else if(!empty($sender_details) && $userall_id->user_role == Config::get('app.Admin_role'))
+            {
+                $user = ucfirst($sender_details['first_name']);
+                $designation = 'Admin';
+            }
+            else if(!empty($sender_details) && $userall_id->user_role == Config::get('app.Parent_role'))
+            {
+                $user = ucfirst($sender_details['first_name']);
+                $designation = 'F/O Test';
+            }
             if(!empty($images_list))//check if empty
             {
                 foreach ($images_list as $image_key => $image_value) {//form array 
@@ -348,6 +422,10 @@ class APINewsEventsController extends Controller
                         'id'=>$image_value['id'],
                         'news_events_id'=>$value['id'],
                         'image'=>$image_value['attachment_location'].'/'.$image_value['attachment_name'],
+                        'user'=>$user,
+                        'designation'=>$designation,
+                        'datetime'=>($value['published_time'] !=null)?$value['published_time']:null,
+
                     ]);
                 }
             }
@@ -363,6 +441,10 @@ class APINewsEventsController extends Controller
                             'id'=>$addonimage_value['id'],
                             'news_events_id'=>$value['id'],
                             'image'=>$addonimage_value['attachment_location'].'/'.$addonimage_value['attachment_name'],
+                            'user'=>$user,
+                            'designation'=>$designation,
+                            'datetime'=>($value['published_time'] !=null)?$value['published_time']:null,
+
                         ]);
 
                     }
@@ -410,6 +492,10 @@ class APINewsEventsController extends Controller
         
         if(!empty($newsevents))
         {
+            $management_categories = array_column(UserCategories::select('id','category_name')->where('user_role',Config::get('app.Management_role'))->get()->toArray(),'category_name','id');
+
+            $staff_categories = array_column(UserCategories::select('id','category_name')->where('user_role',Config::get('app.Staff_role'))->get()->toArray(),'category_name','id');
+
             $data = $images = $addon_images = []; //empty declartion
             $image_ids = explode(',', $newsevents->images);//fetch main images
             $images_list = NewsEventsAttachments::where(['news_events_id'=>$newsevents->id])->whereIn('id',$image_ids)->get()->toArray();//fetch path and images name details from table.
@@ -439,9 +525,36 @@ class APINewsEventsController extends Controller
 
                 $total_like = NewsEventAcceptStatus::select(DB::raw('COUNT(accept_status) as accept_status'),'news_event_id')->where('accept_status',1)->where('news_event_id',$newsevents->id)->get()->first();
             }
+
+            $userall_id = UserAll::select('user_table_id','user_role')->where('id',$newsevents->created_by)->get()->first();//get common id 
+            $sender_details = $this->userDetails($userall_id);
+            $username = $designation = '';
+            if(!empty($sender_details) && $userall_id->user_role == Config::get('app.Management_role'))
+            {
+                $username = isset($management_categories[$sender_details['user_category']])?ucfirst($sender_details['first_name'])." ".$management_categories[$sender_details['user_category']]:ucfirst($sender_details['first_name']);
+                $designation = 'Management';
+            }
+            else if(!empty($sender_details) && $userall_id->user_role == Config::get('app.Staff_role'))
+            {
+                $username = ucfirst($sender_details['first_name']);
+                $designation = $staff_categories[$sender_details['user_category']];
+            }
+            else if(!empty($sender_details) && $userall_id->user_role == Config::get('app.Admin_role'))
+            {
+                $username = ucfirst($sender_details['first_name']);
+                $designation = 'Admin';
+            }
+            else if(!empty($sender_details) && $userall_id->user_role == Config::get('app.Parent_role'))
+            {
+                $username = ucfirst($sender_details['first_name']);
+                $designation = 'F/O Test';
+            }
+
             // array formated to display news
             $data = ([
                 'id'=>$newsevents->id,
+                'user'=>$username,
+                'designation'=>$designation, 
                 'news_events_category'=>$newsevents->news_events_category,
                 'datetime'=>($newsevents->published_time !=null)?$newsevents->published_time:null,
                 'title'=>$newsevents->title,
@@ -484,7 +597,7 @@ class APINewsEventsController extends Controller
 
 
     //View Main screen news and events 
-    public function mainscreen_view_allevents()
+    public function mainscreen_view_allevents(Request $request)
     {
         // Check authenticate user.
         $user = auth()->user();
@@ -493,12 +606,26 @@ class APINewsEventsController extends Controller
         $newsevents = NewsEvents::where(['published'=>'Y','status'=>1,'module_type'=>2]);
         if($user->user_role == Config::get('app.Parent_role'))
         {
-            $user_table_id = UserParents::where(['user_id'=>$user->user_id])->first();//fetch id from user all table to store notification triggered user
-            $student_id = UserStudentsMapping::where(['parent'=>$user_table_id->id])->pluck('student')->toArray();
+            if($request->student_id =='')
+            {
+                $user_table_id = UserParents::where(['user_id'=>$user->user_id])->first();//fetch id from user all table to store notification triggered user
+                $student_id = UserStudentsMapping::where(['parent'=>$user_table_id->id])->pluck('student')->toArray();
+            }
+            else
+                $student_id[] = $request->student_id;
             $class_config = UserStudents::whereIn('id',$student_id)->pluck('class_config')->first();
-            $newsevents=$newsevents->where('visible_to','all')->orWhere('visible_to', 'like', '%' .$class_config. '%')->where('module_type',2);
+
+            $newsevents = $newsevents->where(function($query) use ($class_config){
+                $query->where('visible_to','like','%,'.$class_config.',%')
+                    ->orWhere('visible_to','all');
+            })->where('status',1)->where('module_type',2);
         }
         $newsevents=$newsevents->orderBy('event_date','DESC')->get()->toArray();//fetch all the news data
+
+        $management_categories = array_column(UserCategories::select('id','category_name')->where('user_role',Config::get('app.Management_role'))->get()->toArray(),'category_name','id');
+
+        $staff_categories = array_column(UserCategories::select('id','category_name')->where('user_role',Config::get('app.Staff_role'))->get()->toArray(),'category_name','id');
+
         $upcoming_events = $completed_events = [];
         foreach ($newsevents as $key => $value) { //loop to format all the data in display formaat
             $data = $images = []; //empty declartion
@@ -533,9 +660,36 @@ class APINewsEventsController extends Controller
                 }
             }
 
+            $userall_id = UserAll::select('user_table_id','user_role')->where('id',$value['created_by'])->get()->first();//get common id 
+            $sender_details = $this->userDetails($userall_id);
+            $userdata = $designation = '';
+            if(!empty($sender_details) && $userall_id->user_role == Config::get('app.Management_role'))
+            {
+                $userdata = isset($management_categories[$sender_details['user_category']])?ucfirst($sender_details['first_name'])." ".$management_categories[$sender_details['user_category']]:ucfirst($sender_details['first_name']);
+                $designation = 'Management';
+            }
+            else if(!empty($sender_details) && $userall_id->user_role == Config::get('app.Staff_role'))
+            {
+                $userdata = ucfirst($sender_details['first_name']);
+                $designation = $staff_categories[$sender_details['user_category']];
+            }
+            else if(!empty($sender_details) && $userall_id->user_role == Config::get('app.Admin_role'))
+            {
+                $userdata = ucfirst($sender_details['first_name']);
+                $designation = 'Admin';
+            }
+            else if(!empty($sender_details) && $userall_id->user_role == Config::get('app.Parent_role'))
+            {
+                $userdata = ucfirst($sender_details['first_name']);
+                $designation = 'F/O Test';
+            }
+
             // array formated to display news
             $data = ([
                 'id'=>$value['id'],
+                'user'=>$userdata,
+                'designation'=>$designation,
+                'datetime'=>($value['published_time'] !=null)?$value['published_time']:null,
                 'news_events_category'=>$value['news_events_category'],
                 'event_date'=>($value['event_date'] !=null)?$value['event_date']:null,
                 'event_time'=>($value['event_time'] !=null)?$value['event_time']:null,
@@ -645,5 +799,26 @@ class APINewsEventsController extends Controller
         }
 
         return response()->json(['message'=>'Updated...']);
+    }
+
+    public function userDetails($userall_id)
+    {
+        $user_details =[];
+        if(!empty($userall_id))
+        {
+            if($userall_id->user_role == Config::get('app.Management_role'))
+                $user_details =UserManagements::where(['id'=>$userall_id->user_table_id])->first();
+            else if($userall_id->user_role == Config::get('app.Staff_role'))
+                $user_details =UserStaffs::where(['id'=>$userall_id->user_table_id])->first();
+            else if($userall_id->user_role == Config::get('app.Parent_role'))
+                $user_details =UserParents::where(['id'=>$userall_id->user_table_id])->first();
+            else if($userall_id->user_role == Config::get('app.Admin_role'))
+                $user_details =UserAdmin::where(['id'=>$userall_id->user_table_id])->first();
+        }
+        if(!empty($user_details))
+            return $user_details->toArray();
+        else
+            return $user_details;
+
     }
 }

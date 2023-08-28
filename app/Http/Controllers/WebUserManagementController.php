@@ -328,7 +328,7 @@ class WebUserManagementController extends Controller
             UserGroupsMapping::insert(['group_id'=>$group_id,'user_table_id'=>$parent_id,'user_role'=>Config::get('app.Parent_role'),'user_status'=>1,'group_access'=>2]);
         }
         
-        if(empty($parent_details))
+        if(empty($new_record))
         {
             //make an entry in user all table
             $user_all = new UserAll;
@@ -390,7 +390,7 @@ class WebUserManagementController extends Controller
             'mother_mobile_number'=>isset($parentsdata[2])?$parentsdata[2]->mobile_number:'',
             'mother_email_address'=>isset($parentsdata[2])?$parentsdata[2]->email_id:'',
             'mother_name'=>isset($parentsdata[2])?$parentsdata[2]->first_name:'',
-            'mother_id'=>isset($parentsdata[3])?$parentsdata[3]->id:0,
+            'mother_id'=>isset($parentsdata[2])?$parentsdata[2]->id:0,
             'guardian_mobile_number'=>isset($parentsdata[9])?$parentsdata[9]->mobile_number:'',
             'guardian_email_address'=>isset($parentsdata[9])?$parentsdata[9]->email_id:'',
             'guardian_name'=>isset($parentsdata[9])?$parentsdata[9]->first_name:'',
@@ -784,6 +784,9 @@ class WebUserManagementController extends Controller
             }
             $group_id = $new_group_id!=''?$new_group_id:$old_group_id;
             UserGroupsMapping::insert(['group_id'=>$group_id,'user_table_id'=>$details->id,'user_role'=>Config::get('app.Parent_role'),'user_status'=>1,'group_access'=>2]);
+            $check_exists = UserGroupsMapping::where(['group_id'=>2,'user_table_id'=>$details->id,'user_role'=>Config::get('app.Parent_role'),'user_status'=>1])->get()->first();
+            if(empty($check_exists))
+                UserGroupsMapping::insert(['group_id'=>2,'user_table_id'=>$details->id,'user_role'=>Config::get('app.Parent_role'),'user_status'=>1,'group_access'=>2]);
 
         }
     }

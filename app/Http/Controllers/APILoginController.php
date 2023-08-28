@@ -107,6 +107,7 @@ class APILoginController extends Controller
         
         // Save last login in DB
         $user = auth()->user();
+        $user->new_user = 0;
         $user->last_login = Carbon::now()->timezone('Asia/Kolkata');
         $user->save();
         $loginstudent_id =0;

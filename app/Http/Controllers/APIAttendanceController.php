@@ -118,6 +118,7 @@ class APIAttendanceController extends Controller
 
             // Get individual class and section attendance details 
             $attendance[] = ([
+                'config_id'=>$class_sec_value->id,
                 'class_section_name'=> $class_sec_value->classsectionName(),
                 'present_total'=>$class_present_total,
                 'absent_total'=>$class_absent_total,

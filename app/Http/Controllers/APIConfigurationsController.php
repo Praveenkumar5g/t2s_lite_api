@@ -7,7 +7,7 @@
  * Import class,sections ,staffs,managements ,students and parents details 
  */
 namespace App\Http\Controllers;
-
+ 
 use App\Http\Controllers\Controller;
 use Maatwebsite\Excel\Facades\Excel;
 

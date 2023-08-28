@@ -152,7 +152,7 @@ Route::group(['middleware' => 'auth.connect','prefix' => 'user'], function ($rou
     Route::post('/group_participants',[APICommunicationController::class,'group_participants']);
     Route::post('/image_list',[APICommunicationController::class,'image_list']);
     Route::get('/get_class_list',[APICommunicationController::class,'get_class_list']);
-    
+
     /*Birthday Alert*/
     Route::post('/birthday_student_list',[APICommunicationController::class,'birthday_student_list']);
     Route::post('store_birthday_message',[APICommunicationController::class,'store_birthday_message']);

@@ -109,6 +109,7 @@ class APIAttendanceController extends Controller
             $class_present_total = $class_absent_total = $class_leave_total = $class_present_percentage = $class_absent_percentage = $class_absent_percentage = 0;
 
             $class_present_total = count(Attendance::where('class_config',$request->class_config)->where('attendance_date', 'like', '%' .$attendance_date. '%')->where('session_type',1)->where('attendance_status',1)->pluck('id')->toArray());
+            echo '<pre>';print_r($class_present_total);exit;
 
             $class_absent_total = count(Attendance::where('class_config',$request->class_config)->where('attendance_date', 'like', '%' .$attendance_date. '%')->where('session_type',1)->where('attendance_status',2)->pluck('id')->toArray());
 
@@ -122,7 +123,7 @@ class APIAttendanceController extends Controller
                 'class_section_name'=> $class_sec_value->classsectionName(),
                 'present_total'=>$class_present_total,
                 'absent_total'=>$class_absent_total,
-                'leave_total'=>$class_present_total,
+                'leave_total'=>$class_leave_total,
                 'present_percentage'=>($class_present_total > 0)?(($class_present_total/$class_students_count)*100):0,
                 'absent_percentage'=>($class_absent_total > 0)?(($class_absent_total/$class_students_count)*100):0,
                 'leave_percentage'=>($class_leave_total > 0)?(($class_leave_total/$class_students_count)*100):0,

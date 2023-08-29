@@ -328,7 +328,4 @@ class APIAttendanceController extends Controller
         echo json_encode($student_details);
     }
 
-    }
-
-
 }

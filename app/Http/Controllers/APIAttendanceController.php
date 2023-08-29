@@ -150,7 +150,7 @@ class APIAttendanceController extends Controller
         $user = auth()->user();
         $attendance_date = date("Y-m-d");
 
-        $attendance_records = $request->attendance_record;
+        $attendance_records = $request->attendance_records;
         $old_attendance_status ='';
         if($user->user_role == Config::get('app.Admin_role'))//check role and get current user id
             $user_table_id = UserAdmin::where(['user_id'=>$user->user_id])->pluck('id')->first();
@@ -161,7 +161,6 @@ class APIAttendanceController extends Controller
         else if($user->user_role == Config::get('app.Parent_role'))
             $user_table_id = UserParents::where(['user_id'=>$user->user_id])->pluck('id')->first();//fetch id from user all table to store notification triggered user
         $userall_id = UserAll::where(['user_table_id'=>$user_table_id,'user_role'=>$user->user_role])->pluck('id')->first();
-
         foreach ($attendance_records as $attendance_key => $attendance_value) {
             // code...
             $attendance_entry = $check_entry = Attendance::where('class_config',$request->class_config)->where('attendance_date', 'like', '%' .$attendance_date. '%')->where('user_table_id',$attendance_key)->first();

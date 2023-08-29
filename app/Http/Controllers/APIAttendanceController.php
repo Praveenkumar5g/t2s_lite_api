@@ -108,14 +108,13 @@ class APIAttendanceController extends Controller
         {
             $class_present_total = $class_absent_total = $class_leave_total = $class_present_percentage = $class_absent_percentage = $class_absent_percentage = 0;
 
-            $class_present_total = count(Attendance::where('cdlass_config',$request->class_config)->where('attendance_date', 'like', '%' .$attendance_date. '%')->where('session_type',1)->where('attendance_status',1)->pluck('id')->toArray());
-            echo '<pre>';print_r($class_present_total);exit;
+            $class_present_total = count(Attendance::where('class_config',$class_sec_value->id)->where('attendance_date', 'like', '%' .$attendance_date. '%')->where('session_type',1)->where('attendance_status',1)->pluck('id')->toArray());
 
-            $class_absent_total = count(Attendance::where('class_config',$request->class_config)->where('attendance_date', 'like', '%' .$attendance_date. '%')->where('session_type',1)->where('attendance_status',2)->pluck('id')->toArray());
+            $class_absent_total = count(Attendance::where('class_config',$class_sec_value->id)->where('attendance_date', 'like', '%' .$attendance_date. '%')->where('session_type',1)->where('attendance_status',2)->pluck('id')->toArray());
 
-            $class_leave_total = count(Attendance::where('class_config',$request->class_config)->where('attendance_date', 'like', '%' .$attendance_date. '%')->where('session_type',1)->where('attendance_status',3)->pluck('id')->toArray());
+            $class_leave_total = count(Attendance::where('class_config',$class_sec_value->id)->where('attendance_date', 'like', '%' .$attendance_date. '%')->where('session_type',1)->where('attendance_status',3)->pluck('id')->toArray());
 
-            $class_students_count = count(UserStudents::where('class_config',$request->class_config)->where('user_status',Config::get('app.Group_Active'))->pluck('id')->toArray());//get students count 
+            $class_students_count = count(UserStudents::where('class_config',$class_sec_value->id)->where('user_status',Config::get('app.Group_Active'))->pluck('id')->toArray());//get students count 
 
             // Get individual class and section attendance details 
             $attendance[] = ([
@@ -308,7 +307,7 @@ class APIAttendanceController extends Controller
 
         foreach($student_details as $key=>$value)
         {
-            $attendance_entry = Attendance::select('user_table_id as id','class_config','session_type','attendance_date','reason','attendance_status')->where('class_config',$request->class_config)->where('attendance_date', 'like', '%' .$attendance_date. '%')->get()->first();
+            $attendance_entry = Attendance::select('user_table_id as id','class_config','session_type','attendance_date','reason','attendance_status')->where('class_config',$request->class_config)->where('attendance_date', 'like', '%' .$attendance_date. '%')->where('user_table_id',$value['id'])->get()->first();
             if(!empty($attendance_entry))
             {
                 $student_details[$key]['session_type'] = $attendance_entry->session_type; 

@@ -304,7 +304,30 @@ class APIAttendanceController extends Controller
         $attendance_date = date("Y-m-d");
         $attendance_entry = Attendance::select('user_table_id as id','class_config','session_type','attendance_date','reason')->where('class_config',$request->class_config)->where('attendance_date', 'like', '%' .$attendance_date. '%')->get()->toArray();
 
-        echo json_encode($attendance_entry);
+        $student_details = UserStudents::select('first_name','id')->where('class_config',$request->class_config)->where('user_status',Config::get('app.Group_Active'))->get()->toArray();
+
+        foreach($student_details as $key=>$value)
+        {
+            $attendance_entry = Attendance::select('user_table_id as id','class_config','session_type','attendance_date','reason','attendance_status')->where('class_config',$request->class_config)->where('attendance_date', 'like', '%' .$attendance_date. '%')->get()->first();
+            if(!empty($attendance_entry))
+            {
+                $student_details[$key]['session_type'] = $attendance_entry->session_type; 
+                $student_details[$key]['attendance_date'] = $attendance_entry->attendance_date; 
+                $student_details[$key]['reason'] = $attendance_entry->reason; 
+                $student_details[$key]['attendance_status'] = $attendance_entry->attendance_status;    
+            }
+            else
+            {
+                $student_details[$key]['session_type'] = 1; 
+                $student_details[$key]['attendance_date'] = $attendance_date; 
+                $student_details[$key]['reason'] = ''; 
+                $student_details[$key]['attendance_status'] = 0;
+            }
+        }
+
+        echo json_encode($student_details);
+    }
+
     }
 
 

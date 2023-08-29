@@ -108,7 +108,7 @@ class APIAttendanceController extends Controller
         {
             $class_present_total = $class_absent_total = $class_leave_total = $class_present_percentage = $class_absent_percentage = $class_absent_percentage = 0;
 
-            $class_present_total = count(Attendance::where('class_config',$request->class_config)->where('attendance_date', 'like', '%' .$attendance_date. '%')->where('session_type',1)->where('attendance_status',1)->pluck('id')->toArray());
+            $class_present_total = count(Attendance::where('cdlass_config',$request->class_config)->where('attendance_date', 'like', '%' .$attendance_date. '%')->where('session_type',1)->where('attendance_status',1)->pluck('id')->toArray());
             echo '<pre>';print_r($class_present_total);exit;
 
             $class_absent_total = count(Attendance::where('class_config',$request->class_config)->where('attendance_date', 'like', '%' .$attendance_date. '%')->where('session_type',1)->where('attendance_status',2)->pluck('id')->toArray());

@@ -699,6 +699,8 @@ class APICommunicationController extends Controller
                             $message_category = 'Circular';
                         else if($message_details->message_category == 10)
                             $message_category = 'StudyMaterial';
+                        else if($message_details->message_category == 11)
+                            $message_category = 'Attendance';
 
                         if($message_details->communication_type == 2)
                             $message_category = 'Homework';

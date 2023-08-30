@@ -203,7 +203,7 @@ class APIAttendanceController extends Controller
                         $status = ($attendance_value == 2)?"absent":"leave";
                         $chat_message = 'Dear Parent, Your ward '.$student_name.' is '.$status.' today ('.date("Y-m-d",strtotime(Carbon::now()->timezone('Asia/Kolkata'))).')';
                         $player_ids =[];
-                        $player_ids = Appusers::whereIn('loginid',$parent_details)->pluck('player_id')->first();
+                        $player_ids = Appusers::whereIn('loginid',$parent_details)->pluck('player_id')->get()->toArray();
 
                         if(!empty($player_ids))
                         {
@@ -225,7 +225,7 @@ class APIAttendanceController extends Controller
 
                         $chat_message = 'Dear Parent, Your ward '.$student_name.' is present today ('.date("Y-m-d",strtotime(Carbon::now()->timezone('Asia/Kolkata'))).')';
                         $player_ids =[];
-                        $player_ids = Appusers::whereIn('loginid',$parent_details)->pluck('player_id')->first();
+                        $player_ids = Appusers::whereIn('loginid',$parent_details)->pluck('player_id')->get()->toArray();
 
                         if(!empty($player_ids))
                         {

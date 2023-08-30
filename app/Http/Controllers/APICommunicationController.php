@@ -7,7 +7,7 @@
  * Validate inputs ,created DB for individual school and registed user details in config and school DB
  */
 namespace App\Http\Controllers;
-
+ 
 use App\Http\Controllers\Controller;
 use App\Models\AcademicClassConfiguration;
 use App\Models\CommunicationDistribution;

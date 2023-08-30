@@ -58,7 +58,7 @@ class APIPushNotificationController extends Controller
 		        	'type'=>$type,
 		        	'message_status'=>(!empty($json))?'success':'error'
 		        ]);
-	    	}
+	    	} 
 	    	AppLog::insert($message_delivery_details);
 	    	return $json;
 	        

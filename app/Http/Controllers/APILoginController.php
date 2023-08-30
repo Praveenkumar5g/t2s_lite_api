@@ -128,7 +128,7 @@ class APILoginController extends Controller
             $loginstudent_id = $student_id;
         }
         $userid = $user->user_id;
-        // return token 
+        // return token  
         return response()->json(compact('token','loginstudent_id','userid'));
     }
 

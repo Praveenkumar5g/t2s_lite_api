@@ -63,9 +63,9 @@ class APIAttendanceController extends Controller
             'present_total'=>$present_total,
             'absent_total'=>$absent_total,
             'leave_total'=>$leave_total,
-            'present_percentage'=>($present_total > 0)?(($present_total/$students_count)*100):0,
-            'absent_percentage'=>($absent_total > 0)?(($absent_total/$students_count)*100):0,
-            'leave_percentage'=>($leave_total > 0)?(($leave_total/$students_count)*100):0,
+            'present_percentage'=>($present_total > 0)?round(($present_total/$students_count)*100):0,
+            'absent_percentage'=>($absent_total > 0)?round(($absent_total/$students_count)*100):0,
+            'leave_percentage'=>($leave_total > 0)?round(($leave_total/$students_count)*100):0,
         ]);
         echo json_encode($details);
     } 
@@ -97,9 +97,9 @@ class APIAttendanceController extends Controller
             'present_total'=>$present_total,
             'absent_total'=>$absent_total,
             'leave_total'=>$leave_total,
-            'present_percentage'=>($present_total > 0)?(($present_total/$students_count)*100):0,
-            'absent_percentage'=>($absent_total > 0)?(($absent_total/$students_count)*100):0,
-            'leave_percentage'=>($leave_total > 0)?(($leave_total/$students_count)*100):0,
+            'present_percentage'=>($present_total > 0)?round(($present_total/$students_count)*100):0,
+            'absent_percentage'=>($absent_total > 0)?round(($absent_total/$students_count)*100):0,
+            'leave_percentage'=>($leave_total > 0)?round(($leave_total/$students_count)*100):0,
         ]);
 
         $class_section_details = AcademicClassConfiguration::get();//get class and section details
@@ -123,9 +123,9 @@ class APIAttendanceController extends Controller
                 'present_total'=>$class_present_total,
                 'absent_total'=>$class_absent_total,
                 'leave_total'=>$class_leave_total,
-                'present_percentage'=>($class_present_total > 0)?(($class_present_total/$class_students_count)*100):0,
-                'absent_percentage'=>($class_absent_total > 0)?(($class_absent_total/$class_students_count)*100):0,
-                'leave_percentage'=>($class_leave_total > 0)?(($class_leave_total/$class_students_count)*100):0,
+                'present_percentage'=>($class_present_total > 0)?round(($class_present_total/$class_students_count)*100):0,
+                'absent_percentage'=>($class_absent_total > 0)?round(($class_absent_total/$class_students_count)*100):0,
+                'leave_percentage'=>($class_leave_total > 0)?round(($class_leave_total/$class_students_count)*100):0,
             ]);
         }
         echo json_encode(['left_students'=>$left_students,'school_attendance'=>$details,'attendance'=>$attendance]);

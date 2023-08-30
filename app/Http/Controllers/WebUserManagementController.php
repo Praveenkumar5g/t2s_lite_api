@@ -673,14 +673,33 @@ class WebUserManagementController extends Controller
                     {
                         $group_id = $new_group_id!=''?$new_group_id:$old_group_id;
                         UserGroupsMapping::where('user_table_id',$old_parent_id)->where('group_id',$group_id)->where('user_role',Config::get('app.Parent_role'))->delete();
+                        $user_id = UserParents::where('id',$old_parent_id)->pluck('user_id')->first();
+                        if($user_id!='')
+                        {
+                            SchoolUsers::where('user_id',$user_id)->where('school_profile_id',$user->school_profile_id)->delete();
+                            UserParents::where('id',$old_parent_id)->delete();
+                        }
+
                     }
 
                 }
                 else
+                {
                     UserGroupsMapping::where('user_table_id',$old_parent_id)->where('user_role',Config::get('app.Parent_role'))->delete();
+                    $user_id = UserParents::where('id',$old_parent_id)->pluck('user_id')->first();
+                    if($user_id!='')
+                    {
+                        SchoolUsers::where('user_id',$user_id)->where('school_profile_id',$user->school_profile_id)->delete();
+                        UserParents::where('id',$old_parent_id)->delete();
+                    }
+                }
             }      
         }
         
+        $parent_mobile_details = UserParents::where('mobile_number',$data['mobile_number'])->get()->first();
+        if($page =='' && !empty($parent_mobile_details) && $details->id != $parent_mobile_details->id)
+            $details = $parent_mobile_details;
+
         //save parent details
         if($data['first_name']!='')
             $details->first_name= $data['first_name'];

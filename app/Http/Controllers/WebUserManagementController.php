@@ -702,10 +702,6 @@ class WebUserManagementController extends Controller
             }      
         }
         
-        echo '<pre>'.$page;
-        print_r($parent_mobile_details);
-        print_r($details);
-        exit;
         //save parent details
         if($data['first_name']!='')
             $details->first_name= $data['first_name'];

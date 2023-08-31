@@ -261,10 +261,10 @@ class APIAttendanceController extends Controller
             {
 
                 $status = ($attendance_value == 2)?"absent":"leave";
-                $chat_message = 'Dear Parent, Your ward '.$student_name.' is '.$status.' today ('.date("Y-m-d",strtotime(Carbon::now()->timezone('Asia/Kolkata'))).')';
+                $chat_message = 'Dear Parent, Your ward '.$student_name.' is '.$status.' today ('.date("d-m-Y",strtotime(Carbon::now()->timezone('Asia/Kolkata'))).')';
             }
             else if($old_attendance_status != 1 && $attendance_value == 1 && $old_attendance_status !='')
-                $chat_message = 'Dear Parent, Your ward '.$student_name.' is present today ('.date("Y-m-d",strtotime(Carbon::now()->timezone('Asia/Kolkata'))).')';
+                $chat_message = 'Dear Parent, Your ward '.$student_name.' is present today ('.date("d-m-Y",strtotime(Carbon::now()->timezone('Asia/Kolkata'))).')';
             
             $group_details = UserGroups::select('id','group_name')->where('class_config',$request->class_config)->first();
 

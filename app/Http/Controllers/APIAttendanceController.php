@@ -137,7 +137,64 @@ class APIAttendanceController extends Controller
         // Authentication details
         $user = auth()->user();
 
-        $student_details = UserStudents::select('first_name','id')->where('class_config',$request->class_config)->where('user_status',Config::get('app.Group_Active'))->get()->toArray();
+        $student_details = UserStudents::select('first_name','id','class_config','admission_number','roll_number','profile_image')->where('class_config',$request->class_config)->where('user_status',Config::get('app.Group_Active'))->get();
+
+        foreach($student_details as $key=> $value)
+        {
+            $present_total = $absent_total = $leave_total = $present_percentage = $absent_percentage = $absent_percentage = 0;
+
+            $present_total = count(Attendance::where('class_config',$request->class_config)->where('id',$value->id)->where('session_type',1)->where('attendance_status',1)->pluck('id')->toArray());
+
+            $absent_total = count(Attendance::where('class_config',$request->class_config)->where('id',$value->id)->where('session_type',1)->where('attendance_status',2)->pluck('id')->toArray());
+
+            $leave_total = count(Attendance::where('class_config',$request->class_config)->where('id',$value->id)->where('session_type',1)->where('attendance_status',3)->pluck('id')->toArray());
+
+            $total_days = $present_total+$absent_total+$leave_total;
+
+            $mapped_parents = UserStudentsMapping::where('student',$value->id)->pluck('parent')->toArray();
+
+            $parents = UserParents::whereIn('id',$mapped_parents)->where('user_status',1)->get()->toArray();
+
+            $student_details[$key]['class_section_name'] = $value->classsectionName();
+            if(!empty($parents))
+            {
+                foreach($parents as $parent_key => $parent_value)
+                {
+                    $student_details[$key]['father_name'] = '';
+                    $student_details[$key]['mother_name'] = '';
+                    $student_details[$key]['guardian_name'] = '';
+                    $student_details[$key]['father_mobile_no'] = 0;
+                    $student_details[$key]['mother_mobile_no'] = 0;
+                    $student_details[$key]['guardian_mobile_no'] = 0;
+
+                    if($parent_value['user_category'] == Config::get('app.Father'))
+                    {
+                        $student_details[$key]['father_name'] = $parent_value['first_name'];
+                        $student_details[$key]['father_mobile_no'] = $parent_value['mobile_number'];
+                    }
+
+                    if($parent_value['user_category'] == Config::get('app.Mother'))
+                    {
+                        $student_details[$key]['mother_name'] = $parent_value['first_name'];
+                        $student_details[$key]['mother_mobile_no'] = $parent_value['mobile_number'];
+                    }
+
+                    if($parent_value['user_category'] == Config::get('app.Guardian'))
+                    {
+                        $student_details[$key]['guardian_name'] = $parent_value['first_name'];
+                        $student_details[$key]['guardian_mobile_no'] = $parent_value['mobile_number'];
+                    }
+                }
+            }
+
+
+            $student_details[$key]['present_total'] = $present_total;
+            $student_details[$key]['absent_total'] = $absent_total;
+            $student_details[$key]['leave_total'] = $leave_total;
+            $student_details[$key]['present_percentage'] = ($leave_total > 0)?round(($leave_total/$total_days)*100):0;
+            $student_details[$key]['absent_percentage'] = ($absent_total > 0)?round(($absent_total/$total_days)*100):0;
+            $student_details[$key]['leave_percentage'] = ($leave_total > 0)?round(($leave_total/$total_days)*100):0;
+        }
         
         echo json_encode($student_details);
 
@@ -189,44 +246,26 @@ class APIAttendanceController extends Controller
             $attendance_entry->save();
 
             $chat_message= '';
+            $parent_ids = UserStudentsMapping::where('student',$attendance_key)->pluck('parent')->toArray();
+            if(!empty($parent_ids))
+            {
+                $parent_details = UserParents::whereIn('id',$parent_ids)->where('user_status',Config::get('app.Group_Active'))->pluck('id')->toArray();
+                if(!empty($parent_details))
+                {
+                    $student_name = UserStudents::where('id',$attendance_key)->pluck('first_name')->first();
+                    $player_ids =[];
+                    $player_ids = Appusers::whereIn('loginid',$parent_details)->pluck('player_id')->toArray();
+                }
+            }
             if($attendance_value != 1) //trigger pushnotification for absent and leave
             {
-                $parent_ids = UserStudentsMapping::where('student',$attendance_key)->pluck('parent')->toArray();
-                if(!empty($parent_ids))
-                {
-                    $parent_details = UserParents::whereIn('id',$parent_ids)->where('user_status',Config::get('app.Group_Active'))->pluck('id')->toArray();
 
-                    if(!empty($parent_details))
-                    {
-                        $student_name = UserStudents::where('id',$attendance_key)->pluck('first_name')->first();
-
-                        $status = ($attendance_value == 2)?"absent":"leave";
-                        $chat_message = 'Dear Parent, Your ward '.$student_name.' is '.$status.' today ('.date("Y-m-d",strtotime(Carbon::now()->timezone('Asia/Kolkata'))).')';
-                        $player_ids =[];
-                        $player_ids = Appusers::whereIn('loginid',$parent_details)->pluck('player_id')->toArray();
-                    }
-                }
+                $status = ($attendance_value == 2)?"absent":"leave";
+                $chat_message = 'Dear Parent, Your ward '.$student_name.' is '.$status.' today ('.date("Y-m-d",strtotime(Carbon::now()->timezone('Asia/Kolkata'))).')';
             }
             else if($old_attendance_status != 1 && $attendance_value == 1 && $old_attendance_status !='')
-            {
-                $parent_ids = UserStudentsMapping::where('student',$attendance_key)->pluck('parent')->toArray();
-                if(!empty($parent_ids))
-                {
-                    $parent_details = UserParents::whereIn('id',$parent_ids)->where('user_status',Config::get('app.Group_Active'))->pluck('id')->toArray();
-
-                    if(!empty($parent_details))
-                    {
-                        $student_name = UserStudents::where('id',$attendance_key)->pluck('first_name')->first();
-
-                        $chat_message = 'Dear Parent, Your ward '.$student_name.' is present today ('.date("Y-m-d",strtotime(Carbon::now()->timezone('Asia/Kolkata'))).')';
-                        $player_ids =[];
-                        $player_ids = Appusers::whereIn('loginid',$parent_details)->pluck('player_id')->toArray();
-
-                        
-                    }
-                }
-            }
-
+                $chat_message = 'Dear Parent, Your ward '.$student_name.' is present today ('.date("Y-m-d",strtotime(Carbon::now()->timezone('Asia/Kolkata'))).')';
+            
             $group_details = UserGroups::select('id','group_name')->where('class_config',$request->class_config)->first();
 
             $group_id = $group_details->id;
@@ -254,13 +293,13 @@ class APIAttendanceController extends Controller
 
                     if(!empty($user_list))
                         app('App\Http\Controllers\APICommunicationController')->insert_receipt_log(array_unique($user_list, SORT_REGULAR),$notification_id,$user_table_id);
+                    if(!empty($player_ids))
+                    {
+                        $delivery_details = APIPushNotificationController::SendNotification($chat_message,$player_ids,$notification_id,'attendance'); //trigger pushnotification function
+                    }
                 }
             }
 
-            if(!empty($player_ids))
-            {
-                $delivery_details = APIPushNotificationController::SendNotification($chat_message,$player_ids,$notification_id,'attendance'); //trigger pushnotification function
-            }
         }
 
         // send notifications to class teacher

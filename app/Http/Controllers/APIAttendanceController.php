@@ -204,11 +204,6 @@ class APIAttendanceController extends Controller
                         $chat_message = 'Dear Parent, Your ward '.$student_name.' is '.$status.' today ('.date("Y-m-d",strtotime(Carbon::now()->timezone('Asia/Kolkata'))).')';
                         $player_ids =[];
                         $player_ids = Appusers::whereIn('loginid',$parent_details)->pluck('player_id')->toArray();
-
-                        if(!empty($player_ids))
-                        {
-                            $delivery_details = APIPushNotificationController::SendNotification($chat_message,$player_ids,NULL,'attendance'); //trigger pushnotification function
-                        }
                     }
                 }
             }
@@ -227,10 +222,7 @@ class APIAttendanceController extends Controller
                         $player_ids =[];
                         $player_ids = Appusers::whereIn('loginid',$parent_details)->pluck('player_id')->toArray();
 
-                        if(!empty($player_ids))
-                        {
-                            $delivery_details = APIPushNotificationController::SendNotification($chat_message,$player_ids,NULL,'attendance'); //trigger pushnotification function
-                        }
+                        
                     }
                 }
             }
@@ -263,6 +255,11 @@ class APIAttendanceController extends Controller
                     if(!empty($user_list))
                         app('App\Http\Controllers\APICommunicationController')->insert_receipt_log(array_unique($user_list, SORT_REGULAR),$notification_id,$user_table_id);
                 }
+            }
+
+            if(!empty($player_ids))
+            {
+                $delivery_details = APIPushNotificationController::SendNotification($chat_message,$player_ids,NULL,'attendance'); //trigger pushnotification function
             }
         }
 

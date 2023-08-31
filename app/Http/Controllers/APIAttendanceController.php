@@ -259,7 +259,7 @@ class APIAttendanceController extends Controller
 
             if(!empty($player_ids))
             {
-                $delivery_details = APIPushNotificationController::SendNotification($chat_message,$player_ids,NULL,'attendance'); //trigger pushnotification function
+                $delivery_details = APIPushNotificationController::SendNotification($chat_message,$player_ids,$notification_id,'attendance'); //trigger pushnotification function
             }
         }
 

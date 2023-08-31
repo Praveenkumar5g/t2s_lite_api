@@ -339,7 +339,7 @@ class APIAttendanceController extends Controller
         $attendance_date = date("Y-m-d");
         $attendance_entry = Attendance::select('user_table_id as id','class_config','session_type','attendance_date','reason')->where('class_config',$request->class_config)->where('attendance_date', 'like', '%' .$attendance_date. '%')->get()->toArray();
 
-        $student_details = UserStudents::select('first_name','id')->where('class_config',$request->class_config)->where('user_status',Config::get('app.Group_Active'))->get()->toArray();
+        $student_details = UserStudents::select('first_name','id','class_config','admission_number','roll_number','profile_image')->where('class_config',$request->class_config)->where('user_status',Config::get('app.Group_Active'))->get()->toArray();
 
         foreach($student_details as $key=>$value)
         {

@@ -652,8 +652,14 @@ class WebUserManagementController extends Controller
         }
         if(empty($details) && !isset($details->mobile_number))
         {
-            $page = 'new';
-            $details = new UserParents;
+            $parent_mobile_details = UserParents::where('mobile_number',$data['mobile_number'])->get()->first();
+            if($page =='' && !empty($parent_mobile_details) && $details->id != $parent_mobile_details->id)
+                $details = $parent_mobile_details;
+            else
+            {
+                $page = 'new';
+                $details = new UserParents;
+            }
         }
 
         if(!empty($details) && $details->mobile_number != $data['mobile_number'])
@@ -696,9 +702,6 @@ class WebUserManagementController extends Controller
             }      
         }
         
-        $parent_mobile_details = UserParents::where('mobile_number',$data['mobile_number'])->get()->first();
-        if($page =='' && !empty($parent_mobile_details) && $details->id != $parent_mobile_details->id)
-            $details = $parent_mobile_details;
         echo '<pre>'.$page;
         print_r($parent_mobile_details);
         exit;

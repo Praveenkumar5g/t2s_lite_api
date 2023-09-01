@@ -737,7 +737,7 @@ class WebUserManagementController extends Controller
         }
         else
             $userparent_id = $details->user_id;
-
+        exit();
         if($data['email_address']!='' || $data['mobile_number']!='')
         {
             $schoolusers = SchoolUsers::where(['user_id'=>$userparent_id,'school_profile_id'=>$user->school_profile_id])->get()->first();

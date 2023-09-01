@@ -712,7 +712,7 @@ class WebUserManagementController extends Controller
                 $details = new UserParents;
             }  
         }
-        
+        echo '<pre>';print_r($data);exit;
         //save parent details
         if($data['first_name']!='')
             $details->first_name= $data['first_name'];

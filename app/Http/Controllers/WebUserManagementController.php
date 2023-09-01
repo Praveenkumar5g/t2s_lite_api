@@ -774,6 +774,7 @@ class WebUserManagementController extends Controller
         }
         else
         {
+            echo $old_parent_id;exit;
             if($old_parent_id !='')
             {
                 $check_old_groups = UserStudentsMapping::where('student',$id)->where('parent',$old_parent_id)->get()->first();

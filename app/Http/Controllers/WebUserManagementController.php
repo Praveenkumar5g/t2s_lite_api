@@ -798,7 +798,7 @@ class WebUserManagementController extends Controller
             }
 
 
-            $check_exists = UserStudentsMapping::where('student',$id)->where('parent',$details->id)->pluck('id')->first();
+            $check_exists = UserStudentsMapping::where('student',$id)->where('parent',$parent_id)->pluck('id')->first();
 
             if($check_exists=='')
             {
@@ -811,10 +811,10 @@ class WebUserManagementController extends Controller
                 $student_map->save();
             }
             $group_id = $new_group_id!=''?$new_group_id:$old_group_id;
-            UserGroupsMapping::insert(['group_id'=>$group_id,'user_table_id'=>$details->id,'user_role'=>Config::get('app.Parent_role'),'user_status'=>1,'group_access'=>2]);
-            $check_exists = UserGroupsMapping::where(['group_id'=>2,'user_table_id'=>$details->id,'user_role'=>Config::get('app.Parent_role'),'user_status'=>1])->get()->first();
+            UserGroupsMapping::insert(['group_id'=>$group_id,'user_table_id'=>$parent_id,'user_role'=>Config::get('app.Parent_role'),'user_status'=>1,'group_access'=>2]);
+            $check_exists = UserGroupsMapping::where(['group_id'=>2,'user_table_id'=>$parent_id,'user_role'=>Config::get('app.Parent_role'),'user_status'=>1])->get()->first();
             if(empty($check_exists))
-                UserGroupsMapping::insert(['group_id'=>2,'user_table_id'=>$details->id,'user_role'=>Config::get('app.Parent_role'),'user_status'=>1,'group_access'=>2]);
+                UserGroupsMapping::insert(['group_id'=>2,'user_table_id'=>$parent_id,'user_role'=>Config::get('app.Parent_role'),'user_status'=>1,'group_access'=>2]);
 
         }
     }

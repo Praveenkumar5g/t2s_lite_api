@@ -652,10 +652,10 @@ class WebUserManagementController extends Controller
         //     $data['photo']->move(public_path().'/uploads/'.$profile_details['school_code'].'/students', $filename);
         //     $profile_image_path =url('/').'/uploads/'.$profile_details['school_code'].'/students/'.$filename;
         }
-        if(empty($details) && !isset($details->mobile_number))
+        if(empty($details))
         {
             $parent_mobile_details = UserParents::where('mobile_number',$data['mobile_number'])->get()->first();
-            if((!empty($details) && !empty($parent_mobile_details) && $details->id != $parent_mobile_details->id) || ($page == '' && empty($details)))
+            if(!empty($parent_mobile_details && $details))
                 $details = $parent_mobile_details;
         }
 
@@ -680,8 +680,7 @@ class WebUserManagementController extends Controller
                         if($user_id!='')
                         {
                             SchoolUsers::where('user_id',$user_id)->where('school_profile_id',$user->school_profile_id)->delete();
-                            UserParents::where('id',$old_parent_id)->delete();
-                        }
+                       }
 
                     }
 
@@ -693,6 +692,7 @@ class WebUserManagementController extends Controller
                     if($user_id!='')
                     {
                         SchoolUsers::where('user_id',$user_id)->where('school_profile_id',$user->school_profile_id)->delete();
+                        UserStudentsMapping::where('student',$id)->where('parent',$old_parent_id)->delete();
                         UserParents::where('id',$old_parent_id)->delete();
                     }
                 }

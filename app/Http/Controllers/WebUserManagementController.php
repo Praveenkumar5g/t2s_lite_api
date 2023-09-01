@@ -371,13 +371,15 @@ class WebUserManagementController extends Controller
             $parents = array_column($parent_list,'parent'); //pick parent id alone
             foreach ($parents as $parent_key => $parent_value) { //form array with parent details
                 $parent_data = UserParents::where('id',$parent_value)->get()->first();
-                $parentsdata[$parent_data->user_category] = $parent_data; 
+                if(!empty($parent_data))
+                    $parentsdata[$parent_data->user_category] = $parent_data; 
             }
         }
         else if($request->id!='')
         {
             $parent_data = UserParents::where('id',$request->id)->get()->first();
-            $parentsdata[$parent_data->user_category] = $parent_data; 
+            if(!empty($parent_data))
+                $parentsdata[$parent_data->user_category] = $parent_data; 
         }
 
         $data['student_list'] = ([

@@ -652,9 +652,9 @@ class WebUserManagementController extends Controller
         //     $data['photo']->move(public_path().'/uploads/'.$profile_details['school_code'].'/students', $filename);
         //     $profile_image_path =url('/').'/uploads/'.$profile_details['school_code'].'/students/'.$filename;
         }
-        echo '<pre>';print_r($details);exit;
         if(empty($details) && !isset($details->mobile_number))
         {
+            echo '<pre>test';print_r($details);
             $parent_mobile_details = UserParents::where('mobile_number',$data['mobile_number'])->get()->first();
             if(!isset($details) || $page =='' && !empty($parent_mobile_details) && $details->id != $parent_mobile_details->id)
                 $details = $parent_mobile_details;
@@ -664,6 +664,7 @@ class WebUserManagementController extends Controller
                 $details = new UserParents;
             }
         }
+        echo 'saple';exit;
 
         if(!empty($details) && $details->mobile_number != $data['mobile_number'])
         {

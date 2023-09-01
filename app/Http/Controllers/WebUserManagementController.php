@@ -705,7 +705,12 @@ class WebUserManagementController extends Controller
 
             $parent_mobile_details = UserParents::where('mobile_number',$data['mobile_number'])->get()->first();
             if(!empty($parent_mobile_details) && $details->id != $parent_mobile_details->id)
-                $details = $parent_mobile_details;    
+                $details = $parent_mobile_details;  
+            else
+            {
+                $page = 'new';
+                $details = new UserParents;
+            }  
         }
         
         //save parent details

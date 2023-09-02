@@ -1592,7 +1592,7 @@ class WebUserManagementController extends Controller
         $data['classteacher'] = AcademicClassConfiguration::Where('class_teacher',$request->id)->pluck('id')->first();
 
         $data['teaching_staff'] = AcademicSubjectsMapping::select('subject','class_config')->where('staff',$request->id)->get()->toArray();
-        // echo '<pre>';print_r($data);exit;
+        echo '<pre>';print_r($data);exit;
         return view('UserManagement.editstaff',$data);
     }
 

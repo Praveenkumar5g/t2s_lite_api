@@ -1593,7 +1593,7 @@ class WebUserManagementController extends Controller
 
         $data['teaching_staff'] = AcademicSubjectsMapping::select('subject','class_config')->where('staff',$request->id)->get()->toArray();
         // echo '<pre>';print_r($data);exit;
-        return view('UserManagement.editStaff',$data);
+        return view('UserManagement.editstaff',$data);
     }
 
     // Update Staff 

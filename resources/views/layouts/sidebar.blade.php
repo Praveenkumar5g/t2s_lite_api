@@ -49,7 +49,7 @@
 					<ul class="nav nav-treeview">
 						<li class="nav-item">
 							<a href="{{ url('usermanagement/students') }}" class="{{ Request::segment(count(request()->segments())) == 'students' ? 'nav-link active' : 'nav-link'}}">
-								<i class="fas fa-user nav-icon"></i>
+								<i class="fas fa-child nav-icon"></i>
 								<p>Students</p>
 							</a>
 						</li>

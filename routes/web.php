@@ -49,5 +49,18 @@ Route::group(['middleware' => 'auth.webcheck'], function ($router) {
     Route::get('/usermanagement/welcome_message',[WebUserManagementController::class,'welcome_message']);
     Route::post('usermanagement/send_welcome_message',[WebUserManagementController::class,'send_welcome_message']);
     Route::post('usermanagement/getstudents',[WebUserManagementController::class,'getstudents']);
+    Route::get('/usermanagement/smslog',[WebUserManagementController::class,'smslog']);
+
+    /*Staff*/
+    Route::get('/usermanagement/staffs',[WebUserManagementController::class,'staffs']);
+    Route::post('/usermanagement/getStaff_list',[WebUserManagementController::class,'getStaff_list']);
+    Route::get('/usermanagement/addStaff',[WebUserManagementController::class,'addStaff']);
+    Route::get('/usermanagement/subject_classes',[WebUserManagementController::class,'subject_classes']);
+    Route::post('/usermanagement/checkEmployeeno',[WebUserManagementController::class,'checkEmployeeno']);
+    Route::post('/usermanagement/storeStaff',[WebUserManagementController::class,'storeStaff']);
+    Route::post('/usermanagement/checkStaffMobilenoexists',[WebUserManagementController::class,'checkStaffMobilenoexists']);
+    Route::get('/usermanagement/editStaffdetails',[WebUserManagementController::class,'editStaffdetails']);
+    Route::post('/usermanagement/updateStaff',[WebUserManagementController::class,'updateStaff']);
+    /*Staff Ends*/
     /*user management -- Ends*/
 });

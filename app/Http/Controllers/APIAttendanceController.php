@@ -339,11 +339,65 @@ class APIAttendanceController extends Controller
         $attendance_date = date("Y-m-d");
         $attendance_entry = Attendance::select('user_table_id as id','class_config','session_type','attendance_date','reason')->where('class_config',$request->class_config)->where('attendance_date', 'like', '%' .$attendance_date. '%')->get()->toArray();
 
-        $student_details = UserStudents::select('first_name','id','class_config','admission_number','roll_number','profile_image')->where('class_config',$request->class_config)->where('user_status',Config::get('app.Group_Active'))->get()->toArray();
+        $student_details = UserStudents::select('first_name','id','class_config','admission_number','roll_number','profile_image')->where('class_config',$request->class_config)->where('user_status',Config::get('app.Group_Active'))->get();
 
         foreach($student_details as $key=>$value)
         {
-            $attendance_entry = Attendance::select('user_table_id as id','class_config','session_type','attendance_date','reason','attendance_status')->where('class_config',$request->class_config)->where('attendance_date', 'like', '%' .$attendance_date. '%')->where('user_table_id',$value['id'])->get()->first();
+            $attendance_entry = Attendance::select('user_table_id as id','class_config','session_type','attendance_date','reason','attendance_status')->where('class_config',$request->class_config)->where('attendance_date', 'like', '%' .$attendance_date. '%')->where('user_table_id',$value->id)->get()->first();
+
+            $present_total = $absent_total = $leave_total = $present_percentage = $absent_percentage = $absent_percentage = 0;
+
+            $present_total = count(Attendance::where('class_config',$request->class_config)->where('id',$value->id)->where('session_type',1)->where('attendance_status',1)->pluck('id')->toArray());
+
+            $absent_total = count(Attendance::where('class_config',$request->class_config)->where('id',$value->id)->where('session_type',1)->where('attendance_status',2)->pluck('id')->toArray());
+
+            $leave_total = count(Attendance::where('class_config',$request->class_config)->where('id',$value->id)->where('session_type',1)->where('attendance_status',3)->pluck('id')->toArray());
+
+            $total_days = $present_total+$absent_total+$leave_total;
+
+            $mapped_parents = UserStudentsMapping::where('student',$value->id)->pluck('parent')->toArray();
+
+            $parents = UserParents::whereIn('id',$mapped_parents)->where('user_status',1)->get()->toArray();
+
+            $student_details[$key]['class_section_name'] = $value->classsectionName();
+            if(!empty($parents))
+            {
+                foreach($parents as $parent_key => $parent_value)
+                {
+                    $student_details[$key]['father_name'] = '';
+                    $student_details[$key]['mother_name'] = '';
+                    $student_details[$key]['guardian_name'] = '';
+                    $student_details[$key]['father_mobile_no'] = 0;
+                    $student_details[$key]['mother_mobile_no'] = 0;
+                    $student_details[$key]['guardian_mobile_no'] = 0;
+
+                    if($parent_value['user_category'] == Config::get('app.Father'))
+                    {
+                        $student_details[$key]['father_name'] = $parent_value['first_name'];
+                        $student_details[$key]['father_mobile_no'] = $parent_value['mobile_number'];
+                    }
+
+                    if($parent_value['user_category'] == Config::get('app.Mother'))
+                    {
+                        $student_details[$key]['mother_name'] = $parent_value['first_name'];
+                        $student_details[$key]['mother_mobile_no'] = $parent_value['mobile_number'];
+                    }
+
+                    if($parent_value['user_category'] == Config::get('app.Guardian'))
+                    {
+                        $student_details[$key]['guardian_name'] = $parent_value['first_name'];
+                        $student_details[$key]['guardian_mobile_no'] = $parent_value['mobile_number'];
+                    }
+                }
+            }
+
+            $student_details[$key]['present_total'] = $present_total;
+            $student_details[$key]['absent_total'] = $absent_total;
+            $student_details[$key]['leave_total'] = $leave_total;
+            $student_details[$key]['present_percentage'] = ($leave_total > 0)?round(($leave_total/$total_days)*100):0;
+            $student_details[$key]['absent_percentage'] = ($absent_total > 0)?round(($absent_total/$total_days)*100):0;
+            $student_details[$key]['leave_percentage'] = ($leave_total > 0)?round(($leave_total/$total_days)*100):0;
+
             if(!empty($attendance_entry))
             {
                 $student_details[$key]['session_type'] = $attendance_entry->session_type; 

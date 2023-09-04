@@ -1737,13 +1737,15 @@ class APIConfigurationsController extends Controller
         }
         $staff_list = $staff_list->get()->toArray();
         foreach ($staff_list as $key => $value) {
+        	$check_access = UserGroupsMapping::where('user_table_id',$value['id'])->where('user_role',Config::get('app.Staff_role'))->where('user_status',1)->pluck('id')->first();
+        	
     	 	$classessections = AcademicClassConfiguration::select('id','class_id','section_id','division_id','class_teacher')->where('class_teacher',$value['id'])->get()->first();
         	$staff_list[$key]['user_category'] = ($value['user_category'] ==Config::get('app.Teaching_staff'))?'Teaching_staff':'Non_teaching_staff';
         	$staff_list[$key]['dob'] = $value['dob'];
             $staff_list[$key]['doj'] = $value['doj'];
             $staff_list[$key]['employee_no'] = $value['employee_no'];
             $staff_list[$key]['department'] = $value['department'];
-            $staff_list[$key]['user_status'] = $value['user_status'];
+            $staff_list[$key]['user_status'] = ($check_access == '')?3:$value['user_status']; // 1- active,2-full deactive, 3-partical deactive;
             $staff_list[$key]['class'] = (!empty($classessections))?$classessections->classsectionName():'';
             $staff_list[$key]['designation'] = $value['user_category'];
             $staff_list[$key]['profile_image'] = (isset($value['profile_image']))?$value['profile_image']:'';
@@ -3341,7 +3343,7 @@ class APIConfigurationsController extends Controller
 	        		$student_list[$key]['mother_mobile'] = $parent_details->mobile_number;
 
 	        	}
-	        	else if($parent_details->user_category == 3)
+	        	else if($parent_details->user_category == 9)
 	        	{
 	        		$student_list[$key]['guardian_name'] = $parent_details->first_name;
 	        		$student_list[$key]['guardian_mobile'] = $parent_details->mobile_number;
@@ -3375,10 +3377,12 @@ class APIConfigurationsController extends Controller
         }
         $admin_list = $admin_list->get()->toArray();
         foreach ($admin_list as $key => $value) {
+        	$check_access = UserGroupsMapping::where('user_table_id',$value['id'])->where('user_role',Config::get('app.Admin_role'))->where('user_status',1)->pluck('id')->first();
+
     	 	$admin_list[$key]['dob'] = $value['dob'];
             $admin_list[$key]['doj'] = $value['doj'];
             $admin_list[$key]['employee_no'] = $value['employee_no'];
-            $admin_list[$key]['user_status'] = $value['user_status'];
+            $admin_list[$key]['user_status'] = ($check_access == '')?3:$value['user_status']; // 1- active,2-full deactive, 3-partical deactive
             $admin_list[$key]['designation'] = 'Admin';
             $admin_list[$key]['profile_image'] = (isset($value['profile_image']))?$value['profile_image']:'';
         }
@@ -3401,11 +3405,13 @@ class APIConfigurationsController extends Controller
         }
         $management_list = $management_list->get()->toArray();
         foreach ($management_list as $key => $value) {
+        	$check_access = UserGroupsMapping::where('user_table_id',$value['id'])->where('user_role',Config::get('app.Management_role'))->where('user_status',1)->pluck('id')->first();
+
         	$designation = ($value['user_category']!='')? UserCategories::where('id',$value['user_category'])->pluck('category_name')->first():'';
         	$management_list[$key]['dob'] = $value['dob'];
             $management_list[$key]['doj'] = $value['doj'];
             $management_list[$key]['employee_no'] = $value['employee_no'];
-            $management_list[$key]['user_status'] = $value['user_status'];
+            $management_list[$key]['user_status'] = ($check_access == '')?3:$value['user_status']; // 1- active,2-full deactive, 3-partical deactive
             $management_list[$key]['designation'] = $designation;
             $management_list[$key]['profile_image'] = (isset($value['profile_image']))?$value['profile_image']:'';
         }

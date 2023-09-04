@@ -1738,7 +1738,7 @@ class APIConfigurationsController extends Controller
         $staff_list = $staff_list->get()->toArray();
         foreach ($staff_list as $key => $value) {
         	$check_access = UserGroupsMapping::where('user_table_id',$value['id'])->where('user_role',Config::get('app.Staff_role'))->where('user_status',1)->pluck('id')->first();
-        	
+
     	 	$classessections = AcademicClassConfiguration::select('id','class_id','section_id','division_id','class_teacher')->where('class_teacher',$value['id'])->get()->first();
         	$staff_list[$key]['user_category'] = ($value['user_category'] ==Config::get('app.Teaching_staff'))?'Teaching_staff':'Non_teaching_staff';
         	$staff_list[$key]['dob'] = $value['dob'];
@@ -3331,24 +3331,27 @@ class APIConfigurationsController extends Controller
         	{
 
             	$parent_details = UserParents::whereIn('id',$parent_id)->get()->first();
-	        	if($parent_details->user_category == 1)
-	        	{
-	        		$student_list[$key]['father_name'] = $parent_details->first_name;
-	        		$student_list[$key]['father_mobile'] = $parent_details->mobile_number;
+            	if(!empty($parent_details))
+            	{
+		        	if($parent_details->user_category == 1)
+		        	{
+		        		$student_list[$key]['father_name'] = $parent_details->first_name;
+		        		$student_list[$key]['father_mobile'] = $parent_details->mobile_number;
 
-	        	}
-	        	else if($parent_details->user_category == 2)
-	        	{
-	        		$student_list[$key]['mother_name'] = $parent_details->first_name;
-	        		$student_list[$key]['mother_mobile'] = $parent_details->mobile_number;
+		        	}
+		        	else if($parent_details->user_category == 2)
+		        	{
+		        		$student_list[$key]['mother_name'] = $parent_details->first_name;
+		        		$student_list[$key]['mother_mobile'] = $parent_details->mobile_number;
 
-	        	}
-	        	else if($parent_details->user_category == 9)
-	        	{
-	        		$student_list[$key]['guardian_name'] = $parent_details->first_name;
-	        		$student_list[$key]['guardian_mobile'] = $parent_details->mobile_number;
+		        	}
+		        	else if($parent_details->user_category == 9)
+		        	{
+		        		$student_list[$key]['guardian_name'] = $parent_details->first_name;
+		        		$student_list[$key]['guardian_mobile'] = $parent_details->mobile_number;
 
-	        	}
+		        	}
+		        }
         	}
         	$student_list[$key]['student_name'] = $value['first_name'];
         	// $parent_list[$key]['mobile_number'] = $value['mobile_number'];

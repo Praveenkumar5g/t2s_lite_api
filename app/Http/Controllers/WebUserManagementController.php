@@ -371,13 +371,15 @@ class WebUserManagementController extends Controller
             $parents = array_column($parent_list,'parent'); //pick parent id alone
             foreach ($parents as $parent_key => $parent_value) { //form array with parent details
                 $parent_data = UserParents::where('id',$parent_value)->get()->first();
-                $parentsdata[$parent_data->user_category] = $parent_data; 
+                if(!empty($parent_data))
+                    $parentsdata[$parent_data->user_category] = $parent_data; 
             }
         }
         else if($request->id!='')
         {
             $parent_data = UserParents::where('id',$request->id)->get()->first();
-            $parentsdata[$parent_data->user_category] = $parent_data; 
+            if(!empty($parent_data))
+                $parentsdata[$parent_data->user_category] = $parent_data; 
         }
 
         $data['student_list'] = ([
@@ -650,10 +652,16 @@ class WebUserManagementController extends Controller
         //     $data['photo']->move(public_path().'/uploads/'.$profile_details['school_code'].'/students', $filename);
         //     $profile_image_path =url('/').'/uploads/'.$profile_details['school_code'].'/students/'.$filename;
         }
-        if(empty($details) && !isset($details->mobile_number))
+        if(empty($details))
         {
-            $page = 'new';
-            $details = new UserParents;
+            $parent_mobile_details = UserParents::where('mobile_number',$data['mobile_number'])->get()->first();
+            if(!empty($parent_mobile_details && $details))
+                $details = $parent_mobile_details;
+            else
+            {
+                $page = 'new';
+                $details = new UserParents;
+            }
         }
 
         if(!empty($details) && $details->mobile_number != $data['mobile_number'])
@@ -673,14 +681,37 @@ class WebUserManagementController extends Controller
                     {
                         $group_id = $new_group_id!=''?$new_group_id:$old_group_id;
                         UserGroupsMapping::where('user_table_id',$old_parent_id)->where('group_id',$group_id)->where('user_role',Config::get('app.Parent_role'))->delete();
+                        $user_id = UserParents::where('id',$old_parent_id)->pluck('user_id')->first();
+                        if($user_id!='')
+                        {
+                            SchoolUsers::where('user_id',$user_id)->where('school_profile_id',$user->school_profile_id)->delete();
+                       }
+
                     }
 
                 }
                 else
+                {
                     UserGroupsMapping::where('user_table_id',$old_parent_id)->where('user_role',Config::get('app.Parent_role'))->delete();
-            }      
+                    $user_id = UserParents::where('id',$old_parent_id)->pluck('user_id')->first();
+                    if($user_id!='')
+                    {
+                        SchoolUsers::where('user_id',$user_id)->where('school_profile_id',$user->school_profile_id)->delete();
+                        UserStudentsMapping::where('student',$id)->where('parent',$old_parent_id)->delete();
+                        UserParents::where('id',$old_parent_id)->delete();
+                    }
+                }
+            }  
+
+            $parent_mobile_details = UserParents::where('mobile_number',$data['mobile_number'])->get()->first();
+            if(!empty($parent_mobile_details) && $details->id != $parent_mobile_details->id)
+                $details = $parent_mobile_details;
+            else
+            {
+                $page = 'new';
+                $details = new UserParents;
+            }    
         }
-        
         //save parent details
         if($data['first_name']!='')
             $details->first_name= $data['first_name'];
@@ -711,7 +742,6 @@ class WebUserManagementController extends Controller
         }
         else
             $userparent_id = $details->user_id;
-
         if($data['email_address']!='' || $data['mobile_number']!='')
         {
             $schoolusers = SchoolUsers::where(['user_id'=>$userparent_id,'school_profile_id'=>$user->school_profile_id])->get()->first();
@@ -748,29 +778,32 @@ class WebUserManagementController extends Controller
         }
         else
         {
-            $check_old_groups = UserStudentsMapping::where('student',$id)->where('parent',$old_parent_id)->get()->first();
-            if(!empty($check_old_groups))
-                UserStudentsMapping::where('student',$id)->where('parent',$old_parent_id)->delete();
-            $check_old_class = UserStudents::where('id',$id)->pluck('class_config')->first();
-            if($check_old_class!='')
+            if($old_parent_id !='')
             {
-                $check_other_child = UserStudentsMapping::where('parent',$old_parent_id)->pluck('student')->toArray();
-                if(!empty($check_other_child))
+                $check_old_groups = UserStudentsMapping::where('student',$id)->where('parent',$old_parent_id)->get()->first();
+                if(!empty($check_old_groups))
+                    UserStudentsMapping::where('student',$id)->where('parent',$old_parent_id)->delete();
+                $check_old_class = UserStudents::where('id',$id)->pluck('class_config')->first();
+                if($check_old_class!='')
                 {
-                    $check_same_class = UserStudents::whereIn('id',$check_other_child)->where('id','!=',$id)->where('class_config',$check_old_class)->get()->first();
-                    if(empty($check_same_class))
+                    $check_other_child = UserStudentsMapping::where('parent',$old_parent_id)->pluck('student')->toArray();
+                    if(!empty($check_other_child))
                     {
-                        $group_id = $new_group_id!=''?$new_group_id:$old_group_id;
-                        UserGroupsMapping::where('user_table_id',$old_parent_id)->where('group_id',$group_id)->where('user_role',Config::get('app.Parent_role'))->delete();
-                    }
+                        $check_same_class = UserStudents::whereIn('id',$check_other_child)->where('id','!=',$id)->where('class_config',$check_old_class)->get()->first();
+                        if(empty($check_same_class))
+                        {
+                            $group_id = $new_group_id!=''?$new_group_id:$old_group_id;
+                            UserGroupsMapping::where('user_table_id',$old_parent_id)->where('group_id',$group_id)->where('user_role',Config::get('app.Parent_role'))->delete();
+                        }
 
+                    }
+                    else
+                        UserGroupsMapping::where('user_table_id',$old_parent_id)->where('user_role',Config::get('app.Parent_role'))->delete();
                 }
-                else
-                    UserGroupsMapping::where('user_table_id',$old_parent_id)->where('user_role',Config::get('app.Parent_role'))->delete();
             }
 
 
-            $check_exists = UserStudentsMapping::where('student',$id)->where('parent',$details->id)->pluck('id')->first();
+            $check_exists = UserStudentsMapping::where('student',$id)->where('parent',$parent_id)->pluck('id')->first();
 
             if($check_exists=='')
             {
@@ -783,10 +816,10 @@ class WebUserManagementController extends Controller
                 $student_map->save();
             }
             $group_id = $new_group_id!=''?$new_group_id:$old_group_id;
-            UserGroupsMapping::insert(['group_id'=>$group_id,'user_table_id'=>$details->id,'user_role'=>Config::get('app.Parent_role'),'user_status'=>1,'group_access'=>2]);
-            $check_exists = UserGroupsMapping::where(['group_id'=>2,'user_table_id'=>$details->id,'user_role'=>Config::get('app.Parent_role'),'user_status'=>1])->get()->first();
+            UserGroupsMapping::insert(['group_id'=>$group_id,'user_table_id'=>$parent_id,'user_role'=>Config::get('app.Parent_role'),'user_status'=>1,'group_access'=>2]);
+            $check_exists = UserGroupsMapping::where(['group_id'=>2,'user_table_id'=>$parent_id,'user_role'=>Config::get('app.Parent_role'),'user_status'=>1])->get()->first();
             if(empty($check_exists))
-                UserGroupsMapping::insert(['group_id'=>2,'user_table_id'=>$details->id,'user_role'=>Config::get('app.Parent_role'),'user_status'=>1,'group_access'=>2]);
+                UserGroupsMapping::insert(['group_id'=>2,'user_table_id'=>$parent_id,'user_role'=>Config::get('app.Parent_role'),'user_status'=>1,'group_access'=>2]);
 
         }
     }

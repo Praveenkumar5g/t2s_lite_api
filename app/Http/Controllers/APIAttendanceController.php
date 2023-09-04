@@ -390,7 +390,7 @@ class APIAttendanceController extends Controller
                     }
                 }
             }
-
+            $student_details[$key]['total_days'] = $total_days;
             $student_details[$key]['present_total'] = $present_total;
             $student_details[$key]['absent_total'] = $absent_total;
             $student_details[$key]['leave_total'] = $leave_total;

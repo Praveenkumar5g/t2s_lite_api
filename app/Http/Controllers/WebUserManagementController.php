@@ -1491,7 +1491,7 @@ class WebUserManagementController extends Controller
                     if($check_classsubject_teacher == '')
                         UserGroupsMapping::where(['group_id'=>$group_id,'user_role'=>Config::get('app.Staff_role')])->where('user_table_id',$check_existing_classdetails->class_teacher)->delete();
                     else
-                        UserGroupsMapping::where(['group_id'=>$group_id,'user_role'=>Config::get('app.Staff_role')])->where('user_table_id',$check_existing_classdetails->class_teacher)->update(['group_access',2]);
+                        UserGroupsMapping::where(['group_id'=>$group_id,'user_role'=>Config::get('app.Staff_role')])->where('user_table_id',$check_existing_classdetails->class_teacher)->update(['group_access'=>2]);
                 }
                 $check_existing_classdetails = $check_existing_classdetails->update(['class_teacher'=>$staff_id]);
 

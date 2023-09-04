@@ -219,7 +219,7 @@ class APICommunicationController extends Controller
                     $user_ids = $user_ids->get()->toArray();
                     $user_list = array_merge($user_list,$user_ids);
                 }
-                else if($value == 4 || $value == 5)
+                else if($value == 4 || $value == 5) // 5-Parent(Mother and Father) //4-staff(Teaching and non-teaching)
                 {    
                     $group_id = $request->group_id;
                     if($user->user_role != 2 && ($user_role != 5 || $user_role != 4 ) )
@@ -271,6 +271,15 @@ class APICommunicationController extends Controller
                         $user_list = array_merge($user_list,$user_ids);
                     }
 
+                }
+                else if($value == 9) //from admin to management
+                {
+                    $group_id = $request->group_id;
+                    $user_ids =UserGroupsMapping::select('user_table_id','user_role')->where('group_id',$group_id)->where('user_status',Config::get('app.Group_Active'))->whereIn('user_role',([Config::get('app.Management_role')]))->get()->toArray();
+
+                    $user_list = UserGroupsMapping::select('user_table_id','user_role')->where(['user_table_id'=>$user_table_id,'user_role'=>$user->user_role,'user_status'=>Config::get('app.Group_Active')])->where('group_id',$group_id)->get()->toArray();
+                    
+                    $user_list = array_merge($user_list,$user_ids);
                 }
             }
         }
@@ -545,7 +554,17 @@ class APICommunicationController extends Controller
             }
             else if($request->group_id == 2)
                 $class_messages = Communications::where('group_id',2)->where(['distribution_type'=>6,'communication_type'=>1])->orwhere(['distribution_type'=>8,'communication_type'=>1])->pluck('id')->toArray();
-            
+
+            if($user->user_role == Config::get('app.Admin_role') || $user->user_role == Config::get('app.Management_role'))
+            {
+                $visible_to = $userdetails->id;
+                $management_messages = Communications::where('group_id',$request->group_id)->Where('visible_to','all')->orWhere('visible_to', 'like', '%' .$visible_to. ',%')->where('communication_type',1)->where('distribution_type',9);
+                if($user->user_role == Config::get('app.Parent_role'))
+                        $management_messages = $management_messages->whereNull('message_status')->orWhere('message_status',2);
+
+                $management_messages = $management_messages->pluck('id')->toArray();
+            }
+
             $chat_id_list =$chat_id_list->Where(['visible_to'=>'all','communication_type'=>1])->pluck('id')->toArray();
 
             $remove_duplciate_bd_alert = [];

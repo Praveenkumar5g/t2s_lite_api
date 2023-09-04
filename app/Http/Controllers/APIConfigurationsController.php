@@ -1359,6 +1359,52 @@ class APIConfigurationsController extends Controller
 				UserGroupsMapping::insert($admin_group);
 			
 			$admin_group=[];
+
+						/*Admin - Management group*/
+			$usergroups = new UserGroups;
+	        $usergroups->group_name='Admin-Management';
+	        $usergroups->group_description='This group contains all admin and Management users.';
+	        $usergroups->group_action=1;//1-admin
+	        $usergroups->group_status=1;//1-active
+	        $usergroups->group_type=1;
+	        $usergroups->created_by=$userall_id;
+	        $usergroups->created_time=Carbon::now()->timezone('Asia/Kolkata');
+	        $usergroups->save();
+
+	        // Get inserted recored id
+	        $usergroup_id = $usergroups->id;
+
+	        foreach ($management_users as $management_key => $management_value) {
+				$management_group[] = ([
+					'group_id'=>$usergroup_id,
+					'user_table_id'=>$management_value['id'],
+					'group_access'=>1,
+					'user_role'=>Config::get('app.Management_role'),
+				]);
+			}
+
+			// Insert group users in mapping table
+			if(!empty($management_group))
+				UserGroupsMapping::insert($management_group);
+			$management_group=[];
+
+			// Fetch all admin users
+			$admin_users = UserAdmin::select('id','user_id')->where('user_status',1)->get()->toArray();
+
+			foreach ($admin_users as $admin_key => $admin_value) {
+				$admin_group[] = ([
+					'group_id'=>$usergroup_id,
+					'user_table_id'=>$admin_value['id'],
+					'group_access'=>1,
+					'user_role'=>Config::get('app.Admin_role'),
+				]);
+			}
+			// Insert group users in mapping table
+			if(!empty($admin_group))
+				UserGroupsMapping::insert($admin_group);
+			
+			$admin_group=[];
+			/*Admin - Management group*/
 			
 			/*create class-sections groups -  starts*/
 			$class_config = AcademicClassConfiguration::select('id','class_id','section_id','class_teacher')->get()->toArray();

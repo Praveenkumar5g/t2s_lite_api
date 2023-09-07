@@ -347,8 +347,9 @@ class APIAttendanceController extends Controller
 
             $present_total = $absent_total = $leave_total = $present_percentage = $absent_percentage = $absent_percentage = 0;
 
-            $present_total = count(Attendance::where('class_config',$request->class_config)->where('id',$value->id)->where('session_type',1)->where('attendance_status',1)->pluck('id')->toArray());
-
+            $present_total =Attendance::where('class_config',$request->class_config)->where('id',$value->id)->where('session_type',1)->where('attendance_status',1)->pluck('id')->toArray();
+            if($value->id == 64)
+                echo '<pre>';print_r($present_total);exit;
             $absent_total = count(Attendance::where('class_config',$request->class_config)->where('id',$value->id)->where('session_type',1)->where('attendance_status',2)->pluck('id')->toArray());
 
             $leave_total = count(Attendance::where('class_config',$request->class_config)->where('id',$value->id)->where('session_type',1)->where('attendance_status',3)->pluck('id')->toArray());

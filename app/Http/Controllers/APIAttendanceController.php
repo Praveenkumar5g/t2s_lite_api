@@ -143,11 +143,11 @@ class APIAttendanceController extends Controller
         {
             $present_total = $absent_total = $leave_total = $present_percentage = $absent_percentage = $absent_percentage = 0;
 
-            $present_total = count(Attendance::where('class_config',$request->class_config)->where('id',$value->id)->where('session_type',1)->where('attendance_status',1)->pluck('id')->toArray());
+            $present_total = count(Attendance::where('class_config',$request->class_config)->where('user_table_id',$value->id)->where('session_type',1)->where('attendance_status',1)->pluck('id')->toArray());
 
-            $absent_total = count(Attendance::where('class_config',$request->class_config)->where('id',$value->id)->where('session_type',1)->where('attendance_status',2)->pluck('id')->toArray());
+            $absent_total = count(Attendance::where('class_config',$request->class_config)->where('user_table_id',$value->id)->where('session_type',1)->where('attendance_status',2)->pluck('id')->toArray());
 
-            $leave_total = count(Attendance::where('class_config',$request->class_config)->where('id',$value->id)->where('session_type',1)->where('attendance_status',3)->pluck('id')->toArray());
+            $leave_total = count(Attendance::where('class_config',$request->class_config)->where('user_table_id',$value->id)->where('session_type',1)->where('attendance_status',3)->pluck('id')->toArray());
 
             $total_days = $present_total+$absent_total+$leave_total;
 
@@ -191,7 +191,7 @@ class APIAttendanceController extends Controller
             $student_details[$key]['present_total'] = $present_total;
             $student_details[$key]['absent_total'] = $absent_total;
             $student_details[$key]['leave_total'] = $leave_total;
-            $student_details[$key]['present_percentage'] = ($leave_total > 0)?round(($present_total/$total_days)*100):0;
+            $student_details[$key]['present_percentage'] = ($leave_total > 0)?round(($leave_total/$total_days)*100):0;
             $student_details[$key]['absent_percentage'] = ($absent_total > 0)?round(($absent_total/$total_days)*100):0;
             $student_details[$key]['leave_percentage'] = ($leave_total > 0)?round(($leave_total/$total_days)*100):0;
         }
@@ -347,16 +347,13 @@ class APIAttendanceController extends Controller
 
             $present_total = $absent_total = $leave_total = $present_percentage = $absent_percentage = $absent_percentage = 0;
 
-            $present_total =Attendance::where('class_config',$request->class_config)->where('id',$value->id)->where('session_type',1)->where('attendance_status',1)->pluck('id')->toArray();
-            if($value->id == 64)
-            {
-                echo '<pre>';print_r($present_total);exit;
-            }
-            $absent_total = count(Attendance::where('class_config',$request->class_config)->where('id',$value->id)->where('session_type',1)->where('attendance_status',2)->pluck('id')->toArray());
+            $present_total = count(Attendance::where('class_config',$request->class_config)->where('user_table_id',$value->id)->where('session_type',1)->where('attendance_status',1)->pluck('id')->toArray());
 
-            $leave_total = count(Attendance::where('class_config',$request->class_config)->where('id',$value->id)->where('session_type',1)->where('attendance_status',3)->pluck('id')->toArray());
+            $absent_total = count(Attendance::where('class_config',$request->class_config)->where('user_table_id',$value->id)->where('session_type',1)->where('attendance_status',2)->pluck('id')->toArray());
 
-            $total_days = count($present_total)+$absent_total+$leave_total;
+            $leave_total = count(Attendance::where('class_config',$request->class_config)->where('user_table_id',$value->id)->where('session_type',1)->where('attendance_status',3)->pluck('id')->toArray());
+
+            $total_days = $present_total+$absent_total+$leave_total;
 
             $mapped_parents = UserStudentsMapping::where('student',$value->id)->pluck('parent')->toArray();
 

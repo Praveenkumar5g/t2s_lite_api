@@ -191,7 +191,7 @@ class APIAttendanceController extends Controller
             $student_details[$key]['present_total'] = $present_total;
             $student_details[$key]['absent_total'] = $absent_total;
             $student_details[$key]['leave_total'] = $leave_total;
-            $student_details[$key]['present_percentage'] = ($leave_total > 0)?round(($leave_total/$total_days)*100):0;
+            $student_details[$key]['present_percentage'] = ($present_total > 0)?round(($present_total/$total_days)*100):0;
             $student_details[$key]['absent_percentage'] = ($absent_total > 0)?round(($absent_total/$total_days)*100):0;
             $student_details[$key]['leave_percentage'] = ($leave_total > 0)?round(($leave_total/$total_days)*100):0;
         }
@@ -394,7 +394,7 @@ class APIAttendanceController extends Controller
             $student_details[$key]['present_total'] = $present_total;
             $student_details[$key]['absent_total'] = $absent_total;
             $student_details[$key]['leave_total'] = $leave_total;
-            $student_details[$key]['present_percentage'] = ($leave_total > 0)?round(($present_total/$total_days)*100):0;
+            $student_details[$key]['present_percentage'] = ($present_total > 0)?round(($present_total/$total_days)*100):0;
             $student_details[$key]['absent_percentage'] = ($absent_total > 0)?round(($absent_total/$total_days)*100):0;
             $student_details[$key]['leave_percentage'] = ($leave_total > 0)?round(($leave_total/$total_days)*100):0;
 

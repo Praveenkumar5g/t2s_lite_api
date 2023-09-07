@@ -356,7 +356,7 @@ class APIAttendanceController extends Controller
 
             $leave_total = count(Attendance::where('class_config',$request->class_config)->where('id',$value->id)->where('session_type',1)->where('attendance_status',3)->pluck('id')->toArray());
 
-            $total_days = $present_total+$absent_total+$leave_total;
+            $total_days = count($present_total)+$absent_total+$leave_total;
 
             $mapped_parents = UserStudentsMapping::where('student',$value->id)->pluck('parent')->toArray();
 

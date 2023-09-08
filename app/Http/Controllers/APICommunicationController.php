@@ -518,7 +518,7 @@ class APICommunicationController extends Controller
                 'name'=>$userdetails->first_name,
                 'last_seen'=>$user->last_login
             ]);
-            $groupinfo = UserGroups::where('id',$request->group_id)->pluck('class_config')->first();
+            $groupinfo = UserGroups::where('id',$request->group_id)->first();
             $visible_to = $groupinfo->class_config;
             // only chat messages list
             $chat_id_list = Communications::whereIn('group_id',$group_id)->whereIn('distribution_type',([1,2,3,4,5]));

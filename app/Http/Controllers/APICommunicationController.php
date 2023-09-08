@@ -554,7 +554,7 @@ class APICommunicationController extends Controller
 
             }
             else if($request->group_id == 2)
-                $class_messages = Communications::where('group_id',2)->where(['distribution_type'=>6,'communication_type'=>1])->orwhere(['distribution_type'=>8,'communication_type'=>1])->pluck('id')->toArray();
+                $class_messages = Communications::where('gdroup_id',2)->where(['distribution_type'=>6,'communication_type'=>1])->orwhere(['distribution_type'=>8,'communication_type'=>1])->pluck('id')->toArray();
 
             $groupname = strtolower(str_replace(' ', '', $groupinfo->group_name));
             if($user->user_role == Config::get('app.Admin_role') || $user->user_role == Config::get('app.Management_role') && $groupname == 'admin-management' && $groupinfo->group_type == 1)

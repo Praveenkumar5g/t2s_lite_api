@@ -722,7 +722,8 @@ class APICommunicationController extends Controller
                                 if($management_value!='')
                                 {
                                     $management_details = UserManagements::where('id',$management_value)->get()->first();
-                                    $management_names[] = $management_details->first_name;
+                                    if(!empty($management_details))
+                                        $management_names[] = $management_details->first_name;
                                 }
                             }
 

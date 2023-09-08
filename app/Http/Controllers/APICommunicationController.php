@@ -513,7 +513,7 @@ class APICommunicationController extends Controller
         $unreadmessages = 0;
         if(!empty($userdetails) && !empty($group_id))
         {
-            $class_messages = $student_messages = [];
+            $class_messages = $student_messages = $management_messages = [];
             $user_details = ([
                 'name'=>$userdetails->first_name,
                 'last_seen'=>$user->last_login

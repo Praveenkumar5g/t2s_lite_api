@@ -321,7 +321,7 @@ class APIAttendanceController extends Controller
 
             $user_list = UserGroupsMapping::select('user_table_id','user_role')->where(['user_role'=>Config::get('app.Staff_role'),'user_status'=>Config::get('app.Group_Active')])->where('user_table_id',$classteacher)->where('group_id',$group_id)->get()->toArray();
 
-            $user_ids = UserGroupsMapping::select('user_table_id','user_role')->whereIn('user_role',([Config::get('app.Admin_role'),Config::get('app.Management_role')])->where(['user_status'=>Config::get('app.Group_Active')])->where('group_id',$group_id)->get()->toArray();
+            $user_ids = UserGroupsMapping::select('user_table_id','user_role')->whereIn('user_role',([Config::get('app.Admin_role'),Config::get('app.Management_role')]))->where(['user_status'=>Config::get('app.Group_Active')])->where('group_id',$group_id)->get()->toArray();
 
             $user_list = array_merge($user_list,$user_ids);
 

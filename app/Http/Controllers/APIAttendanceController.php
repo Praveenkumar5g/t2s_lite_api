@@ -270,33 +270,30 @@ class APIAttendanceController extends Controller
 
             $group_id = $group_details->id;
             // Send nottification to parents
-            if(empty($check_entry))
+            if(!empty($parent_ids) && $chat_message!='')
             {
-                if(!empty($parent_ids) && $chat_message!='')
+                $communications = new Communications;
+                $communications->chat_message=$chat_message;
+                $communications->visible_to=','.$attendance_key.',';
+                $communications->distribution_type=5; //5-parent
+                $communications->message_category=11; // 11-attendance
+                $communications->actioned_by=$userall_id;
+                $communications->created_by=$userall_id;
+                $communications->actioned_time=Carbon::now()->timezone('Asia/Kolkata');
+                $communications->created_time=Carbon::now()->timezone('Asia/Kolkata');
+                $communications->group_id=$group_id;
+                $communications->communication_type=1;
+                $communications->approval_status=1;
+                $communications->save();
+                $notification_id = $communications->id;
+
+                $user_list = UserGroupsMapping::select('user_table_id','user_role')->where(['user_role'=>Config::get('app.Parent_role'),'user_status'=>Config::get('app.Group_Active')])->whereIn('user_table_id',$parent_ids)->where('group_id',$group_id)->get()->toArray();
+
+                if(!empty($user_list))
+                    app('App\Http\Controllers\APICommunicationController')->insert_receipt_log(array_unique($user_list, SORT_REGULAR),$notification_id,$user_table_id);
+                if(!empty($player_ids))
                 {
-                    $communications = new Communications;
-                    $communications->chat_message=$chat_message;
-                    $communications->visible_to=','.$attendance_key.',';
-                    $communications->distribution_type=5; //5-parent
-                    $communications->message_category=11; // 11-attendance
-                    $communications->actioned_by=$userall_id;
-                    $communications->created_by=$userall_id;
-                    $communications->actioned_time=Carbon::now()->timezone('Asia/Kolkata');
-                    $communications->created_time=Carbon::now()->timezone('Asia/Kolkata');
-                    $communications->group_id=$group_id;
-                    $communications->communication_type=1;
-                    $communications->approval_status=1;
-                    $communications->save();
-                    $notification_id = $communications->id;
-
-                    $user_list = UserGroupsMapping::select('user_table_id','user_role')->where(['user_role'=>Config::get('app.Parent_role'),'user_status'=>Config::get('app.Group_Active')])->whereIn('user_table_id',$parent_ids)->where('group_id',$group_id)->get()->toArray();
-
-                    if(!empty($user_list))
-                        app('App\Http\Controllers\APICommunicationController')->insert_receipt_log(array_unique($user_list, SORT_REGULAR),$notification_id,$user_table_id);
-                    if(!empty($player_ids))
-                    {
-                        $delivery_details = APIPushNotificationController::SendNotification($chat_message,$player_ids,$notification_id,'attendance'); //trigger pushnotification function
-                    }
+                    $delivery_details = APIPushNotificationController::SendNotification($chat_message,$player_ids,$notification_id,'attendance'); //trigger pushnotification function
                 }
             }
 
@@ -305,7 +302,7 @@ class APIAttendanceController extends Controller
         // send notifications to class teacher
         $classteacher = AcademicClassConfiguration::Where('id',$request->class_config)->pluck('class_teacher')->first();
 
-        if($classteacher!='')
+        if($classteacher!='' && empty($check_entry))
         {
             $user_list=[];
             $communications = new Communications;

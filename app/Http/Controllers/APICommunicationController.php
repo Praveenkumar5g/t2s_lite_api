@@ -581,7 +581,7 @@ class APICommunicationController extends Controller
 
             $remaining_id_list =$remaining_id_list->pluck('id')->toArray();
 
-            $communication_id_list = array_unique(array_merge($chat_id_list,$remaining_id_list,$class_messages,$student_messages));
+            $communication_id_list = array_unique(array_merge($chat_id_list,$remaining_id_list,$class_messages,$student_messages,$management_messages));
 
             $get_class_config= UserGroups::where('id',$request->group_id)->pluck('class_config')->first();
 
@@ -606,7 +606,7 @@ class APICommunicationController extends Controller
                     $query->where(['user_table_id'=>$userdetails->id,'user_role'=>$user->user_role,'communication_type'=>4])->whereIn('communication_id',$communication_id_list);
                 })->orderBy('actioned_time')->get()->toArray(); //Fetch applicable notification ids from table for logged in user.
 
-            echo '<pre>';print_r($communication_id_list);exit;
+            echo '<pre>';print_r($group_id);print_r($chat_id_list);exit;
             $read_count = CommunicationRecipients::select(DB::raw('count(*) as count'),'communication_id','communication_type')->where(['message_status'=>Config::get('app.Read')])->groupBy('communication_id','communication_type')->get()->toArray(); //get read count based on notification id.
             // $readcount_data = array_column($read_count,'count','communication_id');
             foreach($read_count as $read_key => $read_value){

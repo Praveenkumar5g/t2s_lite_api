@@ -712,7 +712,25 @@ class APICommunicationController extends Controller
                                 $visibility = 'Visible to '.implode(',',$student_parent_names);     
                             else
                                 $visibility = 'Visible to Everyone';                
-                        }                
+                        } 
+                        else if($message_details->distribution_type==9) //admin to managment
+                        {
+                            $managements = explode(',',$message_details->visible_to);
+                            $management_names = [];
+                            foreach($managements as $management_key => $management_value)
+                            {
+                                if($management_value!='')
+                                {
+                                    $management_details = UserManagements::where('id',$management_value)->get()->first();
+                                    $management_names[] = $management_details->first_name;
+                                }
+                            }
+
+                            if(!empty($management_names))
+                                $visibility = 'Visible to '.implode(',',$management_names);     
+                            else
+                                $visibility = 'Visible to Everyone';                
+                        }               
                   
 
                         $message_category='';                 

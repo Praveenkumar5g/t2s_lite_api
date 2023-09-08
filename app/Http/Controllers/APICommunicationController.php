@@ -513,7 +513,7 @@ class APICommunicationController extends Controller
         $unreadmessages = 0;
         if(!empty($userdetails) && !empty($group_id))
         {
-            $class_messages = $student_messages = $management_messages = [];
+            $class_messages = $student_messages = $management_messages = $newsevents_id_list= [];
             $user_details = ([
                 'name'=>$userdetails->first_name,
                 'last_seen'=>$user->last_login
@@ -557,7 +557,7 @@ class APICommunicationController extends Controller
                 $class_messages = Communications::where(['distribution_type'=>6,'communication_type'=>1])->orwhere(['distribution_type'=>8,'communication_type'=>1])->where('group_id',2)->pluck('id')->toArray();
 
             $groupname = strtolower(str_replace(' ', '', $groupinfo->group_name));
-            if($user->user_role == Config::get('app.Admin_role') || $user->user_role == Config::get('app.Management_role') && $groupname == 'admin-management' && $groupinfo->group_type == 1)
+            if(($user->user_role == Config::get('app.Admin_role') || $user->user_role == Config::get('app.Management_role')) && $groupname == 'admin-management' && $groupinfo->group_type == 1)
             {
                 $visible_to = $userdetails->id;
                 $management_messages = Communications::where('group_id',$request->group_id)->Where('visible_to','all')->orWhere('visible_to', 'like', '%' .$visible_to. ',%')->where('communication_type',1)->where('distribution_type',9);
@@ -585,14 +585,17 @@ class APICommunicationController extends Controller
 
             $get_class_config= UserGroups::where('id',$request->group_id)->pluck('class_config')->first();
 
-            $newsevents_id_list = NewsEvents::where(function($query) use ($get_class_config){
-                $query->where('visible_to','like','%,'.$get_class_config.',%')
-                    ->orWhere('visible_to','all');
-            });
-            if($user->user_role == Config::get('app.Parent_role'))
-                $newsevents_id_list =$newsevents_id_list->where('status',1);
+            if($request->group_id == 2 || $groupinfo->group_type == 2)
+            {
+                $newsevents_id_list = NewsEvents::where(function($query) use ($get_class_config){
+                    $query->where('visible_to','like','%,'.$get_class_config.',%')
+                        ->orWhere('visible_to','all');
+                });
+                if($user->user_role == Config::get('app.Parent_role'))
+                    $newsevents_id_list =$newsevents_id_list->where('status',1);
 
-            $newsevents_id_list =$newsevents_id_list->pluck('id')->toArray();
+                $newsevents_id_list =$newsevents_id_list->pluck('id')->toArray();
+            }
 
             // $notification_ids = CommunicationRecipients::where(['user_table_id'=>$userdetails->id,'user_role'=>$user->user_role])->whereIn('communication_id',$communication_id_list)->orderBy('actioned_time')->get()->toArray(); //Fetch applicable notification ids from table for logged in user.
 

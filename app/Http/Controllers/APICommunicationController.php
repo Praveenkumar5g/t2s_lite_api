@@ -518,7 +518,8 @@ class APICommunicationController extends Controller
                 'name'=>$userdetails->first_name,
                 'last_seen'=>$user->last_login
             ]);
-            $visible_to = UserGroups::where('id',$request->group_id)->pluck('class_config')->first();
+            $groupinfo = UserGroups::where('id',$request->group_id)->pluck('class_config')->first();
+            $visible_to = $groupinfo->class_config;
             // only chat messages list
             $chat_id_list = Communications::whereIn('group_id',$group_id)->whereIn('distribution_type',([1,2,3,4,5]));
             
@@ -555,7 +556,8 @@ class APICommunicationController extends Controller
             else if($request->group_id == 2)
                 $class_messages = Communications::where('group_id',2)->where(['distribution_type'=>6,'communication_type'=>1])->orwhere(['distribution_type'=>8,'communication_type'=>1])->pluck('id')->toArray();
 
-            if($user->user_role == Config::get('app.Admin_role') || $user->user_role == Config::get('app.Management_role'))
+            $groupname = strtolower(str_replace(' ', '', $groupinfo->group_name));
+            if($user->user_role == Config::get('app.Admin_role') || $user->user_role == Config::get('app.Management_role') && $groupname == 'admin-management' && $groupinfo->group_type == 1)
             {
                 $visible_to = $userdetails->id;
                 $management_messages = Communications::where('group_id',$request->group_id)->Where('visible_to','all')->orWhere('visible_to', 'like', '%' .$visible_to. ',%')->where('communication_type',1)->where('distribution_type',9);
@@ -625,10 +627,17 @@ class APICommunicationController extends Controller
                     if($value['message_status'] == 1)
                         $unreadmessages++;
                     $sender_details =[];
+                    $user = $designation ='';
                     $designation=$user=$message_category=$message=$caption=$important='';
                     if(!empty($fetch_sender_id))
                         $sender_details = $fetch_sender_id->userDetails();
-                    $user = $designation ='';
+                    else if($message_details && $message_details->actioned_by!='' && $message_details->distribution_type == 9) //for admin to management
+                    {
+                        $fetch_sender_id = UserAll::where('id',$message_details->actioned_by)->first();
+                        if(!empty($fetch_sender_id))
+                            $sender_details = $fetch_sender_id->userDetails();
+                    }
+
                     if($value['communication_type'] == 1 && $message_details->communication_type == 2)
                     {
                         $user = '';

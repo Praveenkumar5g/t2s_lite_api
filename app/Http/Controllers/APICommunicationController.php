@@ -570,7 +570,7 @@ class APICommunicationController extends Controller
             $chat_id_list =$chat_id_list->Where(['visible_to'=>'all','communication_type'=>1])->pluck('id')->toArray();
 
             $remove_duplciate_bd_alert = [];
-            if($request->group_id> 5)
+            if($request->group_id> 5 && $groupinfo->group_type == 2)
                 $remove_duplciate_bd_alert = Communications::where('group_id',2)->where('communication_type',4)->pluck('id')->toArray();
             
             // remaining chat messages list

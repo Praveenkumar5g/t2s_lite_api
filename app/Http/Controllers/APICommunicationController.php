@@ -606,7 +606,7 @@ class APICommunicationController extends Controller
                     $query->where(['user_table_id'=>$userdetails->id,'user_role'=>$user->user_role,'communication_type'=>4])->whereIn('communication_id',$communication_id_list);
                 })->orderBy('actioned_time')->get()->toArray(); //Fetch applicable notification ids from table for logged in user.
 
-            echo '<pre>';print_r($class_messages);print_r($student_messages);print_r($remaining_id_list);print_r($management_messages);exit;
+            // echo '<pre>';print_r($class_messages);;exit;
             $read_count = CommunicationRecipients::select(DB::raw('count(*) as count'),'communication_id','communication_type')->where(['message_status'=>Config::get('app.Read')])->groupBy('communication_id','communication_type')->get()->toArray(); //get read count based on notification id.
             // $readcount_data = array_column($read_count,'count','communication_id');
             foreach($read_count as $read_key => $read_value){
@@ -631,7 +631,7 @@ class APICommunicationController extends Controller
                     $designation=$user=$message_category=$message=$caption=$important='';
                     if(!empty($fetch_sender_id))
                         $sender_details = $fetch_sender_id->userDetails();
-                    else if($message_details && $message_details->actioned_by!='' && $message_details->distribution_type == 9) //for admin to management
+                    else if($message_details && $message_details->actioned_by!='' && $message_details->message_category == 11) //for admin to management
                     {
                         $fetch_sender_id = UserAll::where('id',$message_details->actioned_by)->first();
                         if(!empty($fetch_sender_id))

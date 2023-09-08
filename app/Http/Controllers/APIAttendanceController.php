@@ -302,7 +302,7 @@ class APIAttendanceController extends Controller
         // send notifications to class teacher
         $classteacher = AcademicClassConfiguration::Where('id',$request->class_config)->pluck('class_teacher')->first();
 
-        if($classteacher!='' && empty($check_entry))
+        if(empty($check_entry))
         {
             $user_list=[];
             $communications = new Communications;
@@ -320,6 +320,10 @@ class APIAttendanceController extends Controller
             $notification_id = $communications->id;
 
             $user_list = UserGroupsMapping::select('user_table_id','user_role')->where(['user_role'=>Config::get('app.Staff_role'),'user_status'=>Config::get('app.Group_Active')])->where('user_table_id',$classteacher)->where('group_id',$group_id)->get()->toArray();
+
+            $user_ids = UserGroupsMapping::select('user_table_id','user_role')->whereIn('user_role',([Config::get('app.Admin_role'),Config::get('app.Management_role')])->where(['user_status'=>Config::get('app.Group_Active')])->where('group_id',$group_id)->get()->toArray();
+
+            $user_list = array_merge($user_list,$user_ids);
 
             if(!empty($user_list))
                 app('App\Http\Controllers\APICommunicationController')->insert_receipt_log(array_unique($user_list, SORT_REGULAR),$notification_id,$user_table_id);

@@ -45,7 +45,7 @@ class APIAttendanceController extends Controller
         // Authentication details
         $user = auth()->user();
 
-        $attendance_date = date("Y-m-d");
+        $attendance_date = date('Y-m-d',strtotime(Carbon::now()->timezone('Asia/Kolkata')));
 
         $present_total = $absent_total = $leave_total = $present_percentage = $absent_percentage = $absent_percentage = 0;
         $session_type = 1;
@@ -77,7 +77,7 @@ class APIAttendanceController extends Controller
         $user = auth()->user();
 
 
-        $attendance_date = date("Y-m-d");
+        $attendance_date = date('Y-m-d',strtotime(Carbon::now()->timezone('Asia/Kolkata')));
 
         $present_total = $absent_total = $leave_total = $present_percentage = $absent_percentage = $absent_percentage = 0;
         $session_type = 1;
@@ -205,7 +205,7 @@ class APIAttendanceController extends Controller
     {
         // Authentication details
         $user = auth()->user();
-        $attendance_date = date("Y-m-d");
+        $attendance_date = date('Y-m-d',strtotime(Carbon::now()->timezone('Asia/Kolkata')));
 
         $attendance_records = $request->attendance_records;
         $old_attendance_status ='';
@@ -306,7 +306,7 @@ class APIAttendanceController extends Controller
         {
             $user_list=[];
             $communications = new Communications;
-            $communications->chat_message='Today ('.date("Y-m-d",strtotime(Carbon::now()->timezone('Asia/Kolkata'))).') attendance marked for class '.$group_details->group_name;
+            $communications->chat_message='Today ('.date("d-m-Y",strtotime(Carbon::now()->timezone('Asia/Kolkata'))).') attendance marked for class '.$group_details->group_name;
             $communications->distribution_type=5; //5-parent
             $communications->message_category=11; // 11-attendance
             $communications->actioned_by=$userall_id;
@@ -320,6 +320,10 @@ class APIAttendanceController extends Controller
             $notification_id = $communications->id;
 
             $user_list = UserGroupsMapping::select('user_table_id','user_role')->where(['user_role'=>Config::get('app.Staff_role'),'user_status'=>Config::get('app.Group_Active')])->where('user_table_id',$classteacher)->where('group_id',$group_id)->get()->toArray();
+
+            $user_ids = UserGroupsMapping::select('user_table_id','user_role')->where(['user_table_id'=>$user_table_id,'user_role'=>$user->user_role])->whereIn('group_id',$group_id)->where('user_status',Config::get('app.Group_Active'))->get()->toArray();
+            $user_list = array_merge($user_list,$user_ids);
+            $user_ids = [];
 
             $user_ids = UserGroupsMapping::select('user_table_id','user_role')->whereIn('user_role',([Config::get('app.Admin_role'),Config::get('app.Management_role')]))->where(['user_status'=>Config::get('app.Group_Active')])->where('group_id',$group_id)->get()->toArray();
 
@@ -337,7 +341,7 @@ class APIAttendanceController extends Controller
     {
         // Authentication details
         $user = auth()->user();
-        $attendance_date = date("Y-m-d");
+        $attendance_date = date('Y-m-d',strtotime(Carbon::now()->timezone('Asia/Kolkata')));
         $attendance_entry = Attendance::select('user_table_id as id','class_config','session_type','attendance_date','reason')->where('class_config',$request->class_config)->where('attendance_date', 'like', '%' .$attendance_date. '%')->get()->toArray();
 
         $student_details = UserStudents::select('first_name','id','class_config','admission_number','roll_number','profile_image')->where('class_config',$request->class_config)->where('user_status',Config::get('app.Group_Active'))->get();

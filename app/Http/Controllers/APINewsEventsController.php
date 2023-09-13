@@ -557,9 +557,9 @@ class APINewsEventsController extends Controller
                 $designation = 'F/O Test';
             }
 
+            $visibility = [];
             if($newsevents->visible_to!='all' && $newsevents->visible_to!='')
             {
-                $visibility = [];
                 $class_sections = AcademicClassConfiguration::whereIn('id',explode(',',$newsevents->visible_to))->get();
                 if(!empty($class_sections))
                 {

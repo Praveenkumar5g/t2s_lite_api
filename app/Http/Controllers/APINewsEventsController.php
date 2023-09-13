@@ -113,9 +113,13 @@ class APINewsEventsController extends Controller
                 
                 foreach($request->file('images') as $file) //loop to insert images
                 {   
-                    if($newsevents_id!='')//delete already existing images
+                    if($newsevents_id!='')//get already existing images
                     {
-
+                        $images_list = NewsEvents::where('id',$newsevents_id)->pluck('images')->first();
+                        if($images_list!='')
+                        {
+                            $attachment_id = explode(',',$images_list);
+                        }
                     }
 
                     $attachment = new NewsEventsAttachments;
@@ -502,7 +506,10 @@ class APINewsEventsController extends Controller
             if(!empty($images_list))//check if empty
             {
                 foreach ($images_list as $image_key => $image_value) {//form array 
-                    $images[]= $image_value['attachment_location'].'/'.$image_value['attachment_name'];
+                    $images[]= ([
+                        'id'=>$image_value['id'],
+                        'image'=>$image_value['attachment_location'].'/'.$image_value['attachment_name'],
+                    ]);
                 }
             }
 
@@ -820,5 +827,32 @@ class APINewsEventsController extends Controller
         else
             return $user_details;
 
+    }
+
+    // Delete attachments
+    public function delete_attachements(Request $request)
+    {
+        $news_events_id = $request->news_events_id;
+        $attachment_id = $request->attachment_id;
+
+        $news_events_details = NewsEvents::where('id',$news_events_id)->first();
+
+        NewsEventsAttachments::where('id',$attachment_id)->delete();
+
+        $exist_attachment_id = $news_events_details->images;
+
+        if($exist_attachment_id!='' || $exist_attachment_id != NULL)
+        {
+            $ids_list = explode(',',$exist_attachment_id);
+            $result = array_search($attachment_id, $ids_list);
+            if($result > -1)
+            {
+                unset($ids_list[$result]);
+                $news_events_details->images = implode(',',$ids_list);
+                $news_events_details->save();
+            }
+        }
+
+         return response()->json(['status'=>true,'message'=>'Deleted Successfully']);
     }
 }

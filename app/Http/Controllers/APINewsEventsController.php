@@ -557,6 +557,19 @@ class APINewsEventsController extends Controller
                 $designation = 'F/O Test';
             }
 
+            if($newsevents->visible_to!='all' && $newsevents->visible_to!='')
+            {
+                $visibility = [];
+                $class_sections = AcademicClassConfiguration::whereIn('id',explode(',',$newsevents->visible_to))->get();
+                if(!empty($class_sections))
+                {
+                    foreach($class_sections as $class_sec_key => $class_sec_value)
+                    {
+                        $visibility[] = $class_sec_value->classsectionName();
+                    }
+                }
+            }
+
             // array formated to display news
             $data = ([
                 'id'=>$newsevents->id,
@@ -569,7 +582,7 @@ class APINewsEventsController extends Controller
                 'description'=>$newsevents->description,
                 'youtube_link'=>$newsevents->youtube_link,
                 'important'=>($newsevents->important == 'N')?'no':'yes',
-               
+                'visibility'=>$visibility,
             ]);
             if($newsevents->module_type == 1)
             {

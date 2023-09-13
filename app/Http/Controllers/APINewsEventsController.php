@@ -113,9 +113,13 @@ class APINewsEventsController extends Controller
                 
                 foreach($request->file('images') as $file) //loop to insert images
                 {   
-                    if($newsevents_id!='')//delete already existing images
+                    if($newsevents_id!='')//get already existing images
                     {
-
+                        $images_list = NewsEvents::where('id',$newsevents_id)->pluck('images')->first();
+                        if($images_list!='')
+                        {
+                            $attachment_id = explode(',',$images_list);
+                        }
                     }
 
                     $attachment = new NewsEventsAttachments;
@@ -502,7 +506,10 @@ class APINewsEventsController extends Controller
             if(!empty($images_list))//check if empty
             {
                 foreach ($images_list as $image_key => $image_value) {//form array 
-                    $images[]= $image_value['attachment_location'].'/'.$image_value['attachment_name'];
+                    $images[]= ([
+                        'id'=>$image_value['id'],
+                        'image'=>$image_value['attachment_location'].'/'.$image_value['attachment_name'],
+                    ]);
                 }
             }
 

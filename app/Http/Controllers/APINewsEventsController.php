@@ -565,7 +565,10 @@ class APINewsEventsController extends Controller
                 {
                     foreach($class_sections as $class_sec_key => $class_sec_value)
                     {
-                        $visibility[] = $class_sec_value->classsectionName();
+                        $visibility[] =([
+                        'id'=>$class_sec_value,
+                        'class'=>$class_sec_value->classsectionName(),
+                        ]);
                     }
                 }
             }

@@ -489,7 +489,7 @@ class APINewsEventsController extends Controller
         // Check authenticate user.
         $user = auth()->user();
 
-        $newsevents = NewsEvents::where(['published'=>'Y','status'=>1,'attachments'=>'Y','id'=>$request->news_events_id])->get()->first();//fetch all the images data
+        $newsevents = NewsEvents::where(['published'=>'Y','status'=>1,'id'=>$request->news_events_id])->get()->first();//fetch all the images data
         $user_table_id = app('App\Http\Controllers\APILoginController')->get_user_table_id($user);
 
         $userall_id = UserAll::where(['user_table_id'=>$user_table_id->id,'user_role'=>$user->user_role])->pluck('id')->first();//get common id 
@@ -843,5 +843,32 @@ class APINewsEventsController extends Controller
         else
             return $user_details;
 
+    }
+
+    // Delete attachments
+    public function delete_attachments(Request $request)
+    {
+        $news_events_id = $request->news_events_id;
+        $attachment_id = $request->attachment_id;
+
+        $news_events_details = NewsEvents::where('id',$news_events_id)->first();
+
+        NewsEventsAttachments::where('id',$attachment_id)->delete();
+
+        $exist_attachment_id = $news_events_details->images;
+
+        if($exist_attachment_id!='' || $exist_attachment_id != NULL)
+        {
+            $ids_list = explode(',',$exist_attachment_id);
+            $result = array_search($attachment_id, $ids_list);
+            if($result > -1)
+            {
+                unset($ids_list[$result]);
+                $news_events_details->images = implode(',',$ids_list);
+                $news_events_details->save();
+            }
+        }
+
+         return response()->json(['status'=>true,'message'=>'Deleted Successfully']);
     }
 }

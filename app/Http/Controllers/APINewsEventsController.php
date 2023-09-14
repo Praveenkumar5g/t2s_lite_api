@@ -51,6 +51,12 @@ class APINewsEventsController extends Controller
 
         $userall_id = UserAll::where(['user_table_id'=>$user_table_id,'user_role'=>$user->user_role])->pluck('id')->first();//get common id 
 
+        // check deactivation for user
+        $check_access = UserGroupsMapping::where('user_table_id',$user_table_id)->where('group_id',2)->where('user_role',$user->user_role)->where('user_status',1)->pluck('id')->first();
+
+        if($check_access == '')
+            return response()->json(['message'=>'Your account is deactivated. Please contact school management for futher details']);
+        
         // Add rules to the login form
         $validator = Validator::make($request->all(), [
             'title'=>'required',

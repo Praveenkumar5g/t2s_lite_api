@@ -218,6 +218,15 @@ class APIAttendanceController extends Controller
         else if($user->user_role == Config::get('app.Parent_role'))
             $user_table_id = UserParents::where(['user_id'=>$user->user_id])->pluck('id')->first();//fetch id from user all table to store notification triggered user
         $userall_id = UserAll::where(['user_table_id'=>$user_table_id,'user_role'=>$user->user_role])->pluck('id')->first();
+
+        $groupid = UserGroups::where('class_config',$request->class_config)->pluck('id')->first();
+
+        // check deactivation for user
+        $check_access = UserGroupsMapping::where('user_table_id',$user_table_id)->where('group_id',$groupid)->where('user_role',$user->user_role)->where('user_status',1)->pluck('id')->first();
+
+        if($check_access == '')
+            return response()->json(['message'=>'Your account is deactivated. Please contact school management for futher details']);
+        
         foreach ($attendance_records as $attendance_key => $attendance_value) {
             // code...
             $attendance_entry = $check_entry = Attendance::where('class_config',$request->class_config)->where('attendance_date', 'like', '%' .$attendance_date. '%')->where('user_table_id',$attendance_key)->first();

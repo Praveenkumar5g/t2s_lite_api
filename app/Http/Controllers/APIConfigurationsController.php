@@ -1783,7 +1783,10 @@ class APIConfigurationsController extends Controller
         }
         $staff_list = $staff_list->get()->toArray();
         foreach ($staff_list as $key => $value) {
-        	$check_access = UserGroupsMapping::where('user_table_id',$value['id'])->where('user_role',Config::get('app.Staff_role'))->where('user_status',1)->pluck('id')->first();
+        	$check_access = SchoolUsers::where('user_id',$value['user_id'])->where('user_role',Config::get('app.Staff_role'))->where('user_status',2)->pluck('id')->first(); //2- full deactivate
+
+        	if($check_access == '')
+        		$check_access = UserGroupsMapping::where('user_table_id',$value['id'])->where('user_role',Config::get('app.Staff_role'))->where('user_status',1)->pluck('id')->first();
 
     	 	$classessections = AcademicClassConfiguration::select('id','class_id','section_id','division_id','class_teacher')->where('class_teacher',$value['id'])->get()->first();
         	$staff_list[$key]['user_category'] = ($value['user_category'] ==Config::get('app.Teaching_staff'))?'Teaching_staff':'Non_teaching_staff';
@@ -3426,7 +3429,10 @@ class APIConfigurationsController extends Controller
         }
         $admin_list = $admin_list->get()->toArray();
         foreach ($admin_list as $key => $value) {
-        	$check_access = UserGroupsMapping::where('user_table_id',$value['id'])->where('user_role',Config::get('app.Admin_role'))->where('user_status',1)->pluck('id')->first();
+        	$check_access = SchoolUsers::where('user_id',$value['user_id'])->where('user_role',Config::get('app.Admin_role'))->where('user_status',2)->pluck('id')->first(); //2- full deactivate
+
+        	if($check_access == '')
+        		$check_access = UserGroupsMapping::where('user_table_id',$value['id'])->where('user_role',Config::get('app.Admin_role'))->where('user_status',1)->pluck('id')->first();
 
     	 	$admin_list[$key]['dob'] = $value['dob'];
             $admin_list[$key]['doj'] = $value['doj'];
@@ -3454,7 +3460,10 @@ class APIConfigurationsController extends Controller
         }
         $management_list = $management_list->get()->toArray();
         foreach ($management_list as $key => $value) {
-        	$check_access = UserGroupsMapping::where('user_table_id',$value['id'])->where('user_role',Config::get('app.Management_role'))->where('user_status',1)->pluck('id')->first();
+        	$check_access = SchoolUsers::where('user_id',$value['user_id'])->where('user_role',Config::get('app.Management_role'))->where('user_status',2)->pluck('id')->first(); //2- full deactivate
+
+        	if($check_access == '')
+        		$check_access = UserGroupsMapping::where('user_table_id',$value['id'])->where('user_role',Config::get('app.Management_role'))->where('user_status',1)->pluck('id')->first();
 
         	$designation = ($value['user_category']!='')? UserCategories::where('id',$value['user_category'])->pluck('category_name')->first():'';
         	$management_list[$key]['dob'] = $value['dob'];

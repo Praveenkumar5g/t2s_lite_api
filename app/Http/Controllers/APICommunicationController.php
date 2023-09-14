@@ -784,6 +784,7 @@ class APICommunicationController extends Controller
                             'distribution_type'=>$message_details->distribution_type,
                             'approval_status'=>($message_details->approval_status == null)?0:$message_details->approval_status,//0-waiting for approval,1-approval,2-denied
                             'read_count'=>(isset($readcount_data[$value['communication_type']]) && isset($readcount_data[$value['communication_type']][$value['communication_id']]))?$readcount_data[$value['communication_type']][$value['communication_id']]:0,
+                            'edited'=>($message_details['updated_time'] == null)?0:1,
 
                         ]);
                         if($message_details->message_category == 6 && $message_details->communication_type == 1)
@@ -1825,6 +1826,12 @@ class APICommunicationController extends Controller
 
         $userall_id = UserAll::where(['user_table_id'=>$user_table_id,'user_role'=>$user->user_role])->pluck('id')->first();
         $visible_to = $request->visible_to;
+
+        // check deactivation for user
+        $check_access = UserGroupsMapping::where('user_table_id',$user_table_id)->where('group_id',2)->where('user_role',$user->user_role)->where('user_status',1)->pluck('id')->first();
+
+        if($check_access == '')
+            return response()->json(['message'=>'Your account is deactivated. Please contact school management for futher details']);
 
         if($user->user_role == Config::get('app.Management_role') || $user->user_role == Config::get('app.Admin_role'))
         {

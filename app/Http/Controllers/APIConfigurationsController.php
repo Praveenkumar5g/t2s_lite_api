@@ -1773,7 +1773,7 @@ class APIConfigurationsController extends Controller
 		// Save last login in DB
         $user = auth()->user();
 
-        $staff_list = UserStaffs::select('id','first_name','mobile_number','user_category','user_status','dob','doj','employee_no','department','profile_image');
+        $staff_list = UserStaffs::select('id','first_name','mobile_number','user_category','user_status','dob','doj','employee_no','department','profile_image','user_id');
         if(isset($request->search) && $request->search!='')
         {
         	$category = (strpos('teaching staff',strtolower($request->search)))?Config::get('app.Teaching_staff'):((strpos('non teaching staff',strtolower($request->search)))?Config::get('app.Non-Teaching_staff'):'');
@@ -3422,7 +3422,7 @@ class APIConfigurationsController extends Controller
 		// Save last login in DB
         $user = auth()->user();
 
-        $admin_list = UserAdmin::select('id','first_name','mobile_number','user_status','dob','doj','employee_no','profile_image');
+        $admin_list = UserAdmin::select('id','first_name','mobile_number','user_status','dob','doj','employee_no','profile_image','user_id');
         if(isset($request->search) && $request->search!='')
         {
         	$admin_list = $admin_list->where('first_name', 'like', '%' . $request->search . '%')->orWhere('mobile_number', 'like', '%' . $request->search . '%')->orWhere('dob', 'like', '%' . $request->search . '%')->orWhere('doj', 'like', '%' . $request->search . '%')->orWhere('employee_no', 'like', '%' . $request->search . '%');
@@ -3450,7 +3450,7 @@ class APIConfigurationsController extends Controller
 		// Save last login in DB
         $user = auth()->user();
 
-        $management_list = UserManagements::select('id','first_name','mobile_number','user_category','user_status','dob','doj','employee_no','profile_image');
+        $management_list = UserManagements::select('id','first_name','mobile_number','user_category','user_status','dob','doj','employee_no','profile_image','user_id');
         if(isset($request->search) && $request->search!='')
         {
         	$category = (strpos('main head',strtolower($request->search)))?6:((strpos('chairman',strtolower($request->search)))?7:((strpos('principal',strtolower($request->search)))?8:((strpos('headmaster',strtolower($request->search)))?8:'')));

@@ -177,6 +177,7 @@ Route::group(['middleware' => 'auth.connect','prefix' => 'user'], function ($rou
     Route::get('/mainscreen_view_allevents',[APINewsEventsController::class,'mainscreen_view_allevents']);
     Route::post('/event_accept_decline',[APINewsEventsController::class,'event_accept_decline']);
     Route::post('/store_liked_news',[APINewsEventsController::class,'store_liked_news']);//store liked data in db
+    Route::post('/delete_attachments',[APINewsEventsController::class,'delete_attachments']);//delete attachments
     /*News and Events -- Ends*/
 
     /*Attendance -- starts*/

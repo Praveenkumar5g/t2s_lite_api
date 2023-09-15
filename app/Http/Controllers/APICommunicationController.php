@@ -302,7 +302,8 @@ class APICommunicationController extends Controller
 
                 if($player_id!='') //check player id is not empty
                 {
-                    $player_ids[$value['user_role']] =$player_id;
+                    // $player_ids[$value['user_role']] =$player_id;
+                    $player_ids[] =$player_id;
                     if($message->group_id ==1) //check managment group and sent notification msg
                     {
                         $school_name = SchoolProfile::where('id',$user->school_profile_id)->pluck('school_name')->first();

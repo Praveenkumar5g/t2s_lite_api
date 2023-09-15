@@ -68,7 +68,7 @@ class APINewsEventsController extends Controller
             return response()->json($validator->errors());
         }
         $newsevents_id = '';
-        $newsevents_id = $request->newsevents_id;
+        $newsevents_id = $newseventid_edit = $request->newsevents_id;
         $newsevents = ([
             'title'=>$request->title,
             'module_type'=>$request->module_type,//1-news,2-events
@@ -181,7 +181,7 @@ class APINewsEventsController extends Controller
             }
         }
         
-        if($newsevents_id == '') //message triggered only for create 
+        if($newseventid_edit == '') //message triggered only for create 
         {
             $group_ids = UserGroups::where('group_status',1);
             if(!empty($request->visible_to) && $request->visible_to !='all')

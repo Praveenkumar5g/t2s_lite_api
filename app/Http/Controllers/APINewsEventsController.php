@@ -180,15 +180,18 @@ class APINewsEventsController extends Controller
             }
         }
         
-        $group_ids = UserGroups::where('group_status',1);
-        if(!empty($request->visible_to) && $request->visible_to !='all')
-            $group_ids = $group_ids->whereIn('class_config',$request->visible_to);
-        
-        $group_ids = $group_ids->pluck('id')->toArray();
-        if(!empty($group_ids))
+        if($newsevents_id == '') //message triggered only for create 
         {
-            $user_list =UserGroupsMapping::whereIn('group_id',$group_ids)->where('user_status',Config::get('app.Group_Active'))->get()->toArray();
-            $this->insert_receipt_log($user_list,$newsevents_id,$user_table_id);
+            $group_ids = UserGroups::where('group_status',1);
+            if(!empty($request->visible_to) && $request->visible_to !='all')
+                $group_ids = $group_ids->whereIn('class_config',$request->visible_to);
+            
+            $group_ids = $group_ids->pluck('id')->toArray();
+            if(!empty($group_ids))
+            {
+                $user_list =UserGroupsMapping::whereIn('group_id',$group_ids)->where('user_status',Config::get('app.Group_Active'))->get()->toArray();
+                $this->insert_receipt_log($user_list,$newsevents_id,$user_table_id);
+            }
         }
 
         return response()->json(['message'=>'Stored Successfully!...']);

@@ -794,7 +794,7 @@ class APICommunicationController extends Controller
                             'distribution_type'=>$message_details->distribution_type,
                             'approval_status'=>($message_details->approval_status == null)?0:$message_details->approval_status,//0-waiting for approval,1-approval,2-denied
                             'read_count'=>(isset($readcount_data[$value['communication_type']]) && isset($readcount_data[$value['communication_type']][$value['communication_id']]))?$readcount_data[$value['communication_type']][$value['communication_id']]:0,
-                            'edited'=>($message_details['updated_time'] == null)?0:1,
+                            'edited'=>$message_details['edited'],
 
                         ]);
                         if($message_details->message_category == 6 && $message_details->communication_type == 1)

@@ -99,6 +99,7 @@ class APINewsEventsController extends Controller
         }
         else
         {
+            $newsevents['edited'] =1; //0-created,1-edited
             $newsevents['updated_by']=$userall_id;
             $newsevents['updated_time']=Carbon::now()->timezone('Asia/Kolkata');
             NewsEvents::where('id',$newsevents_id)->update($newsevents);//update news

@@ -1557,6 +1557,12 @@ class APIConfigurationsController extends Controller
         	$user_role = 'parent';
         }
 
+        // check deactivation for user
+        $check_access = UserGroupsMapping::where('user_table_id',$userid)->where('group_type',1)->where('user_role',$user_data->user_role)->where('user_status',1)->pluck('id')->first();
+
+        if($check_access == '')
+            return response()->json(['message'=>'Your account is deactivated. Please contact school management for futher details']);
+
 		$group_ids = UserGroupsMapping::select('group_id')->where('user_role',$user_data->user_role)->where('user_table_id',$userid)->groupBy('group_id')->get()->toArray();
 		
 		if(!empty($group_ids))
@@ -1587,6 +1593,12 @@ class APIConfigurationsController extends Controller
         }
         else if($user_data->user_role == Config::get('app.Parent_role'))
         	$userid = UserParents::where(['user_id'=>$user_data->user_id])->pluck('id')->first();
+
+        // check deactivation for user
+        $check_access = UserGroupsMapping::where('user_table_id',$userid)->where('group_type',1)->where('user_role',$user_data->user_role)->where('user_status',1)->pluck('id')->first();
+
+        if($check_access == '')
+            return response()->json(['message'=>'Your account is deactivated. Please contact school management for futher details']);
 
         $group_ids = UserGroupsMapping::select('group_id','group_access')->where('user_role',$user_data->user_role)->where('user_table_id',$userid)->groupBy('group_id')->get()->toArray();
 

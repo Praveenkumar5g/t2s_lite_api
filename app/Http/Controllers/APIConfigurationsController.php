@@ -3231,13 +3231,13 @@ class APIConfigurationsController extends Controller
         $total_users = $student = $parent = $teaching_staffs = $non_teaching_staffs = $management = $total_father = $total_mother = $total_guardian = $total_installed_guardian = $total_installed_father = $total_installed_mother = $inactive_user = $total_management = $total_admin = $total_teaching_staff = $total_nonteaching_staff = $total_installed_admin = $total_installed_management = $total_installed_teaching = $total_installed_nonteaching = $inactive_user = 0 ;
 
         if($user->user_role == Config::get('app.Admin_role'))//check role and get current user id
-            $userid = UserAdmin::where(['user_id'=>$user_data->user_id])->pluck('id')->first();
+            $userid = UserAdmin::where(['user_id'=>$user->user_id])->pluck('id')->first();
         else if($user->user_role == Config::get('app.Management_role'))
-        	$userid = UserManagements::where(['user_id'=>$user_data->user_id])->pluck('id')->first();
+        	$userid = UserManagements::where(['user_id'=>$user->user_id])->pluck('id')->first();
         else if($user->user_role == Config::get('app.Staff_role'))
-        	$userid = UserStaffs::select('id','user_category')->where(['user_id'=>$user_data->user_id])->pluck('id')->first();
+        	$userid = UserStaffs::select('id','user_category')->where(['user_id'=>$user->user_id])->pluck('id')->first();
         else if($user->user_role == Config::get('app.Parent_role'))
-        	$userid = UserParents::where(['user_id'=>$user_data->user_id])->pluck('id')->first();
+        	$userid = UserParents::where(['user_id'=>$user->user_id])->pluck('id')->first();
 
         // check deactivation for user
         $check_access = UserGroupsMapping::where('user_table_id',$userid)->where('group_id',2)->where('user_role',$user->user_role)->where('user_status',1)->pluck('id')->first();

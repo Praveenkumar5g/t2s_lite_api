@@ -118,17 +118,16 @@ class APINewsEventsController extends Controller
             // Insert attachment details in attachment table
             if($request->hasfile('images')) {
                 
+                if($newsevents_id!='')//get already existing images
+                {
+                    $images_list = NewsEvents::where('id',$newsevents_id)->pluck('images')->first();
+                    if($images_list!='')
+                    {
+                        $attachment_id = explode(',',$images_list);
+                    }
+                }
                 foreach($request->file('images') as $file) //loop to insert images
                 {   
-                    if($newsevents_id!='')//get already existing images
-                    {
-                        $images_list = NewsEvents::where('id',$newsevents_id)->pluck('images')->first();
-                        if($images_list!='')
-                        {
-                            $attachment_id = explode(',',$images_list);
-                        }
-                    }
-
                     $attachment = new NewsEventsAttachments;
                     $attachment->news_events_id = $newsevents_id;
                     $name = explode('.',$file->getClientOriginalName());

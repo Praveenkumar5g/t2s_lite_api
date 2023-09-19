@@ -1558,11 +1558,11 @@ class APIConfigurationsController extends Controller
         }
 
         // check deactivation for user
-        $check_access = UserGroupsMapping::where('user_table_id',$userid)->where('group_type',2)->where('user_role',$user_data->user_role)->where('user_status',1)->pluck('id')->first();
+        $check_access = UserGroupsMapping::where('user_table_id',$userid)->where('group_id',2)->where('user_role',$user_data->user_role)->where('user_status',1)->pluck('id')->first();
 
         if($check_access == '')
             return response()->json(['message'=>'Your account is deactivated. Please contact school management for futher details']);
-
+        
 		$group_ids = UserGroupsMapping::select('group_id')->where('user_role',$user_data->user_role)->where('user_table_id',$userid)->groupBy('group_id')->get()->toArray();
 		
 		if(!empty($group_ids))

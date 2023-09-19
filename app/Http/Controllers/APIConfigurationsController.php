@@ -1557,12 +1557,6 @@ class APIConfigurationsController extends Controller
         	$user_role = 'parent';
         }
 
-        // check deactivation for user
-        $check_access = UserGroupsMapping::where('user_table_id',$userid)->where('group_id',2)->where('user_role',$user_data->user_role)->where('user_status',1)->pluck('id')->first();
-
-        if($check_access == '')
-            return response()->json(['message'=>'Your account is deactivated. Please contact school management for futher details']);
-
 		$group_ids = UserGroupsMapping::select('group_id')->where('user_role',$user_data->user_role)->where('user_table_id',$userid)->groupBy('group_id')->get()->toArray();
 		
 		if(!empty($group_ids))
@@ -1593,12 +1587,6 @@ class APIConfigurationsController extends Controller
         }
         else if($user_data->user_role == Config::get('app.Parent_role'))
         	$userid = UserParents::where(['user_id'=>$user_data->user_id])->pluck('id')->first();
-
-        // check deactivation for user
-        $check_access = UserGroupsMapping::where('user_table_id',$userid)->where('group_id',2)->where('user_role',$user_data->user_role)->where('user_status',1)->pluck('id')->first();
-
-        if($check_access == '')
-            return response()->json(['message'=>'Your account is deactivated. Please contact school management for futher details']);
 
         $group_ids = UserGroupsMapping::select('group_id','group_access')->where('user_role',$user_data->user_role)->where('user_table_id',$userid)->groupBy('group_id')->get()->toArray();
 
@@ -3229,21 +3217,6 @@ class APIConfigurationsController extends Controller
     	// Get authorizated user details
         $user = auth()->user();
         $total_users = $student = $parent = $teaching_staffs = $non_teaching_staffs = $management = $total_father = $total_mother = $total_guardian = $total_installed_guardian = $total_installed_father = $total_installed_mother = $inactive_user = $total_management = $total_admin = $total_teaching_staff = $total_nonteaching_staff = $total_installed_admin = $total_installed_management = $total_installed_teaching = $total_installed_nonteaching = $inactive_user = 0 ;
-
-        if($user->user_role == Config::get('app.Admin_role'))//check role and get current user id
-            $userid = UserAdmin::where(['user_id'=>$user->user_id])->pluck('id')->first();
-        else if($user->user_role == Config::get('app.Management_role'))
-        	$userid = UserManagements::where(['user_id'=>$user->user_id])->pluck('id')->first();
-        else if($user->user_role == Config::get('app.Staff_role'))
-        	$userid = UserStaffs::select('id','user_category')->where(['user_id'=>$user->user_id])->pluck('id')->first();
-        else if($user->user_role == Config::get('app.Parent_role'))
-        	$userid = UserParents::where(['user_id'=>$user->user_id])->pluck('id')->first();
-
-        // check deactivation for user
-        $check_access = UserGroupsMapping::where('user_table_id',$userid)->where('group_id',2)->where('user_role',$user->user_role)->where('user_status',1)->pluck('id')->first();
-
-        if($check_access == '')
-            return response()->json(['message'=>'Your account is deactivated. Please contact school management for futher details']);
  
         // fetch all the users under role staff,parent and management
 		$userslist = SchoolUsers::select(DB::raw('count(*) as count'),'user_role')->whereIn('user_role',[2,3,5])->where('school_profile_id',$user->school_profile_id)->where('user_status',1)->groupBy('user_role')->get()->toArray();
@@ -3524,5 +3497,24 @@ class APIConfigurationsController extends Controller
         }
         else
         	return response()->json(['status'=>false,'message'=>'Admission number is required!...']);
+	}
+
+	public function CheckuserStatus(Request $request)
+	{
+		$user = auth()->user();
+		if($user->user_role == Config::get('app.Admin_role'))//check role and get current user id
+            $userid = UserAdmin::where(['user_id'=>$user->user_id])->pluck('id')->first();
+        else if($user->user_role == Config::get('app.Management_role'))
+        	$userid = UserManagements::where(['user_id'=>$user->user_id])->pluck('id')->first();
+        else if($user->user_role == Config::get('app.Staff_role'))
+        	$userid = UserStaffs::select('id','user_category')->where(['user_id'=>$user->user_id])->pluck('id')->first();
+        else if($user->user_role == Config::get('app.Parent_role'))
+        	$userid = UserParents::where(['user_id'=>$user->user_id])->pluck('id')->first();
+
+        // check deactivation for user
+        $check_access = UserGroupsMapping::where('user_table_id',$userid)->where('group_id',2)->where('user_role',$user->user_role)->where('user_status',1)->pluck('id')->first();
+
+        if($check_access == '')
+            return response()->json(['message'=>'Your account is deactivated. Please contact school management for futher details']);
 	}
 }

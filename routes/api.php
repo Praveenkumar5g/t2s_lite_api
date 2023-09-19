@@ -137,6 +137,7 @@ Route::group(['middleware' => 'auth.connect','prefix' => 'user'], function ($rou
     Route::get('/classes_group',[APIConfigurationsController::class,'classes_group']);
     Route::post('/staff_as_parent',[APIConfigurationsController::class,'staff_as_parent']);//Staff as parent
     Route::get('/view_staff_as_parent',[APIConfigurationsController::class,'view_staff_as_parent']);//View Staff as parent
+    Route::get('/CheckuserStatus',[APIConfigurationsController::class,'CheckuserStatus']);//check user status
     
     Route::post('/approval_process', [APICommunicationController::class, 'approval_process']); 
     Route::post('/store_message', [APICommunicationController::class, 'store_message']); 

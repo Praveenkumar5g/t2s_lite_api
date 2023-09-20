@@ -248,6 +248,13 @@ class APIHomeworkController extends Controller
         $userall_id = UserAll::where(['user_table_id'=>$user_table_id,'user_role'=>$user->user_role])->pluck('id')->first();
 
         $group_id = UserGroups::where('class_config',$request->class_config)->pluck('id')->first();
+
+        // check deactivation for user
+        $check_access = UserGroupsMapping::where('user_table_id',$user_table_id)->where('group_id',$group_id)->where('user_role',$user->user_role)->where('user_status',1)->pluck('id')->first();
+
+        if($check_access == '')
+            return response()->json(['message'=>'Your account is deactivated. Please contact school management for futher details']);
+
         // Insert communication message in notification log tables(School DB)
         if($request->notification_id!='')
         {

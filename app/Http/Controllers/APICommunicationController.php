@@ -129,6 +129,11 @@ class APICommunicationController extends Controller
             $visibleto_classes  = $request->visible_to; //section wise
             if($request->distribution_type == 8) // class wise
                 $visibleto_classes = AcademicClassConfiguration::whereIn('class_id',$request->visible_to)->pluck('id')->toArray();
+            if($request->distribution_type == 9)
+            {
+                $userrole = ($user->user_role == Config::get('app.Management_role'))?Config::get('app.Admin_role'):Config::get('app.Management_role');
+                $visibleto_classes = UserAll::whereIn('user_table_id',$request->visible_to)->where('user_role',$userrole)->pluck('id')->toArray();
+            }
             $communications->visible_to=','.implode(',',$visibleto_classes).',';
         }
         $communications->distribution_type=$request->distribution_type; //1-Class,2-Group,3-Everyone,4-Staff,5-Parent
@@ -284,7 +289,7 @@ class APICommunicationController extends Controller
                         $user_ids = UserGroupsMapping::select('user_table_id','user_role')->whereIn('user_table_id',$request->visible_to)->where(['user_role'=>$role,'user_status'=>Config::get('app.Group_Active')])->where('group_id',$group_id)->get()->toArray();                       
                     }
                     else //send to management 
-                        $user_ids =UserGroupsMapping::select('user_table_id','user_role')->where('group_id',$group_id)->where('user_status',Config::get('app.Group_Active'))->whereIn('user_role',([Config::get('app.Management_role'),Config::get('app.Admin_role')]))->get()->toArray();
+                        $user_ids =UserGroupsMapping::select('user_table_id','user_role')->where('group_id',$group_id)->where('user_status',Config::get('app.Group_Active'))->whereIn('user_role',([Config::get('app.Management_role')]))->get()->toArray();
                     
                     // Send one copy to mesage triggered user
                     $user_list = UserGroupsMapping::select('user_table_id','user_role')->where(['user_table_id'=>$user_table_id,'user_role'=>$user->user_role,'user_status'=>Config::get('app.Group_Active')])->where('group_id',$group_id)->get()->toArray();
@@ -571,7 +576,8 @@ class APICommunicationController extends Controller
             if(($user->user_role == Config::get('app.Admin_role') || $user->user_role == Config::get('app.Management_role')) && $groupname == 'admin-management' && $groupinfo->group_type == 1)
             {
                 $visible_to = $userdetails->id;
-                $management_messages = Communications::where('group_id',$request->group_id)->Where('visible_to','all')->orWhere('visible_to', 'like', '%' .$visible_to. ',%')->where('communication_type',1)->where('distribution_type',9);
+                $usertableid = implode(',',UserAll::where('id',explode(',',$visible_to))->pluck('user_table_id')->toArray());
+                $management_messages = Communications::where('group_id',$request->group_id)->Where('visible_to','all')->orWhere('visible_to', 'like', '%' .$usertableid. ',%')->where('communication_type',1)->where('distribution_type',9);
                 if($user->user_role == Config::get('app.Parent_role'))
                         $management_messages = $management_messages->whereNull('message_status')->orWhere('message_status',2);
 

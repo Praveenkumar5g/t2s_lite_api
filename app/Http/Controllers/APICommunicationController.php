@@ -577,7 +577,7 @@ class APICommunicationController extends Controller
             {
                 $visible_to = $userdetails->id;
                 $usertableid = implode(',',UserAll::where('id',explode(',',$visible_to))->pluck('user_table_id')->toArray());
-                $management_messages = Communications::where('group_id',$request->group_id)->Where('visible_to','all')->orWhere('visible_to', 'like', '%' .$usertableid. ',%')->where('communication_type',1)->where('distribution_type',9);
+                $management_messages = Communications::where('group_id',$request->group_id)->where('communication_type',1)->where('distribution_type',9);
                 if($user->user_role == Config::get('app.Parent_role'))
                         $management_messages = $management_messages->whereNull('message_status')->orWhere('message_status',2);
 

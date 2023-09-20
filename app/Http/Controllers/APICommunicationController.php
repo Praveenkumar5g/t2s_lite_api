@@ -111,6 +111,12 @@ class APICommunicationController extends Controller
             $user_table_id = UserParents::where(['user_id'=>$user->user_id])->pluck('id')->first();//fetch id from user all table to store notification triggered user
         $userall_id = UserAll::where(['user_table_id'=>$user_table_id,'user_role'=>$user->user_role])->pluck('id')->first();
 
+        // check deactivation for user
+        $check_access = UserGroupsMapping::where('user_table_id',$user_table_id)->where('group_id',$request->group_id)->where('user_role',$user->user_role)->where('user_status',1)->pluck('id')->first();
+
+        if($check_access == '')
+            return response()->json(['message'=>'Your account is deactivated. Please contact school management for futher details']);
+
         // Insert communication message in notification log tables(School DB)
         $communications = new Communications;
         $communications->chat_message=$request->chat_message;
@@ -123,6 +129,11 @@ class APICommunicationController extends Controller
             $visibleto_classes  = $request->visible_to; //section wise
             if($request->distribution_type == 8) // class wise
                 $visibleto_classes = AcademicClassConfiguration::whereIn('class_id',$request->visible_to)->pluck('id')->toArray();
+            if($request->distribution_type == 9)
+            {
+                $userrole = ($user->user_role == Config::get('app.Management_role'))?Config::get('app.Admin_role'):Config::get('app.Management_role');
+                $visibleto_classes = UserAll::whereIn('user_table_id',$request->visible_to)->where('user_role',$userrole)->pluck('id')->toArray();
+            }
             $communications->visible_to=','.implode(',',$visibleto_classes).',';
         }
         $communications->distribution_type=$request->distribution_type; //1-Class,2-Group,3-Everyone,4-Staff,5-Parent
@@ -213,7 +224,7 @@ class APICommunicationController extends Controller
                     $user_ids = $user_ids->get()->toArray();
                     $user_list = array_merge($user_list,$user_ids);
                 }
-                else if($value == 4 || $value == 5)
+                else if($value == 4 || $value == 5) // 5-Parent(Mother and Father) //4-staff(Teaching and non-teaching)
                 {    
                     $group_id = $request->group_id;
                     if($user->user_role != 2 && ($user_role != 5 || $user_role != 4 ) )
@@ -265,6 +276,25 @@ class APICommunicationController extends Controller
                         $user_list = array_merge($user_list,$user_ids);
                     }
 
+                }
+                else if($value == 9) //from admin to management
+                {
+                    $group_id = $request->group_id;
+                    
+                    if(isset($request->visible_to) && !empty($request->visible_to)) 
+                    {
+                        $role[] = ($user->user_role == Config::get('app.Management_role'))?Config::get('app.Admin_role'):Config::get('app.Management_role');
+
+                        // send to individual users
+                        $user_ids = UserGroupsMapping::select('user_table_id','user_role')->whereIn('user_table_id',$request->visible_to)->where(['user_role'=>$role,'user_status'=>Config::get('app.Group_Active')])->where('group_id',$group_id)->get()->toArray();                       
+                    }
+                    else //send to management 
+                        $user_ids =UserGroupsMapping::select('user_table_id','user_role')->where('group_id',$group_id)->where('user_status',Config::get('app.Group_Active'))->whereIn('user_role',([Config::get('app.Management_role')]))->get()->toArray();
+                    
+                    // Send one copy to mesage triggered user
+                    $user_list = UserGroupsMapping::select('user_table_id','user_role')->where(['user_table_id'=>$user_table_id,'user_role'=>$user->user_role,'user_status'=>Config::get('app.Group_Active')])->where('group_id',$group_id)->get()->toArray();
+                    
+                    $user_list = array_merge($user_list,$user_ids);
                 }
             }
         }
@@ -499,12 +529,13 @@ class APICommunicationController extends Controller
         $unreadmessages = 0;
         if(!empty($userdetails) && !empty($group_id))
         {
-            $class_messages = $student_messages = [];
+            $class_messages = $student_messages = $management_messages = $newsevents_id_list= [];
             $user_details = ([
                 'name'=>$userdetails->first_name,
                 'last_seen'=>$user->last_login
             ]);
-            $visible_to = UserGroups::where('id',$request->group_id)->pluck('class_config')->first();
+            $groupinfo = UserGroups::where('id',$request->group_id)->first();
+            $visible_to = $groupinfo->class_config;
             // only chat messages list
             $chat_id_list = Communications::whereIn('group_id',$group_id)->whereIn('distribution_type',([1,2,3,4,5]));
             
@@ -539,12 +570,24 @@ class APICommunicationController extends Controller
 
             }
             else if($request->group_id == 2)
-                $class_messages = Communications::where('group_id',2)->where(['distribution_type'=>6,'communication_type'=>1])->orwhere(['distribution_type'=>8,'communication_type'=>1])->pluck('id')->toArray();
-            
+                $class_messages = Communications::where(['distribution_type'=>6,'communication_type'=>1])->orwhere(['distribution_type'=>8,'communication_type'=>1])->where('group_id',2)->pluck('id')->toArray();
+
+            $groupname = strtolower(str_replace(' ', '', $groupinfo->group_name));
+            if(($user->user_role == Config::get('app.Admin_role') || $user->user_role == Config::get('app.Management_role')) && $groupname == 'admin-management' && $groupinfo->group_type == 1)
+            {
+                $visible_to = $userdetails->id;
+                $usertableid = implode(',',UserAll::where('id',explode(',',$visible_to))->pluck('user_table_id')->toArray());
+                $management_messages = Communications::where('group_id',$request->group_id)->where('communication_type',1)->where('distribution_type',9);
+                if($user->user_role == Config::get('app.Parent_role'))
+                        $management_messages = $management_messages->whereNull('message_status')->orWhere('message_status',2);
+
+                $management_messages = $management_messages->pluck('id')->toArray();
+            }
+
             $chat_id_list =$chat_id_list->Where(['visible_to'=>'all','communication_type'=>1])->pluck('id')->toArray();
 
             $remove_duplciate_bd_alert = [];
-            if($request->group_id> 5)
+            if($request->group_id> 5 && $groupinfo->group_type == 2)
                 $remove_duplciate_bd_alert = Communications::where('group_id',2)->where('communication_type',4)->pluck('id')->toArray();
             
             // remaining chat messages list
@@ -555,18 +598,21 @@ class APICommunicationController extends Controller
 
             $remaining_id_list =$remaining_id_list->pluck('id')->toArray();
 
-            $communication_id_list = array_unique(array_merge($chat_id_list,$remaining_id_list,$class_messages,$student_messages));
+            $communication_id_list = array_unique(array_merge($chat_id_list,$remaining_id_list,$class_messages,$student_messages,$management_messages));
 
             $get_class_config= UserGroups::where('id',$request->group_id)->pluck('class_config')->first();
 
-            $newsevents_id_list = NewsEvents::where(function($query) use ($get_class_config){
-                $query->where('visible_to','like','%,'.$get_class_config.',%')
-                    ->orWhere('visible_to','all');
-            });
-            if($user->user_role == Config::get('app.Parent_role'))
-                $newsevents_id_list =$newsevents_id_list->where('status',1);
+            if($request->group_id == 2 || $groupinfo->group_type == 2)
+            {
+                $newsevents_id_list = NewsEvents::where(function($query) use ($get_class_config){
+                    $query->where('visible_to','like','%,'.$get_class_config.',%')
+                        ->orWhere('visible_to','all');
+                });
+                if($user->user_role == Config::get('app.Parent_role'))
+                    $newsevents_id_list =$newsevents_id_list->where('status',1);
 
-            $newsevents_id_list =$newsevents_id_list->pluck('id')->toArray();
+                $newsevents_id_list =$newsevents_id_list->pluck('id')->toArray();
+            }
 
             // $notification_ids = CommunicationRecipients::where(['user_table_id'=>$userdetails->id,'user_role'=>$user->user_role])->whereIn('communication_id',$communication_id_list)->orderBy('actioned_time')->get()->toArray(); //Fetch applicable notification ids from table for logged in user.
 
@@ -580,7 +626,7 @@ class APICommunicationController extends Controller
                     $query->where(['user_table_id'=>$userdetails->id,'user_role'=>$user->user_role,'communication_type'=>4])->whereIn('communication_id',$communication_id_list);
                 })->orderBy('actioned_time')->get()->toArray(); //Fetch applicable notification ids from table for logged in user.
 
-            // echo '<pre>';print_r($notification_ids);exit;
+            // echo '<pre>';print_r($class_messages);;exit;
             $read_count = CommunicationRecipients::select(DB::raw('count(*) as count'),'communication_id','communication_type')->where(['message_status'=>Config::get('app.Read')])->groupBy('communication_id','communication_type')->get()->toArray(); //get read count based on notification id.
             // $readcount_data = array_column($read_count,'count','communication_id');
             foreach($read_count as $read_key => $read_value){
@@ -601,10 +647,17 @@ class APICommunicationController extends Controller
                     if($value['message_status'] == 1)
                         $unreadmessages++;
                     $sender_details =[];
+                    $user = $designation ='';
                     $designation=$user=$message_category=$message=$caption=$important='';
                     if(!empty($fetch_sender_id))
                         $sender_details = $fetch_sender_id->userDetails();
-                    $user = $designation ='';
+                    else if($message_details && $message_details->actioned_by!='' && $message_details->message_category == 11) //for admin to management
+                    {
+                        $fetch_sender_id = UserAll::where('id',$message_details->actioned_by)->first();
+                        if(!empty($fetch_sender_id))
+                            $sender_details = $fetch_sender_id->userDetails();
+                    }
+
                     if($value['communication_type'] == 1 && $message_details->communication_type == 2)
                     {
                         $user = '';
@@ -676,7 +729,26 @@ class APICommunicationController extends Controller
                                 $visibility = 'Visible to '.implode(',',$student_parent_names);     
                             else
                                 $visibility = 'Visible to Everyone';                
-                        }                
+                        } 
+                        else if($message_details->distribution_type==9) //admin to managment
+                        {
+                            $managements = explode(',',$message_details->visible_to);
+                            $management_names = [];
+                            foreach($managements as $management_key => $management_value)
+                            {
+                                if($management_value!='')
+                                {
+                                    $management_details = UserManagements::where('id',$management_value)->get()->first();
+                                    if(!empty($management_details))
+                                        $management_names[] = $management_details->first_name;
+                                }
+                            }
+
+                            if(!empty($management_names))
+                                $visibility = 'Visible to '.implode(',',$management_names);     
+                            else
+                                $visibility = 'Visible to Everyone';                
+                        }               
                   
 
                         $message_category='';                 
@@ -700,6 +772,8 @@ class APICommunicationController extends Controller
                             $message_category = 'Circular';
                         else if($message_details->message_category == 10)
                             $message_category = 'StudyMaterial';
+                        else if($message_details->message_category == 11)
+                            $message_category = 'Attendance'; 
 
                         if($message_details->communication_type == 2)
                             $message_category = 'Homework';
@@ -727,6 +801,7 @@ class APICommunicationController extends Controller
                             'distribution_type'=>$message_details->distribution_type,
                             'approval_status'=>($message_details->approval_status == null)?0:$message_details->approval_status,//0-waiting for approval,1-approval,2-denied
                             'read_count'=>(isset($readcount_data[$value['communication_type']]) && isset($readcount_data[$value['communication_type']][$value['communication_id']]))?$readcount_data[$value['communication_type']][$value['communication_id']]:0,
+                            'edited'=>$message_details['edited'],
 
                         ]);
                         if($message_details->message_category == 6 && $message_details->communication_type == 1)
@@ -1768,6 +1843,12 @@ class APICommunicationController extends Controller
 
         $userall_id = UserAll::where(['user_table_id'=>$user_table_id,'user_role'=>$user->user_role])->pluck('id')->first();
         $visible_to = $request->visible_to;
+
+        // check deactivation for user
+        $check_access = UserGroupsMapping::where('user_table_id',$user_table_id)->where('group_id',2)->where('user_role',$user->user_role)->where('user_status',1)->pluck('id')->first();
+
+        if($check_access == '')
+            return response()->json(['message'=>'Your account is deactivated. Please contact school management for futher details']);
 
         if($user->user_role == Config::get('app.Management_role') || $user->user_role == Config::get('app.Admin_role'))
         {

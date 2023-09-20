@@ -6,6 +6,7 @@ use App\Http\Controllers\APIConfigurationsController;
 use App\Http\Controllers\APICommunicationController;
 use App\Http\Controllers\APIRegistrationController;
 use App\Http\Controllers\APINewsEventsController;
+use App\Http\Controllers\APIAttendanceController;
 use App\Http\Controllers\APIHomeworkController;
 use App\Http\Controllers\APILoginController;
 use App\Http\Controllers\WelcomeController;
@@ -136,6 +137,7 @@ Route::group(['middleware' => 'auth.connect','prefix' => 'user'], function ($rou
     Route::get('/classes_group',[APIConfigurationsController::class,'classes_group']);
     Route::post('/staff_as_parent',[APIConfigurationsController::class,'staff_as_parent']);//Staff as parent
     Route::get('/view_staff_as_parent',[APIConfigurationsController::class,'view_staff_as_parent']);//View Staff as parent
+    Route::get('/CheckuserStatus',[APIConfigurationsController::class,'CheckuserStatus']);//check user status
     
     Route::post('/approval_process', [APICommunicationController::class, 'approval_process']); 
     Route::post('/store_message', [APICommunicationController::class, 'store_message']); 
@@ -178,6 +180,14 @@ Route::group(['middleware' => 'auth.connect','prefix' => 'user'], function ($rou
     Route::post('/store_liked_news',[APINewsEventsController::class,'store_liked_news']);//store liked data in db
     Route::post('/delete_attachments',[APINewsEventsController::class,'delete_attachments']);//delete attachments
     /*News and Events -- Ends*/
+
+    /*Attendance -- starts*/
+    Route::get('/attendance_maindashboard',[APIAttendanceController::class,'attendance_maindashboard']);//get overall attendance details for dashboard
+    Route::get('/attendance_class_section_listing',[APIAttendanceController::class,'attendance_class_section_listing']);//class and section wise listing with attendance details.
+    Route::post('/get_student_list',[APIAttendanceController::class,'get_student_list']);//get all student details from selected class,section
+    Route::post('/store_attendance',[APIAttendanceController::class,'store_attendance']); //store attendance entry details in db.
+    Route::post('/get_attendance',[APIAttendanceController::class,'get_attendance']);//get attendance entry details
+    /*Attendance -- ends*/
 
     /*Payfees -- starts*/
     Route::get('/feesStructure',[PayfeesController::class,'feesStructure']);

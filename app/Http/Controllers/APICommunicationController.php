@@ -290,7 +290,7 @@ class APICommunicationController extends Controller
                     }
                     else //send to management 
                     {
-                        $role = ($user->user_role == Config::get('app.Management_role'))?([Config::get('app.Admin_role'),Config::get('app.Management')]):([Config::get('app.Management_role')]);
+                        $role = ($user->user_role == Config::get('app.Management_role'))?([Config::get('app.Admin_role'),Config::get('app.Management_role')]):([Config::get('app.Management_role')]);
                         $user_ids =UserGroupsMapping::select('user_table_id','user_role')->where('group_id',$group_id)->where('user_status',Config::get('app.Group_Active'))->whereIn('user_role',$role)->get()->toArray();
                     }
                     

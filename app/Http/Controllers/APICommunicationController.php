@@ -289,7 +289,10 @@ class APICommunicationController extends Controller
                         $user_ids = UserGroupsMapping::select('user_table_id','user_role')->whereIn('user_table_id',$request->visible_to)->where(['user_role'=>$role,'user_status'=>Config::get('app.Group_Active')])->where('group_id',$group_id)->get()->toArray();                       
                     }
                     else //send to management 
-                        $user_ids =UserGroupsMapping::select('user_table_id','user_role')->where('group_id',$group_id)->where('user_status',Config::get('app.Group_Active'))->whereIn('user_role',([Config::get('app.Management_role')]))->get()->toArray();
+                    {
+                        $role = ($user->user_role == Config::get('app.Management_role'))?([Config::get('app.Admin_role'),Config::get('app.Management_role')]):([Config::get('app.Management_role')]);
+                        $user_ids =UserGroupsMapping::select('user_table_id','user_role')->where('group_id',$group_id)->where('user_status',Config::get('app.Group_Active'))->whereIn('user_role',$role)->get()->toArray();
+                    }
                     
                     // Send one copy to mesage triggered user
                     $user_list = UserGroupsMapping::select('user_table_id','user_role')->where(['user_table_id'=>$user_table_id,'user_role'=>$user->user_role,'user_status'=>Config::get('app.Group_Active')])->where('group_id',$group_id)->get()->toArray();

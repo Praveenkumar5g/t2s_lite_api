@@ -1881,19 +1881,19 @@ class APIConfigurationsController extends Controller
             $student_details = UserStudents::whereIn('id',$student_id)->get()->toArray();
             foreach($student_details as $stu_key => $stu_value)
             {
-            	$member_parent_list[$index] = $value;
+            	$member_parent_list['data'][$index] = $value;
 	        	$user_category = (strtolower($value['user_category']) == 1)?'F/O':((strtolower($value['user_category']) == 2)?'M/O':'G/O');
-	        	$member_parent_list[$index]['student_name'] = ($user_category.' '.((isset($stu_value['first_name']))?$stu_value['first_name']:''));
-	        	$member_parent_list[$index]['student_id'] =(isset($stu_value['id']))?$stu_value['id']:'';
+	        	$member_parent_list['data'][$index]['student_name'] = ($user_category.' '.((isset($stu_value['first_name']))?$stu_value['first_name']:''));
+	        	$member_parent_list['data'][$index]['student_id'] =(isset($stu_value['id']))?$stu_value['id']:'';
 	        	// $parent_details[$index]['mobile_number'] = $value['mobile_number'];
-	        	$member_parent_list[$index]['dob'] = (isset($stu_value['dob']))?$stu_value['dob']:'';
-	        	$member_parent_list[$index]['admission_number'] = (isset($stu_value['admission_number']))?$stu_value['admission_number']:'';
+	        	$member_parent_list['data'][$index]['dob'] = (isset($stu_value['dob']))?$stu_value['dob']:'';
+	        	$member_parent_list['data'][$index]['admission_number'] = (isset($stu_value['admission_number']))?$stu_value['admission_number']:'';
 	        	$classessections =[];
 	        	if(isset($stu_value['class_config']))
 	        		$classessections = AcademicClassConfiguration::select('id','class_id','section_id','division_id','class_teacher')->where('id',$stu_value['class_config'])->get()->first();
-	        	$member_parent_list[$index]['class'] = (!empty($classessections))?$classessections->classsectionName():'';
-	        	$member_parent_list[$index]['class_teacher'] = (!empty($classessections))?UserStaffs::where('id',$classessections->class_teacher)->pluck('first_name')->first():'';
-	        	$member_parent_list[$index]['student_profile_image'] = (isset($stu_value['profile_image']))?$stu_value['profile_image']:'';
+	        	$member_parent_list['data'][$index]['class'] = (!empty($classessections))?$classessections->classsectionName():'';
+	        	$member_parent_list['data'][$index]['class_teacher'] = (!empty($classessections))?UserStaffs::where('id',$classessections->class_teacher)->pluck('first_name')->first():'';
+	        	$member_parent_list['data'][$index]['student_profile_image'] = (isset($stu_value['profile_image']))?$stu_value['profile_image']:'';
 	        	$index++;
             }
         }
@@ -3469,18 +3469,31 @@ class APIConfigurationsController extends Controller
         		$classessections = AcademicClassConfiguration::select('id','class_id','section_id','division_id','class_teacher')->where('id',$value['class_config'])->get()->first();
         	
         	$member_student_list['data'][]=([
+        		'id'=>$value['id'],
+        		'user_id'=>$value['user_id'],
+	        	'first_name' => $value['first_name'],
+	        	'last_name' => $value['last_name'],
+        		'roll_number'=>$value['roll_number'],
+        		'gender'=>$value['gender'],
+        		'class_config'=>$value['class_config'],
+        		'created_by'=>$value['created_by'],
+        		'updated_by'=>$value['updated_by'],
+        		'created_time'=>$value['created_time'],
+        		'updated_time'=>$value['updated_time'],
+        		'user_status'=>$value['user_status'],
 	        	'father_name' => '',
 	        	'mother_name' => '',
 	        	'guardian_name'=>'',
 	        	'father_mobile' => 0,
 		        'mother_mobile'=>0,
 		        'guardian_mobile' => 0,
-	        	'student_name' => $value['first_name'],
+	        	'student_name' => $value['student_name'],
         		// $parent_list[$key]['mobile_number'] = $value['mobile_number'];
 	        	'dob' => (isset($value['dob']))?$value['dob']:'',
 	        	'admission_number' => (isset($value['admission_number']))?$value['admission_number']:'',
         		'class' => (!empty($classessections))?$classessections->classsectionName():'',
         		'class_teacher' => (!empty($classessections))?UserStaffs::where('id',$classessections->class_teacher)->pluck('first_name')->first():'',
+        		'profile_image' => $value['profile_image'],
         		'student_profile_image' => (isset($value['profile_image']))?public_path(env('SAMPLE_CONFIG_URL').'students/'.$value['profile_image']):'',
         	]);
         	$parent_id = UserStudentsMapping::where('student',$value['id'])->pluck('parent')->toArray();

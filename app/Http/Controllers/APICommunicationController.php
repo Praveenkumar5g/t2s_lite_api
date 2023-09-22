@@ -9,6 +9,8 @@
 namespace App\Http\Controllers;
  
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Collection;
+use Illuminate\Pagination\LengthAwarePaginator;
 use App\Models\AcademicClassConfiguration;
 use App\Models\CommunicationDistribution;
 use App\Models\CommunicationAttachments;

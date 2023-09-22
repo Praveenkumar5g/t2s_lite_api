@@ -3468,7 +3468,7 @@ class APIConfigurationsController extends Controller
         	if(isset($value['class_config']))
         		$classessections = AcademicClassConfiguration::select('id','class_id','section_id','division_id','class_teacher')->where('id',$value['class_config'])->get()->first();
         	
-        	$member_student_list['data'][]=([
+        	$member_student_list['data'][$index]=([
         		'id'=>$value['id'],
         		'user_id'=>$value['user_id'],
 	        	'first_name' => $value['first_name'],
@@ -3505,20 +3505,20 @@ class APIConfigurationsController extends Controller
             	{
 		        	if($parent_details->user_category == 1)
 		        	{
-		        		$member_student_list['data'][$key]['father_name'] = $parent_details->first_name;
-		        		$member_student_list['data'][$key]['father_mobile'] = $parent_details->mobile_number;
+		        		$member_student_list['data'][$index]['father_name'] = $parent_details->first_name;
+		        		$member_student_list['data'][$index]['father_mobile'] = $parent_details->mobile_number;
 
 		        	}
 		        	else if($parent_details->user_category == 2)
 		        	{
-		        		$member_student_list['data'][$key]['mother_name'] = $parent_details->first_name;
-		        		$member_student_list['data'][$key]['mother_mobile'] = $parent_details->mobile_number;
+		        		$member_student_list['data'][$index]['mother_name'] = $parent_details->first_name;
+		        		$member_student_list['data'][$index]['mother_mobile'] = $parent_details->mobile_number;
 
 		        	}
 		        	else if($parent_details->user_category == 9)
 		        	{
-		        		$member_student_list['data'][$key]['guardian_name'] = $parent_details->first_name;
-		        		$member_student_list['data'][$key]['guardian_mobile'] = $parent_details->mobile_number;
+		        		$member_student_list['data'][$index]['guardian_name'] = $parent_details->first_name;
+		        		$member_student_list['data'][$index]['guardian_mobile'] = $parent_details->mobile_number;
 
 		        	}
 		        }

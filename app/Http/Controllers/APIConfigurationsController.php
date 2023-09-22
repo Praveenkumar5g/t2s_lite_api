@@ -3487,7 +3487,7 @@ class APIConfigurationsController extends Controller
 	        	'father_mobile' => 0,
 		        'mother_mobile'=>0,
 		        'guardian_mobile' => 0,
-	        	'student_name' => $value['student_name'],
+	        	'student_name' => $value['first_name'],
         		// $parent_list[$key]['mobile_number'] = $value['mobile_number'];
 	        	'dob' => (isset($value['dob']))?$value['dob']:'',
 	        	'admission_number' => (isset($value['admission_number']))?$value['admission_number']:'',

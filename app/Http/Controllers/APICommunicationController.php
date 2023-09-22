@@ -1148,6 +1148,33 @@ class APICommunicationController extends Controller
         return (['user_details'=>$user_details,'user_category'=>$user_category]);
     }
 
+    public function array_user_details($userdetails)
+    {
+        if($userdetails['user_role'] == Config::get('app.Management_role'))
+        {
+            $management_categories = array_column(UserCategories::select('id','category_name')->where('user_role',Config::get('app.Management_role'))->get()->toArray(),'category_name','id');
+            $user_details = UserManagements::where(['id'=>$userdetails['user_table_id']])->get()->first();
+            $user_category = $management_categories[$user_details['user_category']];
+        }
+        else if($userdetails['user_role'] == Config::get('app.Admin_role'))//check role and get current user id
+        {
+            $user_details = UserAdmin::where(['id'=>$userdetails['user_table_id']])->get()->first();
+            $user_category = 'Admin';
+        }
+        else if($userdetails['user_role'] == Config::get('app.Staff_role'))
+        {
+            $staff_categories = array_column(UserCategories::select('id','category_name')->where('user_role',Config::get('app.Staff_role'))->get()->toArray(),'category_name','id');
+            $user_details = UserStaffs::where(['id'=>$userdetails['user_table_id']])->get()->first();
+            $user_category = isset($user_details['user_category'])?$staff_categories[$user_details['user_category']]:'';
+        }
+        else if($userdetails['user_role'] == Config::get('app.Parent_role'))
+        {
+            $user_category = 'Parent';
+            $user_details = UserParents::where(['id'=>$userdetails['user_table_id']])->get()->first();//fetch id from user all table to store notification triggered user
+        }
+        return (['user_details'=>$user_details,'user_category'=>$user_category]);
+    }
+
     public function message_delivery_details(Request $request)
     {
         // Add rules to the Store Message form
@@ -1530,16 +1557,39 @@ class APICommunicationController extends Controller
         }
         else
             $group_users =$group_users->get();
-        if(!empty($group_users))
+
+        // $currentPage = LengthAwarePaginator::resolveCurrentPage(); // Get current page form url e.x. &page=1
+        $currentPage = $request->page;
+        $itemCollection = new Collection($group_users); // Create a new Laravel collection from the array data
+        $perPage = 5;
+        // Slice the collection to get the items to display in current page
+        $sortedCollection = $itemCollection->sortByDesc('admission_no');
+        $currentPageItems = $sortedCollection->values()->slice(($currentPage * $perPage) - $perPage, $perPage)->all();
+        // Create our paginator and pass it to the view
+        $paginatedItems= new LengthAwarePaginator($currentPageItems , count($itemCollection), $perPage);
+
+        $paginatedItems->setPath($request->url()); // set url path for generted links
+        $paginatedItems->appends($request->page);
+
+        if(!empty($group_users) && $currentPage > 0)
         {
-            foreach ($group_users as $key => $value) {
+            $tempdata = $paginatedItems->toArray();
+            $members_list['total'] = $tempdata['total'];
+            $members_list['per_page'] = $tempdata['per_page'];
+            $members_list['current_page'] = $tempdata['current_page'];
+            $members_list['last_page'] = $tempdata['last_page'];
+            $members_list['next_page_url'] = $tempdata['next_page_url'];
+            $members_list['prev_page_url'] = $tempdata['prev_page_url'];
+            $members_list['from'] = $tempdata['from'];
+            $members_list['to'] = $tempdata['to'];
+            foreach ($tempdata['data'] as $key => $value) {
                 $category = $app_status = $admission_no='';
 
-                $list = $this->user_details($value); //fetch individual user details
+                $list = $this->array_user_details($value); //fetch individual user details
 
                 if(!empty($list))
                 {
-                    if($value->user_role == Config::get('app.Parent_role')) //for parent fetch student details
+                    if($value['user_role'] == Config::get('app.Parent_role')) //for parent fetch student details
                     {
                         $user_category = UserCategories::where(['id'=>$list['user_details']->user_category])->pluck('category_name')->first(); //fetch parent category and student name
                         $user_category = (strtolower($user_category) == 'father')?'F/O':((strtolower($user_category) == 'mother')?'M/O':'G/O');
@@ -1561,22 +1611,22 @@ class APICommunicationController extends Controller
                     $app_status = isset($player_details[$userall_id])?'Installed':'Not Installed';
                     $last_login =  SchoolUsers::where('user_id',$list['user_details']->user_id)->pluck('last_login')->first();
                     // user details
-                    $members_list[]=([
+                    $members_list['data'][]=([
                         'id'=>$list['user_details']->id,
                         'name' => $list['user_details']->first_name,
                         'mobile_number' => $list['user_details']->mobile_number,
-                        'designation' => ($value->user_role == Config::get('app.Parent_role') &&$category!='')?$category:$list['user_category'],
+                        'designation' => ($value['user_role'] == Config::get('app.Parent_role') &&$category!='')?$category:$list['user_category'],
                         'profile_image'=>($list['user_details']->profile_image!='' && $list['user_details']->profile_image!=null)?$list['user_details']->profile_image:'',
                         'last_login'=>$last_login,
                         'app_status'=>$app_status,
-                        'user_role'=>$value->user_role,
+                        'user_role'=>$value['user_role'],
                         'inactive_days'=>($last_login!= null)?round((time() - strtotime($last_login)) / (60 * 60 * 24)):0,
                         'admission_no'=>$admission_no
                     ]);
                 }
             }
-            $key_values = array_column($members_list, 'admission_no'); 
-            array_multisort($key_values, SORT_ASC, $members_list);
+            // $key_values = array_column($members_list, 'admission_no'); 
+            // array_multisort($key_values, SORT_ASC, $members_list);
         }
         return response()->json($members_list);exit();
     }

@@ -1772,7 +1772,7 @@ class APIConfigurationsController extends Controller
 	{
 		// Save last login in DB
         $user = auth()->user();
-
+        $member_staff_list = [];
         $staff_list = UserStaffs::select('id','first_name','mobile_number','user_category','user_status','dob','doj','employee_no','department','profile_image','user_id');
         if(isset($request->search) && $request->search!='')
         {
@@ -1782,24 +1782,59 @@ class APIConfigurationsController extends Controller
         		$staff_list = $staff_list->orWhere('user_category', 'like', '%' . $category . '%');
         }
         $staff_list = $staff_list->get()->toArray();
-        foreach ($staff_list as $key => $value) {
+
+        // $currentPage = LengthAwarePaginator::resolveCurrentPage(); // Get current page form url e.x. &page=1
+        $currentPage = $request->page;
+        $itemCollection = new Collection($staff_list); // Create a new Laravel collection from the array data
+        $perPage = 10;
+        // Slice the collection to get the items to display in current page
+        // $sortedCollection = $itemCollection->sortByDesc('admission_no');
+        $currentPageItems = $itemCollection->values()->slice(($currentPage * $perPage) - $perPage, $perPage)->all();
+        // Create our paginator and pass it to the view
+        $paginatedItems= new LengthAwarePaginator($currentPageItems , count($itemCollection), $perPage);
+
+        $paginatedItems->setPath($request->url()); // set url path for generted links
+        $paginatedItems->appends($request->page);
+
+        $tempdata = $paginatedItems->toArray();
+        $member_staff_list['total'] = $tempdata['total'];
+        $member_staff_list['per_page'] = $tempdata['per_page'];
+        $member_staff_list['current_page'] = $tempdata['current_page'];
+        $member_staff_list['last_page'] = $tempdata['last_page'];
+        $member_staff_list['next_page_url'] = $tempdata['next_page_url'];
+        $member_staff_list['prev_page_url'] = $tempdata['prev_page_url'];
+        $member_staff_list['from'] = $tempdata['from'];
+        $member_staff_list['to'] = $tempdata['to'];
+        $list = ($currentPage <= 0)?$staff_list:$tempdata['data'];
+        	
+        foreach ($list as $key => $value) {
         	$check_access = SchoolUsers::where('user_id',$value['user_id'])->where('user_role',Config::get('app.Staff_role'))->where('user_status',2)->pluck('id')->first(); //2- full deactivate
 
         	if($check_access == '')
         		$check_access = UserGroupsMapping::where('user_table_id',$value['id'])->where('user_role',Config::get('app.Staff_role'))->where('user_status',1)->pluck('id')->first();
 
     	 	$classessections = AcademicClassConfiguration::select('id','class_id','section_id','division_id','class_teacher')->where('class_teacher',$value['id'])->get()->first();
-        	$staff_list[$key]['user_category'] = ($value['user_category'] ==Config::get('app.Teaching_staff'))?'Teaching_staff':'Non_teaching_staff';
-        	$staff_list[$key]['dob'] = $value['dob'];
-            $staff_list[$key]['doj'] = $value['doj'];
-            $staff_list[$key]['employee_no'] = $value['employee_no'];
-            $staff_list[$key]['department'] = $value['department'];
-            $staff_list[$key]['user_status'] = ($check_access == '')?3:$value['user_status']; // 1- active,2-full deactive, 3-partical deactive;
-            $staff_list[$key]['class'] = (!empty($classessections))?$classessections->classsectionName():'';
-            $staff_list[$key]['designation'] = $value['user_category'];
-            $staff_list[$key]['profile_image'] = (isset($value['profile_image']))?$value['profile_image']:'';
+
+    	 	$member_staff_list['data'][]=([ 
+    	 		'id' => $value['id'],
+        		'first_name' => $value['first_name'],
+	        	'mobile_number' => $value['mobile_number'],
+	        	'user_id' => $value['user_id'],
+	        	'user_category' => ($value['user_category'] ==Config::get('app.Teaching_staff'))?'Teaching_staff':'Non_teaching_staff',
+	        	'dob' => $value['dob'],
+	            'doj' => $value['doj'],
+	            'employee_no' => $value['employee_no'],
+	            'department' => $value['department'],
+	            'user_status' => ($check_access == '')?3:$value['user_status'], // 1- active,2-full deactive, 3-partical deactive;
+	            'class' => (!empty($classessections))?$classessections->classsectionName():'',
+	            'designation' => $value['user_category'],
+	            'profile_image' => (isset($value['profile_image']))?$value['profile_image']:'',
+	        ]);
         }
-        return response()->json($staff_list);
+        if($currentPage <= 0)
+        	$member_staff_list = $member_staff_list['data'];
+
+	    return response()->json($member_staff_list);
 	}
 
 	// All users list
@@ -1807,35 +1842,63 @@ class APIConfigurationsController extends Controller
 	{
 		// Save last login in DB
         $user = auth()->user();
-
+        $member_parent_list = [];
         $parent_list = UserParents::select('first_name','id','user_category','mobile_number','user_status','profile_image as parent_profile_image');
         if(isset($request->search) && $request->search!='')
             $parent_list = $parent_list->where('first_name', 'like', '%' . $request->search . '%')->orWhere('mobile_number', 'like', '%' . $request->search . '%');
         	
         $parent_list =$parent_list->get()->toArray();
+
+        // $currentPage = LengthAwarePaginator::resolveCurrentPage(); // Get current page form url e.x. &page=1
+        $currentPage = $request->page;
+        $itemCollection = new Collection($parent_list); // Create a new Laravel collection from the array data
+        $perPage = 10;
+        // Slice the collection to get the items to display in current page
+        // $sortedCollection = $itemCollection->sortByDesc('admission_no');
+        $currentPageItems = $itemCollection->values()->slice(($currentPage * $perPage) - $perPage, $perPage)->all();
+        // Create our paginator and pass it to the view
+        $paginatedItems= new LengthAwarePaginator($currentPageItems , count($itemCollection), $perPage);
+
+        $paginatedItems->setPath($request->url()); // set url path for generted links
+        $paginatedItems->appends($request->page);
+		
+		$tempdata = $paginatedItems->toArray();
+        $member_parent_list['total'] = $tempdata['total'];
+        $member_parent_list['per_page'] = $tempdata['per_page'];
+        $member_parent_list['current_page'] = $tempdata['current_page'];
+        $member_parent_list['last_page'] = $tempdata['last_page'];
+        $member_parent_list['next_page_url'] = $tempdata['next_page_url'];
+        $member_parent_list['prev_page_url'] = $tempdata['prev_page_url'];
+        $member_parent_list['from'] = $tempdata['from'];
+        $member_parent_list['to'] = $tempdata['to'];
+
         $index = 0;
-        foreach ($parent_list as $key => $value) {
+        $list = ($currentPage <= 0)?$parent_list:$tempdata['data'];
+        	
+        foreach ($list as $key => $value) {
         	$student_id = UserStudentsMapping::where('parent',$value['id'])->pluck('student')->toArray();
             $student_details = UserStudents::whereIn('id',$student_id)->get()->toArray();
             foreach($student_details as $stu_key => $stu_value)
             {
-            	$parent_details[$index] = $value;
+            	$member_parent_list[$index] = $value;
 	        	$user_category = (strtolower($value['user_category']) == 1)?'F/O':((strtolower($value['user_category']) == 2)?'M/O':'G/O');
-	        	$parent_details[$index]['student_name'] = ($user_category.' '.((isset($stu_value['first_name']))?$stu_value['first_name']:''));
-	        	$parent_details[$index]['student_id'] =(isset($stu_value['id']))?$stu_value['id']:'';
+	        	$member_parent_list[$index]['student_name'] = ($user_category.' '.((isset($stu_value['first_name']))?$stu_value['first_name']:''));
+	        	$member_parent_list[$index]['student_id'] =(isset($stu_value['id']))?$stu_value['id']:'';
 	        	// $parent_details[$index]['mobile_number'] = $value['mobile_number'];
-	        	$parent_details[$index]['dob'] = (isset($stu_value['dob']))?$stu_value['dob']:'';
-	        	$parent_details[$index]['admission_number'] = (isset($stu_value['admission_number']))?$stu_value['admission_number']:'';
+	        	$member_parent_list[$index]['dob'] = (isset($stu_value['dob']))?$stu_value['dob']:'';
+	        	$member_parent_list[$index]['admission_number'] = (isset($stu_value['admission_number']))?$stu_value['admission_number']:'';
 	        	$classessections =[];
 	        	if(isset($stu_value['class_config']))
 	        		$classessections = AcademicClassConfiguration::select('id','class_id','section_id','division_id','class_teacher')->where('id',$stu_value['class_config'])->get()->first();
-	        	$parent_details[$index]['class'] = (!empty($classessections))?$classessections->classsectionName():'';
-	        	$parent_details[$index]['class_teacher'] = (!empty($classessections))?UserStaffs::where('id',$classessections->class_teacher)->pluck('first_name')->first():'';
-	        	$parent_details[$index]['student_profile_image'] = (isset($stu_value['profile_image']))?$stu_value['profile_image']:'';
+	        	$member_parent_list[$index]['class'] = (!empty($classessections))?$classessections->classsectionName():'';
+	        	$member_parent_list[$index]['class_teacher'] = (!empty($classessections))?UserStaffs::where('id',$classessections->class_teacher)->pluck('first_name')->first():'';
+	        	$member_parent_list[$index]['student_profile_image'] = (isset($stu_value['profile_image']))?$stu_value['profile_image']:'';
 	        	$index++;
             }
         }
-        return response()->json($parent_details);
+        if($currentPage <= 0)
+        	$member_parent_list = $member_parent_list['data'];
+        return response()->json($member_parent_list);
 	}
 
 	// Store Onesignal device details in DB
@@ -3366,15 +3429,59 @@ class APIConfigurationsController extends Controller
 	{
 		// Save last login in DB
         $user = auth()->user();
-
+        $member_student_list = [];
         $student_list = UserStudents::select('*');
         if(isset($request->search) && $request->search!='')
             $student_list = $student_list->where('first_name', 'like', '%' . $request->search . '%')->orWhere('mobile_number', 'like', '%' . $request->search . '%');
         	
         $student_list =$student_list->orderBy('class_config')->get()->toArray();
-        foreach ($student_list as $key => $value) {
-        	$student_list[$key]['father_name'] =  $student_list[$key]['mother_name'] =  $student_list[$key]['guardian_name']  = '';
-        	$student_list[$key]['father_mobile'] = $student_list[$key]['mother_mobile'] = $student_list[$key]['guardian_mobile'] = 0;
+
+       	// $currentPage = LengthAwarePaginator::resolveCurrentPage(); // Get current page form url e.x. &page=1
+        $currentPage = $request->page;
+        $itemCollection = new Collection($student_list); // Create a new Laravel collection from the array data
+        $perPage = 10;
+        // Slice the collection to get the items to display in current page
+        // $sortedCollection = $itemCollection->sortByDesc('admission_no');
+        $currentPageItems = $itemCollection->values()->slice(($currentPage * $perPage) - $perPage, $perPage)->all();
+        // Create our paginator and pass it to the view
+        $paginatedItems= new LengthAwarePaginator($currentPageItems , count($itemCollection), $perPage);
+
+        $paginatedItems->setPath($request->url()); // set url path for generted links
+        $paginatedItems->appends($request->page);
+
+        $tempdata = $paginatedItems->toArray();
+        $member_student_list['total'] = $tempdata['total'];
+        $member_student_list['per_page'] = $tempdata['per_page'];
+        $member_student_list['current_page'] = $tempdata['current_page'];
+        $member_student_list['last_page'] = $tempdata['last_page'];
+        $member_student_list['next_page_url'] = $tempdata['next_page_url'];
+        $member_student_list['prev_page_url'] = $tempdata['prev_page_url'];
+        $member_student_list['from'] = $tempdata['from'];
+        $member_student_list['to'] = $tempdata['to'];
+       	$index = 0; 
+        $list = ($currentPage <= 0)?$student_list:$tempdata['data'];
+        	
+        foreach ($list as $key => $value) {
+        	
+        	$classessections =[];
+        	if(isset($value['class_config']))
+        		$classessections = AcademicClassConfiguration::select('id','class_id','section_id','division_id','class_teacher')->where('id',$value['class_config'])->get()->first();
+        	
+        	$member_student_list['data'][]=([
+	        	'father_name' => '',
+	        	'mother_name' => '',
+	        	'guardian_name'=>'',
+	        	'father_mobile' => 0,
+		        'mother_mobile'=>0,
+		        'guardian_mobile' => 0,
+	        	'student_name' => $value['first_name'],
+        		// $parent_list[$key]['mobile_number'] = $value['mobile_number'];
+	        	'dob' => (isset($value['dob']))?$value['dob']:'',
+	        	'admission_number' => (isset($value['admission_number']))?$value['admission_number']:'',
+        		'class' => (!empty($classessections))?$classessections->classsectionName():'',
+        		'class_teacher' => (!empty($classessections))?UserStaffs::where('id',$classessections->class_teacher)->pluck('first_name')->first():'',
+        		'student_profile_image' => (isset($value['profile_image']))?public_path(env('SAMPLE_CONFIG_URL').'students/'.$value['profile_image']):'',
+        	]);
         	$parent_id = UserStudentsMapping::where('student',$value['id'])->pluck('parent')->toArray();
         	foreach($parent_id as $parentid)
         	{
@@ -3384,36 +3491,29 @@ class APIConfigurationsController extends Controller
             	{
 		        	if($parent_details->user_category == 1)
 		        	{
-		        		$student_list[$key]['father_name'] = $parent_details->first_name;
-		        		$student_list[$key]['father_mobile'] = $parent_details->mobile_number;
+		        		$member_student_list['data'][$key]['father_name'] = $parent_details->first_name;
+		        		$member_student_list['data'][$key]['father_mobile'] = $parent_details->mobile_number;
 
 		        	}
 		        	else if($parent_details->user_category == 2)
 		        	{
-		        		$student_list[$key]['mother_name'] = $parent_details->first_name;
-		        		$student_list[$key]['mother_mobile'] = $parent_details->mobile_number;
+		        		$member_student_list['data'][$key]['mother_name'] = $parent_details->first_name;
+		        		$member_student_list['data'][$key]['mother_mobile'] = $parent_details->mobile_number;
 
 		        	}
 		        	else if($parent_details->user_category == 9)
 		        	{
-		        		$student_list[$key]['guardian_name'] = $parent_details->first_name;
-		        		$student_list[$key]['guardian_mobile'] = $parent_details->mobile_number;
+		        		$member_student_list['data'][$key]['guardian_name'] = $parent_details->first_name;
+		        		$member_student_list['data'][$key]['guardian_mobile'] = $parent_details->mobile_number;
 
 		        	}
 		        }
         	}
-        	$student_list[$key]['student_name'] = $value['first_name'];
-        	// $parent_list[$key]['mobile_number'] = $value['mobile_number'];
-        	$student_list[$key]['dob'] = (isset($value['dob']))?$value['dob']:'';
-        	$student_list[$key]['admission_number'] = (isset($value['admission_number']))?$value['admission_number']:'';
-        	$classessections =[];
-        	if(isset($value['class_config']))
-        		$classessections = AcademicClassConfiguration::select('id','class_id','section_id','division_id','class_teacher')->where('id',$value['class_config'])->get()->first();
-        	$student_list[$key]['class'] = (!empty($classessections))?$classessections->classsectionName():'';
-        	$student_list[$key]['class_teacher'] = (!empty($classessections))?UserStaffs::where('id',$classessections->class_teacher)->pluck('first_name')->first():'';
-        	$student_list[$key]['student_profile_image'] = (isset($value['profile_image']))?$value['profile_image']:'';
+        	$index++;
         }
-        return response()->json($student_list);
+        if($currentPage <= 0)
+        	$member_student_list = $member_student_list['data'];
+        return response()->json($member_student_list);
 	}
 	
 	// All admin list
@@ -3421,27 +3521,60 @@ class APIConfigurationsController extends Controller
 	{
 		// Save last login in DB
         $user = auth()->user();
-
+        $member_admin_list= [];
         $admin_list = UserAdmin::select('id','first_name','mobile_number','user_status','dob','doj','employee_no','profile_image','user_id');
         if(isset($request->search) && $request->search!='')
         {
         	$admin_list = $admin_list->where('first_name', 'like', '%' . $request->search . '%')->orWhere('mobile_number', 'like', '%' . $request->search . '%')->orWhere('dob', 'like', '%' . $request->search . '%')->orWhere('doj', 'like', '%' . $request->search . '%')->orWhere('employee_no', 'like', '%' . $request->search . '%');
         }
         $admin_list = $admin_list->get()->toArray();
-        foreach ($admin_list as $key => $value) {
+        // $currentPage = LengthAwarePaginator::resolveCurrentPage(); // Get current page form url e.x. &page=1
+        $currentPage = $request->page;
+        $itemCollection = new Collection($admin_list); // Create a new Laravel collection from the array data
+        $perPage = 10;
+        // Slice the collection to get the items to display in current page
+        // $sortedCollection = $itemCollection->sortByDesc('admission_no');
+        $currentPageItems = $itemCollection->values()->slice(($currentPage * $perPage) - $perPage, $perPage)->all();
+        // Create our paginator and pass it to the view
+        $paginatedItems= new LengthAwarePaginator($currentPageItems , count($itemCollection), $perPage);
+
+        $paginatedItems->setPath($request->url()); // set url path for generted links
+        $paginatedItems->appends($request->page);
+
+        $tempdata = $paginatedItems->toArray();
+        $member_admin_list['total'] = $tempdata['total'];
+        $member_admin_list['per_page'] = $tempdata['per_page'];
+        $member_admin_list['current_page'] = $tempdata['current_page'];
+        $member_admin_list['last_page'] = $tempdata['last_page'];
+        $member_admin_list['next_page_url'] = $tempdata['next_page_url'];
+        $member_admin_list['prev_page_url'] = $tempdata['prev_page_url'];
+        $member_admin_list['from'] = $tempdata['from'];
+        $member_admin_list['to'] = $tempdata['to'];
+        $list = ($currentPage <= 0)?$admin_list:$tempdata['data'];
+        	
+        foreach ($list as $key => $value) {
         	$check_access = SchoolUsers::where('user_id',$value['user_id'])->where('user_role',Config::get('app.Admin_role'))->where('user_status',2)->pluck('id')->first(); //2- full deactivate
 
         	if($check_access == '')
         		$check_access = UserGroupsMapping::where('user_table_id',$value['id'])->where('user_role',Config::get('app.Admin_role'))->where('user_status',1)->pluck('id')->first();
 
-    	 	$admin_list[$key]['dob'] = $value['dob'];
-            $admin_list[$key]['doj'] = $value['doj'];
-            $admin_list[$key]['employee_no'] = $value['employee_no'];
-            $admin_list[$key]['user_status'] = ($check_access == '')?3:$value['user_status']; // 1- active,2-full deactive, 3-partical deactive
-            $admin_list[$key]['designation'] = 'Admin';
-            $admin_list[$key]['profile_image'] = (isset($value['profile_image']))?$value['profile_image']:'';
+        	$member_admin_list['data'][]=([
+	        	'id' => $value['id'],
+	        	'first_name' => $value['first_name'],
+	        	'mobile_number' => $value['mobile_number'],
+	        	'user_id' => $value['user_id'],
+	    	 	'dob' => $value['dob'],
+	            'doj' => $value['doj'],
+	            'employee_no' => $value['employee_no'],
+	            'user_status' => ($check_access == '')?3:$value['user_status'], // 1- active,2-full deactive,3-partical deactive
+	            'designation' => 'Admin',
+	            'profile_image' => (isset($value['profile_image']))?$value['profile_image']:'',
+	        ]);
         }
-        return response()->json($admin_list);
+        if($currentPage <= 0)
+	    	$member_admin_list = $member_admin_list['data'];
+
+        return response()->json($member_admin_list);
 	}
 
 	// All management list
@@ -3449,7 +3582,7 @@ class APIConfigurationsController extends Controller
 	{
 		// Save last login in DB
         $user = auth()->user();
-
+        $member_management_list = [];
         $management_list = UserManagements::select('id','first_name','mobile_number','user_category','user_status','dob','doj','employee_no','profile_image','user_id');
         if(isset($request->search) && $request->search!='')
         {
@@ -3459,21 +3592,56 @@ class APIConfigurationsController extends Controller
         		$management_list = $management_list->orWhere('user_category', 'like', '%' . $category . '%');
         }
         $management_list = $management_list->get()->toArray();
-        foreach ($management_list as $key => $value) {
+        // $currentPage = LengthAwarePaginator::resolveCurrentPage(); // Get current page form url e.x. &page=1
+        $currentPage = $request->page;
+        $itemCollection = new Collection($management_list); // Create a new Laravel collection from the array data
+        $perPage = 10;
+        // Slice the collection to get the items to display in current page
+        // $sortedCollection = $itemCollection->sortByDesc('admission_no');
+        $currentPageItems = $itemCollection->values()->slice(($currentPage * $perPage) - $perPage, $perPage)->all();
+        // Create our paginator and pass it to the view
+        $paginatedItems= new LengthAwarePaginator($currentPageItems , count($itemCollection), $perPage);
+
+        $paginatedItems->setPath($request->url()); // set url path for generted links
+        $paginatedItems->appends($request->page);
+
+        $tempdata = $paginatedItems->toArray();
+        $member_management_list['total'] = $tempdata['total'];
+        $member_management_list['per_page'] = $tempdata['per_page'];
+        $member_management_list['current_page'] = $tempdata['current_page'];
+        $member_management_list['last_page'] = $tempdata['last_page'];
+        $member_management_list['next_page_url'] = $tempdata['next_page_url'];
+        $member_management_list['prev_page_url'] = $tempdata['prev_page_url'];
+        $member_management_list['from'] = $tempdata['from'];
+        $member_management_list['to'] = $tempdata['to'];
+        $list = ($currentPage <= 0)?$management_list:$tempdata['data'];
+        	
+        foreach ($list as $key => $value) {
         	$check_access = SchoolUsers::where('user_id',$value['user_id'])->where('user_role',Config::get('app.Management_role'))->where('user_status',2)->pluck('id')->first(); //2- full deactivate
 
         	if($check_access == '')
         		$check_access = UserGroupsMapping::where('user_table_id',$value['id'])->where('user_role',Config::get('app.Management_role'))->where('user_status',1)->pluck('id')->first();
 
         	$designation = ($value['user_category']!='')? UserCategories::where('id',$value['user_category'])->pluck('category_name')->first():'';
-        	$management_list[$key]['dob'] = $value['dob'];
-            $management_list[$key]['doj'] = $value['doj'];
-            $management_list[$key]['employee_no'] = $value['employee_no'];
-            $management_list[$key]['user_status'] = ($check_access == '')?3:$value['user_status']; // 1- active,2-full deactive, 3-partical deactive
-            $management_list[$key]['designation'] = $designation;
-            $management_list[$key]['profile_image'] = (isset($value['profile_image']))?$value['profile_image']:'';
+
+        	$member_management_list['data'][]=([
+        		'id' => $value['id'],
+	        	'first_name' => $value['first_name'],
+	        	'mobile_number' => $value['mobile_number'],
+	        	'user_id' => $value['user_id'],
+	        	'user_category' => $value['user_category'],
+	        	'dob' => $value['dob'],
+	            'doj' => $value['doj'],
+	            'employee_no' => $value['employee_no'],
+	            'user_status' => ($check_access == '')?3:$value['user_status'], // 1- active,2-full deactive,,3-partical deactive
+	            'designation' => $designation,
+	            'profile_image' => (isset($value['profile_image']))?$value['profile_image']:'',
+	        ]);
         }
-        return response()->json($management_list);
+        if($currentPage <= 0)
+	    	$member_management_list = $member_management_list['data'];
+
+        return response()->json($member_management_list);
 	}
 
 	// Check admission number already exists

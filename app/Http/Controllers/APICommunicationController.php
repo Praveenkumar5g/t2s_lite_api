@@ -1563,7 +1563,7 @@ class APICommunicationController extends Controller
         // $currentPage = LengthAwarePaginator::resolveCurrentPage(); // Get current page form url e.x. &page=1
         $currentPage = $request->page;
         $itemCollection = new Collection($group_users); // Create a new Laravel collection from the array data
-        $perPage = 5;
+        $perPage = 10;
         // Slice the collection to get the items to display in current page
         $sortedCollection = $itemCollection->sortByDesc('admission_no');
         $currentPageItems = $sortedCollection->values()->slice(($currentPage * $perPage) - $perPage, $perPage)->all();

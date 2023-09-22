@@ -10,7 +10,8 @@ namespace App\Http\Controllers;
  
 use App\Http\Controllers\Controller;
 use Maatwebsite\Excel\Facades\Excel;
-
+use Illuminate\Support\Collection;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Maatwebsite\Excel\Excel as ExcelExcel;
 use App\Models\AcademicClassConfiguration;
 use App\Exports\MapClassesSectionsExport;

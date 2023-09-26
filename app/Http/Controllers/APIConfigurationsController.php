@@ -1880,6 +1880,7 @@ class APIConfigurationsController extends Controller
         	$student_id = UserStudentsMapping::where('parent',$value['id'])->pluck('student')->toArray();
             $student_details = UserStudents::whereIn('id',$student_id)->get()->first();
             // echo '<pre>';print_r($student_details);
+            $parent_list_data[$index] = $value;
         	$user_category = (strtolower($value['user_category']) == 1)?'F/O':'M/O';
         	$parent_list_data[$index]['student_name'] = ($user_category.' '.((isset($student_details->first_name))?$student_details->first_name:''));
         	// $parent_list[$key]['mobile_number'] = $value['mobile_number'];

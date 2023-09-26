@@ -1844,7 +1844,7 @@ class APIConfigurationsController extends Controller
 		// Save last login in DB
         $user = auth()->user();
         $member_parent_list = [];
-        $parent_list = UserParents::select('user_parents.first_name','user_parents.id','user_parents.user_category','user_parents.mobile_number','user_parents.user_status','user_parents.profile_image as parent_profile_image','class_config')->join('user_students_mapping as sm','sm.parent','=','user_parents.id')->join('user_students as s','s.id','=','sm.student');
+        $parent_list = UserParents::select('first_name','id','user_category','mobile_number','user_status','profile_image as parent_profile_image');
         if(isset($request->search) && $request->search!='')
             $parent_list = $parent_list->where('first_name', 'like', '%' . $request->search . '%')->orWhere('mobile_number', 'like', '%' . $request->search . '%');
         	
@@ -1878,27 +1878,30 @@ class APIConfigurationsController extends Controller
         	
         foreach ($list as $key => $value) {
         	$student_id = UserStudentsMapping::where('parent',$value['id'])->pluck('student')->toArray();
-            $student_details = UserStudents::whereIn('id',$student_id)->get()->toArray();
-            foreach($student_details as $stu_key => $stu_value)
-            {
-            	$member_parent_list['data'][$index] = $value;
-	        	$user_category = (strtolower($value['user_category']) == 1)?'F/O':((strtolower($value['user_category']) == 2)?'M/O':'G/O');
-	        	$member_parent_list['data'][$index]['student_name'] = ($user_category.' '.((isset($stu_value['first_name']))?$stu_value['first_name']:''));
-	        	$member_parent_list['data'][$index]['student_id'] =(isset($stu_value['id']))?$stu_value['id']:'';
-	        	// $parent_details[$index]['mobile_number'] = $value['mobile_number'];
-	        	$member_parent_list['data'][$index]['dob'] = (isset($stu_value['dob']))?$stu_value['dob']:'';
-	        	$member_parent_list['data'][$index]['admission_number'] = (isset($stu_value['admission_number']))?$stu_value['admission_number']:'';
-	        	$classessections =[];
-	        	if(isset($stu_value['class_config']))
-	        		$classessections = AcademicClassConfiguration::select('id','class_id','section_id','division_id','class_teacher')->where('id',$stu_value['class_config'])->get()->first();
-	        	$member_parent_list['data'][$index]['class'] = (!empty($classessections))?$classessections->classsectionName():'';
-	        	$member_parent_list['data'][$index]['class_teacher'] = (!empty($classessections))?UserStaffs::where('id',$classessections->class_teacher)->pluck('first_name')->first():'';
-	        	$member_parent_list['data'][$index]['student_profile_image'] = (isset($stu_value['profile_image']))?$stu_value['profile_image']:'';
-	        	$index++;
-            }
+            $student_details = UserStudents::whereIn('id',$student_id)->get()->first();
+            // echo '<pre>';print_r($student_details);
+        	$user_category = (strtolower($value['user_category']) == 1)?'F/O':'M/O';
+        	$parent_list_data[$index]['student_name'] = ($user_category.' '.((isset($student_details->first_name))?$student_details->first_name:''));
+        	// $parent_list[$key]['mobile_number'] = $value['mobile_number'];
+        	$parent_list_data[$index]['dob'] = (isset($student_details->dob))?$student_details->dob:'';
+        	$parent_list_data[$index]['admission_number'] = (isset($student_details->admission_number))?$student_details->admission_number:'';
+        	$classessections =[];
+        	if(isset($student_details->class_config))
+        		$classessections = AcademicClassConfiguration::select('id','class_id','section_id','division_id','class_teacher')->where('id',$student_details->class_config)->get()->first();
+        	$parent_list_data[$index]['class'] = (!empty($classessections))?$classessections->classsectionName():'';
+        	$parent_list_data[$index]['class_config'] = isset($student_details->class_config)?$student_details->class_config:'';
+        	$parent_list_data[$index]['class_teacher'] = (!empty($classessections))?UserStaffs::where('id',$classessections->class_teacher)->pluck('first_name')->first():'';
+        	$parent_list_data[$index]['student_profile_image'] = (isset($student_details->profile_image))?$student_details->profile_image:'';
+        	$index++;
         }
-        if($currentPage <= 0)
-        	$member_parent_list = $member_parent_list['data'];
+	    if($currentPage <= 0)
+        	$member_parent_list = $parent_list_data;
+        else
+        {
+        	$key_values = array_column($parent_list_data, 'class_config'); 
+            array_multisort($key_values, SORT_ASC, $parent_list_data);
+            $member_parent_list['data'] = $parent_list_data;
+        }
         return response()->json($member_parent_list);
 	}
 

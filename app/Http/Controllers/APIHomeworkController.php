@@ -123,7 +123,7 @@ class APIHomeworkController extends Controller
                             'image'=>$images,
                             'homework_status'=>!empty($homework_status_response)?$homework_status_response->status:0,
                             'homework_status_reason'=>!empty($homework_status_response)?$homework_status_response->reason:0,
-
+                            'edited'=>$value['edited'],
                         ]);
 
                     }
@@ -190,6 +190,7 @@ class APIHomeworkController extends Controller
                             'staff_name'=>(!empty($teachingstaff_list) && array_key_exists($sub_value->staff,$teachingstaff_list))?$teachingstaff_list[$sub_value->staff]:'',
                             'staff_id'=>$sub_value->staff,
                             'classteacher_name'=>$classteacherdetails['first_name'],
+                            'profile_image'=>$classteacherdetails['profile_image'],
                             'classteacher_id'=>$classteacher_data->class_teacher,
                             'class_config'=>$sub_value->class_config,
                             'class_section'=>$classteacher_data->classsectionName(),
@@ -261,6 +262,7 @@ class APIHomeworkController extends Controller
             $communications = Communications::where(['id'=>$request->notification_id])->first();
             $communications->updated_time=Carbon::now()->timezone('Asia/Kolkata');
             $communications->updated_by=$userall_id;
+            $communications->edited =1; //0-created,1-edited
         }
         else
         {

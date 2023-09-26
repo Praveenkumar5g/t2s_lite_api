@@ -1832,8 +1832,8 @@ class APIConfigurationsController extends Controller
 	            'profile_image' => (isset($value['profile_image']))?$value['profile_image']:'',
 	        ]);
         }
-        if($currentPage <= 0)
-        	$member_staff_list = $member_staff_list['data'];
+        // if($currentPage <= 0)
+        // 	$member_staff_list = $member_staff_list['data'];
 
 	    return response()->json($member_staff_list);
 	}
@@ -1844,9 +1844,9 @@ class APIConfigurationsController extends Controller
 		// Save last login in DB
         $user = auth()->user();
         $member_parent_list = [];
-        $parent_list = UserParents::select('first_name','id','user_category','mobile_number','user_status','profile_image as parent_profile_image');
+        $parent_list = UserStudents::select('user_students.first_name as student_name','p.id','p.user_category','p.mobile_number','p.user_status','p.profile_image as parent_profile_image','user_students.profile_image as student_profile_image','user_students.id as student_id','user_students.id as dob','user_students.id as admission_number','user_students.id as class_config')->join('user_students_mapping as sm','sm.student','=','user_students.id')->join('user_parents as p','p.id','=','sm.parent');
         if(isset($request->search) && $request->search!='')
-            $parent_list = $parent_list->where('first_name', 'like', '%' . $request->search . '%')->orWhere('mobile_number', 'like', '%' . $request->search . '%');
+            $parent_list = $parent_list->where('p.first_name', 'like', '%' . $request->search . '%')->orWhere('p.mobile_number', 'like', '%' . $request->search . '%');
         	
         $parent_list =$parent_list->get()->toArray();
 
@@ -1882,27 +1882,22 @@ class APIConfigurationsController extends Controller
             // echo '<pre>';print_r($student_details);
             $parent_list_data[$index] = $value;
         	$user_category = (strtolower($value['user_category']) == 1)?'F/O':'M/O';
-        	$parent_list_data[$index]['student_name'] = ($user_category.' '.((isset($student_details->first_name))?$student_details->first_name:''));
-        	// $parent_list[$key]['mobile_number'] = $value['mobile_number'];
-        	$parent_list_data[$index]['dob'] = (isset($student_details->dob))?$student_details->dob:'';
-        	$parent_list_data[$index]['admission_number'] = (isset($student_details->admission_number))?$student_details->admission_number:'';
+        	$parent_list_data[$index]['student_name'] = ($user_category.' '.((isset($value['student_name']))?$value['student_name']:''));
         	$classessections =[];
         	if(isset($student_details->class_config))
         		$classessections = AcademicClassConfiguration::select('id','class_id','section_id','division_id','class_teacher')->where('id',$student_details->class_config)->get()->first();
         	$parent_list_data[$index]['class'] = (!empty($classessections))?$classessections->classsectionName():'';
-        	$parent_list_data[$index]['class_config'] = isset($student_details->class_config)?$student_details->class_config:'';
         	$parent_list_data[$index]['class_teacher'] = (!empty($classessections))?UserStaffs::where('id',$classessections->class_teacher)->pluck('first_name')->first():'';
-        	$parent_list_data[$index]['student_profile_image'] = (isset($student_details->profile_image))?$student_details->profile_image:'';
         	$index++;
         }
-	    if($currentPage <= 0)
-        	$member_parent_list = $parent_list_data;
-        else
-        {
+	    // if($currentPage <= 0)
+        // 	$member_parent_list = $parent_list_data;
+        // else
+        // {
         	$key_values = array_column($parent_list_data, 'class_config'); 
             array_multisort($key_values, SORT_ASC, $parent_list_data);
             $member_parent_list['data'] = $parent_list_data;
-        }
+        // }
         return response()->json($member_parent_list);
 	}
 
@@ -3529,8 +3524,8 @@ class APIConfigurationsController extends Controller
         	}
         	$index++;
         }
-        if($currentPage <= 0)
-        	$member_student_list = $member_student_list['data'];
+        // if($currentPage <= 0)
+        // 	$member_student_list = $member_student_list['data'];
         return response()->json($member_student_list);
 	}
 	
@@ -3589,8 +3584,8 @@ class APIConfigurationsController extends Controller
 	            'profile_image' => (isset($value['profile_image']))?$value['profile_image']:'',
 	        ]);
         }
-        if($currentPage <= 0)
-	    	$member_admin_list = $member_admin_list['data'];
+        // if($currentPage <= 0)
+	    // 	$member_admin_list = $member_admin_list['data'];
 
         return response()->json($member_admin_list);
 	}
@@ -3656,8 +3651,8 @@ class APIConfigurationsController extends Controller
 	            'profile_image' => (isset($value['profile_image']))?$value['profile_image']:'',
 	        ]);
         }
-        if($currentPage <= 0)
-	    	$member_management_list = $member_management_list['data'];
+        // if($currentPage <= 0)
+	    // 	$member_management_list = $member_management_list['data'];
 
         return response()->json($member_management_list);
 	}

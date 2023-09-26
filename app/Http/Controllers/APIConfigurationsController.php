@@ -1844,7 +1844,7 @@ class APIConfigurationsController extends Controller
 		// Save last login in DB
         $user = auth()->user();
         $member_parent_list = [];
-        $parent_list = UserParents::select('first_name','id','user_category','mobile_number','user_status','profile_image as parent_profile_image');
+        $parent_list = UserParents::select('user_parents.first_name','user_parents.id','user_parents.user_category','user_parents.mobile_number','user_parents.user_status','user_parents.profile_image as parent_profile_image','class_config')->join('user_students_mapping as sm','sm.parent','=','user_parents.id')->join('user_students as s','s.id','=','sm.student');
         if(isset($request->search) && $request->search!='')
             $parent_list = $parent_list->where('first_name', 'like', '%' . $request->search . '%')->orWhere('mobile_number', 'like', '%' . $request->search . '%');
         	

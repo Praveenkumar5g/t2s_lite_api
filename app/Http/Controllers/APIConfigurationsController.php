@@ -1789,7 +1789,7 @@ class APIConfigurationsController extends Controller
         $itemCollection = new Collection($staff_list); // Create a new Laravel collection from the array data
         $perPage = 10;
         // Slice the collection to get the items to display in current page
-        $sortedCollection = $itemCollection->sortByDesc('user_category');
+        $sortedCollection = $itemCollection->sortBy('user_category');
         $currentPageItems = $sortedCollection->values()->slice(($currentPage * $perPage) - $perPage, $perPage)->all();
         // Create our paginator and pass it to the view
         $paginatedItems= new LengthAwarePaginator($currentPageItems , count($itemCollection), $perPage);
@@ -1855,7 +1855,7 @@ class APIConfigurationsController extends Controller
         $itemCollection = new Collection($parent_list); // Create a new Laravel collection from the array data
         $perPage = 10;
         // Slice the collection to get the items to display in current page
-        $sortedCollection = $itemCollection->sortByDesc('class_config');
+        $sortedCollection = $itemCollection->sortBy('class_config');
         $currentPageItems = $sortedCollection->values()->slice(($currentPage * $perPage) - $perPage, $perPage)->all();
         // Create our paginator and pass it to the view
         $paginatedItems= new LengthAwarePaginator($currentPageItems , count($itemCollection), $perPage);
@@ -3442,7 +3442,7 @@ class APIConfigurationsController extends Controller
         $itemCollection = new Collection($student_list); // Create a new Laravel collection from the array data
         $perPage = 10;
         // Slice the collection to get the items to display in current page
-        $sortedCollection = $itemCollection->sortByDesc('class_config');
+        $sortedCollection = $itemCollection->sortBy('class_config');
         $currentPageItems = $sortedCollection->values()->slice(($currentPage * $perPage) - $perPage, $perPage)->all();
         // Create our paginator and pass it to the view
         $paginatedItems= new LengthAwarePaginator($currentPageItems , count($itemCollection), $perPage);
@@ -3547,7 +3547,7 @@ class APIConfigurationsController extends Controller
         $itemCollection = new Collection($admin_list); // Create a new Laravel collection from the array data
         $perPage = 10;
         // Slice the collection to get the items to display in current page
-        $sortedCollection = $itemCollection->sortByDesc('id');
+        $sortedCollection = $itemCollection->sortBy('id');
         $currentPageItems = $sortedCollection->values()->slice(($currentPage * $perPage) - $perPage, $perPage)->all();
         // Create our paginator and pass it to the view
         $paginatedItems= new LengthAwarePaginator($currentPageItems , count($itemCollection), $perPage);
@@ -3611,7 +3611,7 @@ class APIConfigurationsController extends Controller
         $itemCollection = new Collection($management_list); // Create a new Laravel collection from the array data
         $perPage = 10;
         // Slice the collection to get the items to display in current page
-        $sortedCollection = $itemCollection->sortByDesc('id');
+        $sortedCollection = $itemCollection->sortBy('id');
         $currentPageItems = $sortedCollection->values()->slice(($currentPage * $perPage) - $perPage, $perPage)->all();
         // Create our paginator and pass it to the view
         $paginatedItems= new LengthAwarePaginator($currentPageItems , count($itemCollection), $perPage);

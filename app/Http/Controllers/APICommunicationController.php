@@ -1573,7 +1573,7 @@ class APICommunicationController extends Controller
         $paginatedItems->setPath($request->url()); // set url path for generted links
         $paginatedItems->appends($request->page);
 
-        if(!empty($group_users) && $currentPage > 0)
+        if(!empty($group_users))
         {
             $tempdata = $paginatedItems->toArray();
             $members_list['total'] = $tempdata['total'];
@@ -1584,7 +1584,10 @@ class APICommunicationController extends Controller
             $members_list['prev_page_url'] = $tempdata['prev_page_url'];
             $members_list['from'] = $tempdata['from'];
             $members_list['to'] = $tempdata['to'];
-            foreach ($tempdata['data'] as $key => $value) {
+
+            $list = ($currentPage <= 0)?$group_users:$tempdata['data'];
+
+            foreach ($list as $key => $value) {
                 $category = $app_status = $admission_no='';
 
                 $list = $this->array_user_details($value); //fetch individual user details

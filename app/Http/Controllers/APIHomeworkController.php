@@ -204,7 +204,7 @@ class APIHomeworkController extends Controller
                             'homework_content'=>!empty($homework_details)?$homework_details->chat_message:'',
                             'approval_status'=>(!empty($homework_details) && $homework_details->approval_status>0)?$homework_details->approval_status:0,
                             'is_pointed'=>($request->notification_id!='' && !empty($homework_details) && $homework_details->id == $request->notification_id)?1:0,
-                            'edited'=>$homework_details->edited,
+                            'edited'=>!empty($homework_details)?$homework_details->edited:0,
                         ]);
                         if($user->user_role == Config::get('app.Admin_role') || $user->user_role == Config::get('app.Management_role'))
                             $subjects[$sub_key]['flag'] = 'classteacher';

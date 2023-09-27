@@ -191,6 +191,7 @@ class APIHomeworkController extends Controller
                             'staff_name'=>(!empty($teachingstaff_list) && array_key_exists($sub_value->staff,$teachingstaff_list))?$teachingstaff_list[$sub_value->staff]:'',
                             'staff_id'=>$sub_value->staff,
                             'classteacher_name'=>$classteacherdetails['first_name'],
+                            'profile_image'=>$staff_details->profile_image,
                             'classteacher_id'=>$classteacher_data->class_teacher,
                             'class_config'=>$sub_value->class_config,
                             'class_section'=>$classteacher_data->classsectionName(),
@@ -203,6 +204,7 @@ class APIHomeworkController extends Controller
                             'homework_content'=>!empty($homework_details)?$homework_details->chat_message:'',
                             'approval_status'=>(!empty($homework_details) && $homework_details->approval_status>0)?$homework_details->approval_status:0,
                             'is_pointed'=>($request->notification_id!='' && !empty($homework_details) && $homework_details->id == $request->notification_id)?1:0,
+                            'edited'=>$homework_details->edited,
                         ]);
                         if($user->user_role == Config::get('app.Admin_role') || $user->user_role == Config::get('app.Management_role'))
                             $subjects[$sub_key]['flag'] = 'classteacher';

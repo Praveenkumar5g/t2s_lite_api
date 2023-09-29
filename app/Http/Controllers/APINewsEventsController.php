@@ -51,6 +51,12 @@ class APINewsEventsController extends Controller
 
         $userall_id = UserAll::where(['user_table_id'=>$user_table_id,'user_role'=>$user->user_role])->pluck('id')->first();//get common id 
 
+        // check deactivation for user
+        $check_access = UserGroupsMapping::where('user_table_id',$user_table_id)->where('group_id',2)->where('user_role',$user->user_role)->where('user_status',1)->pluck('id')->first();
+
+        if($check_access == '')
+            return response()->json(['message'=>'Your account is deactivated. Please contact school management for futher details']);
+        
         // Add rules to the login form
         $validator = Validator::make($request->all(), [
             'title'=>'required',
@@ -62,7 +68,7 @@ class APINewsEventsController extends Controller
             return response()->json($validator->errors());
         }
         $newsevents_id = '';
-        $newsevents_id = $request->newsevents_id;
+        $newsevents_id = $newseventid_edit = $request->newsevents_id;
         $newsevents = ([
             'title'=>$request->title,
             'module_type'=>$request->module_type,//1-news,2-events
@@ -93,6 +99,7 @@ class APINewsEventsController extends Controller
         }
         else
         {
+            $newsevents['edited'] =1; //0-created,1-edited
             $newsevents['updated_by']=$userall_id;
             $newsevents['updated_time']=Carbon::now()->timezone('Asia/Kolkata');
             NewsEvents::where('id',$newsevents_id)->update($newsevents);//update news
@@ -111,13 +118,16 @@ class APINewsEventsController extends Controller
             // Insert attachment details in attachment table
             if($request->hasfile('images')) {
                 
+                if($newsevents_id!='')//get already existing images
+                {
+                    $images_list = NewsEvents::where('id',$newsevents_id)->pluck('images')->first();
+                    if($images_list!='')
+                    {
+                        $attachment_id = explode(',',$images_list);
+                    }
+                }
                 foreach($request->file('images') as $file) //loop to insert images
                 {   
-                    if($newsevents_id!='')//delete already existing images
-                    {
-
-                    }
-
                     $attachment = new NewsEventsAttachments;
                     $attachment->news_events_id = $newsevents_id;
                     $name = explode('.',$file->getClientOriginalName());
@@ -170,15 +180,18 @@ class APINewsEventsController extends Controller
             }
         }
         
-        $group_ids = UserGroups::where('group_status',1);
-        if(!empty($request->visible_to) && $request->visible_to !='all')
-            $group_ids = $group_ids->whereIn('class_config',$request->visible_to);
-        
-        $group_ids = $group_ids->pluck('id')->toArray();
-        if(!empty($group_ids))
+        if($newseventid_edit == '') //message triggered only for create 
         {
-            $user_list =UserGroupsMapping::whereIn('group_id',$group_ids)->where('user_status',Config::get('app.Group_Active'))->get()->toArray();
-            $this->insert_receipt_log($user_list,$newsevents_id,$user_table_id);
+            $group_ids = UserGroups::where('group_status',1);
+            if(!empty($request->visible_to) && $request->visible_to !='all')
+                $group_ids = $group_ids->whereIn('class_config',$request->visible_to);
+            
+            $group_ids = $group_ids->pluck('id')->toArray();
+            if(!empty($group_ids))
+            {
+                $user_list =UserGroupsMapping::whereIn('group_id',$group_ids)->where('user_status',Config::get('app.Group_Active'))->get()->toArray();
+                $this->insert_receipt_log($user_list,$newsevents_id,$user_table_id);
+            }
         }
 
         return response()->json(['message'=>'Stored Successfully!...']);
@@ -485,7 +498,7 @@ class APINewsEventsController extends Controller
         // Check authenticate user.
         $user = auth()->user();
 
-        $newsevents = NewsEvents::where(['published'=>'Y','status'=>1,'attachments'=>'Y','id'=>$request->news_events_id])->get()->first();//fetch all the images data
+        $newsevents = NewsEvents::where(['published'=>'Y','status'=>1,'id'=>$request->news_events_id])->get()->first();//fetch all the images data
         $user_table_id = app('App\Http\Controllers\APILoginController')->get_user_table_id($user);
 
         $userall_id = UserAll::where(['user_table_id'=>$user_table_id->id,'user_role'=>$user->user_role])->pluck('id')->first();//get common id 
@@ -502,7 +515,10 @@ class APINewsEventsController extends Controller
             if(!empty($images_list))//check if empty
             {
                 foreach ($images_list as $image_key => $image_value) {//form array 
-                    $images[]= $image_value['attachment_location'].'/'.$image_value['attachment_name'];
+                    $images[]= ([
+                        'id'=>$image_value['id'],
+                        'image'=>$image_value['attachment_location'].'/'.$image_value['attachment_name'],
+                    ]);
                 }
             }
 
@@ -550,6 +566,22 @@ class APINewsEventsController extends Controller
                 $designation = 'F/O Test';
             }
 
+            $visibility = [];
+            if($newsevents->visible_to!='all' && $newsevents->visible_to!='')
+            {
+                $class_sections = AcademicClassConfiguration::whereIn('id',explode(',',$newsevents->visible_to))->get();
+                if(!empty($class_sections))
+                {
+                    foreach($class_sections as $class_sec_key => $class_sec_value)
+                    {
+                        $visibility[] =([
+                        'id'=>$class_sec_value->id,
+                        'class'=>$class_sec_value->classsectionName(),
+                        ]);
+                    }
+                }
+            }
+
             // array formated to display news
             $data = ([
                 'id'=>$newsevents->id,
@@ -562,7 +594,7 @@ class APINewsEventsController extends Controller
                 'description'=>$newsevents->description,
                 'youtube_link'=>$newsevents->youtube_link,
                 'important'=>($newsevents->important == 'N')?'no':'yes',
-               
+                'visibility'=>$visibility,
             ]);
             if($newsevents->module_type == 1)
             {
@@ -820,5 +852,32 @@ class APINewsEventsController extends Controller
         else
             return $user_details;
 
+    }
+
+    // Delete attachments
+    public function delete_attachments(Request $request)
+    {
+        $news_events_id = $request->news_events_id;
+        $attachment_id = $request->attachment_id;
+
+        $news_events_details = NewsEvents::where('id',$news_events_id)->first();
+
+        NewsEventsAttachments::where('id',$attachment_id)->delete();
+
+        $exist_attachment_id = $news_events_details->images;
+
+        if($exist_attachment_id!='' || $exist_attachment_id != NULL)
+        {
+            $ids_list = explode(',',$exist_attachment_id);
+            $result = array_search($attachment_id, $ids_list);
+            if($result > -1)
+            {
+                unset($ids_list[$result]);
+                $news_events_details->images = implode(',',$ids_list);
+                $news_events_details->save();
+            }
+        }
+
+         return response()->json(['status'=>true,'message'=>'Deleted Successfully']);
     }
 }

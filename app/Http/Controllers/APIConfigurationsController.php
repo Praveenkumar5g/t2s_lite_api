@@ -1359,6 +1359,52 @@ class APIConfigurationsController extends Controller
 				UserGroupsMapping::insert($admin_group);
 			
 			$admin_group=[];
+
+						/*Admin - Management group*/
+			$usergroups = new UserGroups;
+	        $usergroups->group_name='Admin-Management';
+	        $usergroups->group_description='This group contains all admin and Management users.';
+	        $usergroups->group_action=1;//1-admin
+	        $usergroups->group_status=1;//1-active
+	        $usergroups->group_type=1;
+	        $usergroups->created_by=$userall_id;
+	        $usergroups->created_time=Carbon::now()->timezone('Asia/Kolkata');
+	        $usergroups->save();
+
+	        // Get inserted recored id
+	        $usergroup_id = $usergroups->id;
+
+	        foreach ($management_users as $management_key => $management_value) {
+				$management_group[] = ([
+					'group_id'=>$usergroup_id,
+					'user_table_id'=>$management_value['id'],
+					'group_access'=>1,
+					'user_role'=>Config::get('app.Management_role'),
+				]);
+			}
+
+			// Insert group users in mapping table
+			if(!empty($management_group))
+				UserGroupsMapping::insert($management_group);
+			$management_group=[];
+
+			// Fetch all admin users
+			$admin_users = UserAdmin::select('id','user_id')->where('user_status',1)->get()->toArray();
+
+			foreach ($admin_users as $admin_key => $admin_value) {
+				$admin_group[] = ([
+					'group_id'=>$usergroup_id,
+					'user_table_id'=>$admin_value['id'],
+					'group_access'=>1,
+					'user_role'=>Config::get('app.Admin_role'),
+				]);
+			}
+			// Insert group users in mapping table
+			if(!empty($admin_group))
+				UserGroupsMapping::insert($admin_group);
+			
+			$admin_group=[];
+			/*Admin - Management group*/
 			
 			/*create class-sections groups -  starts*/
 			$class_config = AcademicClassConfiguration::select('id','class_id','section_id','class_teacher')->get()->toArray();
@@ -1727,7 +1773,7 @@ class APIConfigurationsController extends Controller
 		// Save last login in DB
         $user = auth()->user();
 
-        $staff_list = UserStaffs::select('id','first_name','mobile_number','user_category','user_status','dob','doj','employee_no','department','profile_image');
+        $staff_list = UserStaffs::select('id','first_name','mobile_number','user_category','user_status','dob','doj','employee_no','department','profile_image','user_id');
         if(isset($request->search) && $request->search!='')
         {
         	$category = (strpos('teaching staff',strtolower($request->search)))?Config::get('app.Teaching_staff'):((strpos('non teaching staff',strtolower($request->search)))?Config::get('app.Non-Teaching_staff'):'');
@@ -1737,13 +1783,18 @@ class APIConfigurationsController extends Controller
         }
         $staff_list = $staff_list->get()->toArray();
         foreach ($staff_list as $key => $value) {
+        	$check_access = SchoolUsers::where('user_id',$value['user_id'])->where('user_role',Config::get('app.Staff_role'))->where('user_status',2)->pluck('id')->first(); //2- full deactivate
+
+        	if($check_access == '')
+        		$check_access = UserGroupsMapping::where('user_table_id',$value['id'])->where('user_role',Config::get('app.Staff_role'))->where('user_status',1)->pluck('id')->first();
+
     	 	$classessections = AcademicClassConfiguration::select('id','class_id','section_id','division_id','class_teacher')->where('class_teacher',$value['id'])->get()->first();
         	$staff_list[$key]['user_category'] = ($value['user_category'] ==Config::get('app.Teaching_staff'))?'Teaching_staff':'Non_teaching_staff';
         	$staff_list[$key]['dob'] = $value['dob'];
             $staff_list[$key]['doj'] = $value['doj'];
             $staff_list[$key]['employee_no'] = $value['employee_no'];
             $staff_list[$key]['department'] = $value['department'];
-            $staff_list[$key]['user_status'] = $value['user_status'];
+            $staff_list[$key]['user_status'] = ($check_access == '')?3:$value['user_status']; // 1- active,2-full deactive, 3-partical deactive;
             $staff_list[$key]['class'] = (!empty($classessections))?$classessections->classsectionName():'';
             $staff_list[$key]['designation'] = $value['user_category'];
             $staff_list[$key]['profile_image'] = (isset($value['profile_image']))?$value['profile_image']:'';
@@ -3329,24 +3380,27 @@ class APIConfigurationsController extends Controller
         	{
 
             	$parent_details = UserParents::whereIn('id',$parent_id)->get()->first();
-	        	if($parent_details->user_category == 1)
-	        	{
-	        		$student_list[$key]['father_name'] = $parent_details->first_name;
-	        		$student_list[$key]['father_mobile'] = $parent_details->mobile_number;
+            	if(!empty($parent_details))
+            	{
+		        	if($parent_details->user_category == 1)
+		        	{
+		        		$student_list[$key]['father_name'] = $parent_details->first_name;
+		        		$student_list[$key]['father_mobile'] = $parent_details->mobile_number;
 
-	        	}
-	        	else if($parent_details->user_category == 2)
-	        	{
-	        		$student_list[$key]['mother_name'] = $parent_details->first_name;
-	        		$student_list[$key]['mother_mobile'] = $parent_details->mobile_number;
+		        	}
+		        	else if($parent_details->user_category == 2)
+		        	{
+		        		$student_list[$key]['mother_name'] = $parent_details->first_name;
+		        		$student_list[$key]['mother_mobile'] = $parent_details->mobile_number;
 
-	        	}
-	        	else if($parent_details->user_category == 3)
-	        	{
-	        		$student_list[$key]['guardian_name'] = $parent_details->first_name;
-	        		$student_list[$key]['guardian_mobile'] = $parent_details->mobile_number;
+		        	}
+		        	else if($parent_details->user_category == 9)
+		        	{
+		        		$student_list[$key]['guardian_name'] = $parent_details->first_name;
+		        		$student_list[$key]['guardian_mobile'] = $parent_details->mobile_number;
 
-	        	}
+		        	}
+		        }
         	}
         	$student_list[$key]['student_name'] = $value['first_name'];
         	// $parent_list[$key]['mobile_number'] = $value['mobile_number'];
@@ -3368,17 +3422,22 @@ class APIConfigurationsController extends Controller
 		// Save last login in DB
         $user = auth()->user();
 
-        $admin_list = UserAdmin::select('id','first_name','mobile_number','user_status','dob','doj','employee_no','profile_image');
+        $admin_list = UserAdmin::select('id','first_name','mobile_number','user_status','dob','doj','employee_no','profile_image','user_id');
         if(isset($request->search) && $request->search!='')
         {
         	$admin_list = $admin_list->where('first_name', 'like', '%' . $request->search . '%')->orWhere('mobile_number', 'like', '%' . $request->search . '%')->orWhere('dob', 'like', '%' . $request->search . '%')->orWhere('doj', 'like', '%' . $request->search . '%')->orWhere('employee_no', 'like', '%' . $request->search . '%');
         }
         $admin_list = $admin_list->get()->toArray();
         foreach ($admin_list as $key => $value) {
+        	$check_access = SchoolUsers::where('user_id',$value['user_id'])->where('user_role',Config::get('app.Admin_role'))->where('user_status',2)->pluck('id')->first(); //2- full deactivate
+
+        	if($check_access == '')
+        		$check_access = UserGroupsMapping::where('user_table_id',$value['id'])->where('user_role',Config::get('app.Admin_role'))->where('user_status',1)->pluck('id')->first();
+
     	 	$admin_list[$key]['dob'] = $value['dob'];
             $admin_list[$key]['doj'] = $value['doj'];
             $admin_list[$key]['employee_no'] = $value['employee_no'];
-            $admin_list[$key]['user_status'] = $value['user_status'];
+            $admin_list[$key]['user_status'] = ($check_access == '')?3:$value['user_status']; // 1- active,2-full deactive, 3-partical deactive
             $admin_list[$key]['designation'] = 'Admin';
             $admin_list[$key]['profile_image'] = (isset($value['profile_image']))?$value['profile_image']:'';
         }
@@ -3391,7 +3450,7 @@ class APIConfigurationsController extends Controller
 		// Save last login in DB
         $user = auth()->user();
 
-        $management_list = UserManagements::select('id','first_name','mobile_number','user_category','user_status','dob','doj','employee_no','profile_image');
+        $management_list = UserManagements::select('id','first_name','mobile_number','user_category','user_status','dob','doj','employee_no','profile_image','user_id');
         if(isset($request->search) && $request->search!='')
         {
         	$category = (strpos('main head',strtolower($request->search)))?6:((strpos('chairman',strtolower($request->search)))?7:((strpos('principal',strtolower($request->search)))?8:((strpos('headmaster',strtolower($request->search)))?8:'')));
@@ -3401,11 +3460,16 @@ class APIConfigurationsController extends Controller
         }
         $management_list = $management_list->get()->toArray();
         foreach ($management_list as $key => $value) {
+        	$check_access = SchoolUsers::where('user_id',$value['user_id'])->where('user_role',Config::get('app.Management_role'))->where('user_status',2)->pluck('id')->first(); //2- full deactivate
+
+        	if($check_access == '')
+        		$check_access = UserGroupsMapping::where('user_table_id',$value['id'])->where('user_role',Config::get('app.Management_role'))->where('user_status',1)->pluck('id')->first();
+
         	$designation = ($value['user_category']!='')? UserCategories::where('id',$value['user_category'])->pluck('category_name')->first():'';
         	$management_list[$key]['dob'] = $value['dob'];
             $management_list[$key]['doj'] = $value['doj'];
             $management_list[$key]['employee_no'] = $value['employee_no'];
-            $management_list[$key]['user_status'] = $value['user_status'];
+            $management_list[$key]['user_status'] = ($check_access == '')?3:$value['user_status']; // 1- active,2-full deactive, 3-partical deactive
             $management_list[$key]['designation'] = $designation;
             $management_list[$key]['profile_image'] = (isset($value['profile_image']))?$value['profile_image']:'';
         }
@@ -3433,5 +3497,26 @@ class APIConfigurationsController extends Controller
         }
         else
         	return response()->json(['status'=>false,'message'=>'Admission number is required!...']);
+	}
+
+	public function CheckuserStatus(Request $request)
+	{
+		$user = auth()->user();
+		if($user->user_role == Config::get('app.Admin_role'))//check role and get current user id
+            $userid = UserAdmin::where(['user_id'=>$user->user_id])->pluck('id')->first();
+        else if($user->user_role == Config::get('app.Management_role'))
+        	$userid = UserManagements::where(['user_id'=>$user->user_id])->pluck('id')->first();
+        else if($user->user_role == Config::get('app.Staff_role'))
+        	$userid = UserStaffs::select('id','user_category')->where(['user_id'=>$user->user_id])->pluck('id')->first();
+        else if($user->user_role == Config::get('app.Parent_role'))
+        	$userid = UserParents::where(['user_id'=>$user->user_id])->pluck('id')->first();
+
+        // check deactivation for user
+        $check_access = UserGroupsMapping::where('user_table_id',$userid)->where('group_id',2)->where('user_role',$user->user_role)->where('user_status',1)->pluck('id')->first();
+
+        if($check_access == '')
+            return response()->json(['status'=>false,'message'=>'Your account is deactivated. Please contact school management for futher details']);
+        else
+        	return response()->json(['status'=>true,'message'=>'']);
 	}
 }

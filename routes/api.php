@@ -2,6 +2,8 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Version2\V2APICommunicationController;
+use App\Http\Controllers\Version2\V2APINewsEventsController;
 use App\Http\Controllers\APIConfigurationsController;
 use App\Http\Controllers\APICommunicationController;
 use App\Http\Controllers\APIRegistrationController;
@@ -53,7 +55,25 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 Route::get('/demo', function () {
     dd(1);
 });
+/*
+|--------------------------------------------------------------------------
+| Application Routes for version 2
+|--------------------------------------------------------------------------
+*/
+Route::group(['namespace' => 'Version2', 'prefix' => 'v2'], function ($router) {
+    Route::group(['middleware' => 'auth.connect'], function ($router) {
+        Route::post('/view_messages',[V2APICommunicationController::class,'view_messages']);
+        Route::get('/mainscreen_view_newsevents',[V2APINewsEventsController::class,'mainscreen_view_newsevents']);
+        Route::get('/view_all_images',[V2APINewsEventsController::class,'view_all_images']);
+        Route::get('/mainscreen_view_allevents',[V2APINewsEventsController::class,'mainscreen_view_allevents']);
+    });
+});
 
+/*
+|--------------------------------------------------------------------------
+| Application Routes for version 1
+|--------------------------------------------------------------------------
+*/
 Route::get('/user/welcome', [WelcomeController::class, 'welcome']);
 Route::post('/user/register' , [APIRegistrationController::class,'register']);
 

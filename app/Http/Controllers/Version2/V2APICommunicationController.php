@@ -236,7 +236,7 @@ class V2APICommunicationController extends Controller
 
                     $staff_categories = array_column(UserCategories::select('id','category_name')->where('user_role',Config::get('app.Staff_role'))->get()->toArray(),'category_name','id');
                     $unreadmessages = $index = 0;
-                    foreach ($notification_ids as $key => $value) {
+                    foreach ($tempdata['data'] as $key => $value) {
                         $fetch_sender_id = CommunicationRecipients::select('user_table_id','user_role')->where(['view_type'=>1,'communication_id'=>$value['communication_id']])->get()->first();
                         if($value['communication_type'] == 1) //chat or homework
                             $message_details = Communications::select('*')->where(['id'=>$value['communication_id']])->get()->first();

@@ -98,7 +98,7 @@ class V2APICommunicationController extends Controller
                 $group_id = ([$request->group_id]);
         }
 
-        $messages=$user_details= $messages = [];
+        $messages=$user_details= [];
         $unreadmessages = 0;
         if(!empty($userdetails) && !empty($group_id))
         {
@@ -150,7 +150,7 @@ class V2APICommunicationController extends Controller
             {
                 $visible_to = $userdetails->id;
                 $usertableid = implode(',',UserAll::where('id',explode(',',$visible_to))->pluck('user_table_id')->toArray());
-                $management_messages = Communications::where('group_id',$request->group_id)->Where('visible_to','all')->orWhere('visible_to', 'like', '%' .$usertableid. ',%')->where('communication_type',1)->where('distribution_type',9);
+                $management_messages = Communications::where('group_id',$request->group_id)->where('communication_type',1)->where('distribution_type',9);
                 if($user->user_role == Config::get('app.Parent_role'))
                         $management_messages = $management_messages->whereNull('message_status')->orWhere('message_status',2);
 
@@ -199,6 +199,7 @@ class V2APICommunicationController extends Controller
                     $query->where(['user_table_id'=>$userdetails->id,'user_role'=>$user->user_role,'communication_type'=>4])->whereIn('communication_id',$communication_id_list);
                 })->orderBy('actioned_time','DESC')->get()->toArray(); //Fetch applicable notification ids from table for logged in user.
 
+            // echo '<pre>';print_r($class_messages);;exit;
             // $currentPage = LengthAwarePaginator::resolveCurrentPage(); // Get current page form url e.x. &page=1
             $currentPage = $request->page;
             $itemCollection = new Collection($notification_ids); // Create a new Laravel collection from the array data
@@ -221,7 +222,9 @@ class V2APICommunicationController extends Controller
             $messages['prev_page_url'] = $tempdata['prev_page_url'];
             $messages['from'] = $tempdata['from'];
             $messages['to'] = $tempdata['to'];
+
             if($currentPage > 0){
+
                 $read_count = CommunicationRecipients::select(DB::raw('count(*) as count'),'communication_id','communication_type')->where(['message_status'=>Config::get('app.Read')])->groupBy('communication_id','communication_type')->get()->toArray(); //get read count based on notification id.
                 // $readcount_data = array_column($read_count,'count','communication_id');
                 foreach($read_count as $read_key => $read_value){
@@ -233,7 +236,7 @@ class V2APICommunicationController extends Controller
 
                     $staff_categories = array_column(UserCategories::select('id','category_name')->where('user_role',Config::get('app.Staff_role'))->get()->toArray(),'category_name','id');
                     $unreadmessages = $index = 0;
-                    foreach ($tempdata['data'] as $key => $value) {
+                    foreach ($notification_ids as $key => $value) {
                         $fetch_sender_id = CommunicationRecipients::select('user_table_id','user_role')->where(['view_type'=>1,'communication_id'=>$value['communication_id']])->get()->first();
                         if($value['communication_type'] == 1) //chat or homework
                             $message_details = Communications::select('*')->where(['id'=>$value['communication_id']])->get()->first();
@@ -396,7 +399,7 @@ class V2APICommunicationController extends Controller
                                 'distribution_type'=>$message_details->distribution_type,
                                 'approval_status'=>($message_details->approval_status == null)?0:$message_details->approval_status,//0-waiting for approval,1-approval,2-denied
                                 'read_count'=>(isset($readcount_data[$value['communication_type']]) && isset($readcount_data[$value['communication_type']][$value['communication_id']]))?$readcount_data[$value['communication_type']][$value['communication_id']]:0,
-                                'edited'=>($message_details['updated_time'] == null)?0:1,
+                                'edited'=>$message_details['edited'],
 
                             ]);
                             if($message_details->message_category == 6 && $message_details->communication_type == 1)
@@ -452,7 +455,7 @@ class V2APICommunicationController extends Controller
                                             $images[]= $image_value['attachment_location'].''.$image_value['attachment_name'];
                                         }
                                         
-                                        $messages[$index]['images'] = $images;
+                                        $messages['data'][$index]['images'] = $images;
                                     }
                                 }
                                 else if($message_details->message_category == 6 && $message_details->communication_type == 1)
@@ -476,8 +479,8 @@ class V2APICommunicationController extends Controller
                           
                     }
                 }
-            }    
-            echo json_encode(['message'=>$messages,'user_details'=>$user_details,'unreadmessages'=>$unreadmessages]);exit();    
+            }
+            echo json_encode(['message'=>$messages,'user_details'=>$user_details,'unreadmessages'=>$unreadmessages]);exit();        
         }
         return response()->json('No Messages');
     }

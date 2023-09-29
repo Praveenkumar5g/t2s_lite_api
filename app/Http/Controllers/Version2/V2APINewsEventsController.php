@@ -105,6 +105,7 @@ class V2APINewsEventsController extends Controller
         $olddata['from'] = $tempdata['from'];
         $olddata['to'] = $tempdata['to'];
 
+        $index =0;
         foreach ($tempdata['data'] as $key => $value) { //loop to format all the data in display formaat
             $news = $images = $addon_images = []; //empty declartion
             $image_ids = explode(',', $value['images']);//fetch main images
@@ -183,11 +184,11 @@ class V2APINewsEventsController extends Controller
                 'like'=>in_array($value['id'],$liked_news),
                 'total_like'=>isset($total_like[$value['id']])?$total_like[$value['id']]:0,
             ]);
-            if($key == 0)
+            if($index == 0)
                 $latest = $news; //latest news
             else
                 $olddata['data'][] = $news; //old news
-
+            $index++;
         }
         return response()->json(['latest'=>$latest,'old'=>$olddata]);
     }
@@ -405,6 +406,8 @@ class V2APINewsEventsController extends Controller
 
     public function eventsdata($upcoming_events_list,$old_events_list,$management_categories,$staff_categories,$type,$url,$page)
     {
+        // Check authenticate user.
+        $user = auth()->user();
         // $currentPage = LengthAwarePaginator::resolveCurrentPage(); // Get current page form url e.x. &page=1
         $currentPage = $page;
         $list = ($type == 'new')?$upcoming_events_list:$old_events_list;

@@ -1523,7 +1523,8 @@ class WebUserManagementController extends Controller
                             }
 
                         }
-                        $check_existing_teacherdetails = $check_existing_teacherdetails->update(['staff'=>$staff_id]);
+                        if(!empty($check_existing_teacherdetails))
+                            $check_existing_teacherdetails = $check_existing_teacherdetails->update(['staff'=>$staff_id]);
 
                         $checkusergroup_exists = UserGroupsMapping::where('user_table_id',$staff_id)->where('group_id',$teachergroup_id)->pluck('id')->first();
 
@@ -1775,7 +1776,8 @@ class WebUserManagementController extends Controller
                             }
 
                         }
-                        $check_existing_teacherdetails = $check_existing_teacherdetails->update(['staff'=>$staff_details->id]);
+                        if(!empty($check_existing_teacherdetails))
+                            $check_existing_teacherdetails = $check_existing_teacherdetails->update(['staff'=>$staff_details->id]);
 
                         $checkusergroup_exists = UserGroupsMapping::where('user_table_id',$staff_details->id)->where('group_id',$teachergroup_id)->pluck('id')->first();
 

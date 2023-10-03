@@ -1171,8 +1171,8 @@ class APICommunicationController extends Controller
         }
         else if($userdetails['user_role'] == Config::get('app.Parent_role'))
         {
-            $user_category = 'Parent';
             $user_details = UserParents::where(['id'=>$userdetails['user_table_id']])->get()->first();//fetch id from user all table to store notification triggered user
+            $user_category = 'Parent';
         }
         return (['user_details'=>$user_details,'user_category'=>$user_category]);
     }
@@ -1590,8 +1590,8 @@ class APICommunicationController extends Controller
             foreach ($list as $key => $value) {
                 $category = $app_status = $admission_no='';
 
-                $list = $this->user_details((object)$value); //fetch individual user details
-                echo '<pre>';print_r($list);exit;
+                $list = $this->array_user_details($value); //fetch individual user details
+
                 if(!empty($list))
                 {
                     if($value['user_role'] == Config::get('app.Parent_role')) //for parent fetch student details

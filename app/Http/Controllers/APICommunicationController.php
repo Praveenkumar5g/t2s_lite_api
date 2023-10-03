@@ -1551,7 +1551,7 @@ class APICommunicationController extends Controller
         // Get authorizated user details
         $user = auth()->user();
         $player_details = array_column(Appusers::get()->toArray(),'player_id','loginid');
-        $group_users = UserGroupsMapping::where('group_id',$request->group_id)->where('user_status',Config::get('app.Group_Active')); //fetch group members
+        $group_users = UserGroupsMapping::where('group_id',$request->group_id)->where('user_status',Config::get('app.Group_Active'))->where('user_role',[3]); //fetch group members
 
         if(isset($request->search) && $request->search!='')
         {

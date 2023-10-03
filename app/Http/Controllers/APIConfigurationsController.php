@@ -3449,7 +3449,7 @@ class APIConfigurationsController extends Controller
         $paginatedItems->setPath($request->url()); // set url path for generted links
         $paginatedItems->appends($request->page);
 
-        $tempdata = $paginatedItems->toArray();
+        $tempdata = $paginatedItems->toArray(); 
         $member_student_list['total'] = $tempdata['total'];
         $member_student_list['per_page'] = $tempdata['per_page'];
         $member_student_list['current_page'] = $tempdata['current_page'];

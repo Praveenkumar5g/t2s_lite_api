@@ -1171,6 +1171,7 @@ class APICommunicationController extends Controller
         }
         else if($userdetails['user_role'] == Config::get('app.Parent_role'))
         {
+            echo 'tet';exit;
             $user_category = 'Parent';
             $user_details = UserParents::where(['id'=>$userdetails['user_table_id']])->get()->first();//fetch id from user all table to store notification triggered user
             echo '<pre>';print_r($user_details);exit;

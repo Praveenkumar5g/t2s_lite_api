@@ -1596,8 +1596,8 @@ class APICommunicationController extends Controller
                 {
                     if($value['user_role'] == Config::get('app.Parent_role')) //for parent fetch student details
                     {
-                        $user_category = UserCategories::where(['id'=>$list['user_details']->user_category])->pluck('category_name')->first(); //fetch parent category and student name
-                        $user_category = (strtolower($user_category) == 'father')?'F/O':((strtolower($user_category) == 'mother')?'M/O':'G/O');
+                        // $user_category = UserCategories::where(['id'=>$list['user_details']->user_category])->pluck('category_name')->first(); //fetch parent category and student name
+                        // $user_category = (strtolower($user_category) == 'father')?'F/O':((strtolower($user_category) == 'mother')?'M/O':'G/O');
                         $class_config = UserGroups::where('id',$request->group_id)->pluck('class_config')->first();
                         $student_ids_list = UserStudentsMapping::where(['parent'=>$list['user_details']->id])->pluck('student')->toArray();
                         $student_id = UserStudents::whereIn('id',$student_ids_list);
@@ -1608,7 +1608,8 @@ class APICommunicationController extends Controller
                         $student_id =$student_id->get()->toArray();
 
                         $student_name = implode(',',array_column($student_id,'first_name'));
-                        $category = $user_category.' '.$student_name; //combine category and name
+                        // $category = $user_category.' '.$student_name; //combine category and name
+                        $category = $list['user_details'];
                         $admission_no = implode(',',array_column($student_id,'admission_number'));
                     }
                     //fetch id from user all table to store notification triggered user

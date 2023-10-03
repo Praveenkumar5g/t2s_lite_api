@@ -1589,7 +1589,7 @@ class APICommunicationController extends Controller
 
             foreach ($list as $key => $value) {
                 $category = $app_status = $admission_no='';
-
+                echo '<pre>';print_r($value);
                 $list = $this->array_user_details($value); //fetch individual user details
 
                 if(!empty($list))

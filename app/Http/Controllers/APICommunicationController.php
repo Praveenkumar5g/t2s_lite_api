@@ -1150,33 +1150,6 @@ class APICommunicationController extends Controller
         return (['user_details'=>$user_details,'user_category'=>$user_category]);
     }
 
-    public function array_user_details($userdetails)
-    {
-        if($userdetails['user_role'] == Config::get('app.Parent_role'))
-        {
-            $user_category = 'Parent';
-            $user_details = UserParents::where(['id'=>$userdetails['user_table_id']])->get()->first();//fetch id from user all table to store notification triggered user
-        }
-        else if($userdetails['user_role'] == Config::get('app.Management_role'))
-        {
-            $management_categories = array_column(UserCategories::select('id','category_name')->where('user_role',Config::get('app.Management_role'))->get()->toArray(),'category_name','id');
-            $user_details = UserManagements::where(['id'=>$userdetails['user_table_id']])->get()->first();
-            $user_category = $management_categories[$user_details['user_category']];
-        }
-        else if($userdetails['user_role'] == Config::get('app.Staff_role'))
-        {
-            $staff_categories = array_column(UserCategories::select('id','category_name')->where('user_role',Config::get('app.Staff_role'))->get()->toArray(),'category_name','id');
-            $user_details = UserStaffs::where(['id'=>$userdetails['user_table_id']])->get()->first();
-            $user_category = isset($user_details['user_category'])?$staff_categories[$user_details['user_category']]:'';
-        }
-        else if($userdetails['user_role'] == Config::get('app.Admin_role'))//check role and get current user id
-        {
-            $user_details = UserAdmin::where(['id'=>$userdetails['user_table_id']])->get()->first();
-            $user_category = 'Admin';
-        }
-        return (['user_details'=>$user_details,'user_category'=>$user_category]);
-    }
-
     public function message_delivery_details(Request $request)
     {
         // Add rules to the Store Message form
@@ -1591,13 +1564,13 @@ class APICommunicationController extends Controller
                 $category = $app_status = $admission_no='';
 
                 $list = $this->array_user_details($value); //fetch individual user details
-
+                echo '<pre>';print_r($list);exit;
                 if(!empty($list))
                 {
                     if($value['user_role'] == Config::get('app.Parent_role')) //for parent fetch student details
                     {
-                        // $user_category = UserCategories::where(['id'=>$list['user_details']->user_category])->pluck('category_name')->first(); //fetch parent category and student name
-                        // $user_category = (strtolower($user_category) == 'father')?'F/O':((strtolower($user_category) == 'mother')?'M/O':'G/O');
+                        $user_category = UserCategories::where(['id'=>$list['user_details']->user_category])->pluck('category_name')->first(); //fetch parent category and student name
+                        $user_category = (strtolower($user_category) == 'father')?'F/O':((strtolower($user_category) == 'mother')?'M/O':'G/O');
                         $class_config = UserGroups::where('id',$request->group_id)->pluck('class_config')->first();
                         $student_ids_list = UserStudentsMapping::where(['parent'=>$list['user_details']->id])->pluck('student')->toArray();
                         $student_id = UserStudents::whereIn('id',$student_ids_list);
@@ -1635,6 +1608,33 @@ class APICommunicationController extends Controller
             // array_multisort($key_values, SORT_ASC, $members_list);
         }
         return response()->json($members_list);exit();
+    }
+
+    public function array_user_details($userdetails)
+    {
+        if($userdetails['user_role'] == Config::get('app.Parent_role'))
+        {
+            $user_category = 'Parent';
+            $user_details = UserParents::where(['id'=>$userdetails['user_table_id']])->get()->first();//fetch id from user all table to store notification triggered user
+        }
+        else if($userdetails['user_role'] == Config::get('app.Management_role'))
+        {
+            $management_categories = array_column(UserCategories::select('id','category_name')->where('user_role',Config::get('app.Management_role'))->get()->toArray(),'category_name','id');
+            $user_details = UserManagements::where(['id'=>$userdetails['user_table_id']])->get()->first();
+            $user_category = $management_categories[$user_details['user_category']];
+        }
+        else if($userdetails['user_role'] == Config::get('app.Staff_role'))
+        {
+            $staff_categories = array_column(UserCategories::select('id','category_name')->where('user_role',Config::get('app.Staff_role'))->get()->toArray(),'category_name','id');
+            $user_details = UserStaffs::where(['id'=>$userdetails['user_table_id']])->get()->first();
+            $user_category = isset($user_details['user_category'])?$staff_categories[$user_details['user_category']]:'';
+        }
+        else if($userdetails['user_role'] == Config::get('app.Admin_role'))//check role and get current user id
+        {
+            $user_details = UserAdmin::where(['id'=>$userdetails['user_table_id']])->get()->first();
+            $user_category = 'Admin';
+        }
+        return (['user_details'=>$user_details,'user_category'=>$user_category]);
     }
 
     // Fetch all the images in group

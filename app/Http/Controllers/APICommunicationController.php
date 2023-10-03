@@ -1563,12 +1563,11 @@ class APICommunicationController extends Controller
             foreach ($list as $key => $value) {
                 $category = $app_status = $admission_no='';
 
-                $list = $this->array_user_details($value); //fetch individual user details
+                $list = $this->user_details((object)$value); //fetch individual user details
                 if(!empty($list['user_details']))
                 {
                     if($value['user_role'] == Config::get('app.Parent_role')) //for parent fetch student details
                     {
-                        $list['user_details'] = UserParents::where('idd',$value['user_table_id'])->get();
                         $user_category = UserCategories::where(['id'=>$list['user_details']->user_category])->pluck('category_name')->first(); //fetch parent category and student name
                         $user_category = (strtolower($user_category) == 'father')?'F/O':((strtolower($user_category) == 'mother')?'M/O':'G/O');
                         $class_config = UserGroups::where('id',$request->group_id)->pluck('class_config')->first();

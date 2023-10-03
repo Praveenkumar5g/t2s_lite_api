@@ -1152,6 +1152,7 @@ class APICommunicationController extends Controller
 
     public function array_user_details($userdetails)
     {
+        echo '<pre>';print_r($userdetails);
         if($userdetails['user_role'] == Config::get('app.Management_role'))
         {
             $management_categories = array_column(UserCategories::select('id','category_name')->where('user_role',Config::get('app.Management_role'))->get()->toArray(),'category_name','id');

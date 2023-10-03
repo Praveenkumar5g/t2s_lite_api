@@ -1551,7 +1551,7 @@ class APICommunicationController extends Controller
         // Get authorizated user details
         $user = auth()->user();
         $player_details = array_column(Appusers::get()->toArray(),'player_id','loginid');
-        $group_users = UserGroupsMapping::where('group_id',$request->group_id)->where('user_status',Config::get('app.Group_Active')); //fetch group members
+        $group_users = UserGroupsMapping::where('group_id',$request->group_id)->where('user_status',Config::get('app.Group_Active'))->whereIn('user_role',[3]); //fetch group members
 
         if(isset($request->search) && $request->search!='')
         {
@@ -1591,7 +1591,7 @@ class APICommunicationController extends Controller
                 $category = $app_status = $admission_no='';
 
                 $list = $this->user_details((object)$value); //fetch individual user details
-
+                echo '<pre>';print_r($list);exit;
                 if(!empty($list))
                 {
                     if($value['user_role'] == Config::get('app.Parent_role')) //for parent fetch student details

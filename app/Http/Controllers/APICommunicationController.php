@@ -1173,7 +1173,7 @@ class APICommunicationController extends Controller
         {
             $user_category = 'Parent';
             $user_details = UserParents::where(['id'=>$userdetails['user_table_id']])->get()->first();//fetch id from user all table to store notification triggered user
-            echo '<pre>';print_r(UserParents::where(['id'=>$userdetails['user_table_id']])->get()->toArray());exit;
+            echo '<pre>';print_r($user_details);exit;
         }
         return (['user_details'=>$user_details,'user_category'=>$user_category]);
     }

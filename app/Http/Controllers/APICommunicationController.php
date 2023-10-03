@@ -1152,7 +1152,6 @@ class APICommunicationController extends Controller
 
     public function array_user_details($userdetails)
     {
-        echo '<pre>';print_r($userdetails);
         if($userdetails['user_role'] == Config::get('app.Management_role'))
         {
             $management_categories = array_column(UserCategories::select('id','category_name')->where('user_role',Config::get('app.Management_role'))->get()->toArray(),'category_name','id');
@@ -1175,6 +1174,7 @@ class APICommunicationController extends Controller
             $user_category = 'Parent';
             $user_details = UserParents::where(['id'=>$userdetails['user_table_id']])->get()->first();//fetch id from user all table to store notification triggered user
         }
+        echo '<pre>';print_r($user_details);
         return (['user_details'=>$user_details,'user_category'=>$user_category]);
     }
 

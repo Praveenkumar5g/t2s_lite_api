@@ -1558,8 +1558,8 @@ class APICommunicationController extends Controller
         //     // $staff_list = $staff_list->where('first_name', 'like', '%' . $request->search . '%')->orWhere('mobile_number', 'like', '%' . $request->search . '%');
         // }
         // else
-            $group_users =$group_users->groupBy('user_role')->get();
-        echo '<pre>';print_r($group_users);exit;
+            $group_users =$group_users->get();
+
         // $currentPage = LengthAwarePaginator::resolveCurrentPage(); // Get current page form url e.x. &page=1
         $currentPage = $request->page;
         $itemCollection = new Collection($group_users); // Create a new Laravel collection from the array data

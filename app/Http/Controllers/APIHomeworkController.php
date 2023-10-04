@@ -392,7 +392,7 @@ class APIHomeworkController extends Controller
         foreach ($request->notification_id as $key => $value) {
             if($value>0)
             {
-                $triggered_users = $user_list = [];
+                $triggered_users = $user_list = $notification_triggered_user = [];
                 $communication_data = Communications::where(['id'=>$value])->get()->first();
                 $class_config = UserGroups::where('id',$communication_data->group_id)->pluck('class_config')->first();
                 $subject_teacher = AcademicSubjectsMapping::where('subject',$communication_data->subject_id)->where('class_config',$class_config)->pluck('staff')->first();

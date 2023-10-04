@@ -397,7 +397,7 @@ class APIHomeworkController extends Controller
                 $class_config = UserGroups::where('id',$communication_data->group_id)->pluck('class_config')->first();
                 $subject_teacher = AcademicSubjectsMapping::where('subject',$communication_data->subject_id)->where('class_config',$class_config)->pluck('staff')->first();
 
-                $class_teacher[] = AcademicClassConfiguration::where('id',$class_config)->pluck('class_teacher')->first();
+                $class_teacher = AcademicClassConfiguration::where('id',$class_config)->pluck('class_teacher')->first();
                 // $notification_triggered_user[] = UserAll::where('id',$communication_data->created_by)->where('user_role',Config::get('app.Staff_role'))->pluck('user_table_id')->first();
                 // if(!empty($notification_triggered_user))
                 //     $triggered_users = array_merge($class_teacher,$notification_triggered_user);

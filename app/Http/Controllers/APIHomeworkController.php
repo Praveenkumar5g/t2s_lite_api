@@ -365,7 +365,7 @@ class APIHomeworkController extends Controller
         // $user_ids = $user_ids->get()->toArray();
         // $user_list = array_merge($user_list,$user_ids);
         // if(count($user_list)>0)
-        //     app('App\Http\Controllers\APICommunicationController')->insert_receipt_log($user_list,$notification_id,$user_table_id);
+        //     app('App\Http\Controllers\APICommunicationController')->insert_receipt_log($user_list,$notification_id,$user_table_id); 
         if($request->notification_id!='')
             return response()->json(['message'=>'Homework updated Successfully!...']);
         else

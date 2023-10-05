@@ -3773,7 +3773,8 @@ class APIConfigurationsController extends Controller
 			{	
 				$removing_group = $classgroups =[];
 				$removing_group =  ($user_category == Config::get('app.Teaching_staff'))? 5:4; //remove teaching or non-teaching staff based on category selection.
-
+				AcademicSubjectsMapping::where('staff',$original_details->id)->update(['staff'=>null,'updated_by'=>$userall_id]);
+				AcademicClassConfiguration::where('class_teacher',$original_details->id)->update(['class_teacher'=>null,'updated_by'=>$userall_id]);
 				$classgroups = UserGroupsMapping::where('group_type',2)->pluck('id')->toArray();
 
 				if($original_role == Config::get('app.Admin_role'))
@@ -3801,6 +3802,8 @@ class APIConfigurationsController extends Controller
         $change_table_details->dob = $original_details->dob;
         $change_table_details->doj = $original_details->doj;
         $change_table_details->employee_no = $original_details->employee_no;
+        if(isset($request->user_category))
+        	$change_table_details->employee_no = $request->user_category;
 	    $change_table_details->created_by=$userall_id;
     	$change_table_details->created_time=Carbon::now()->timezone('Asia/Kolkata');
         $change_table_details->save();
@@ -3901,5 +3904,12 @@ class APIConfigurationsController extends Controller
 			return (['status'=>true,'message'=>'']);
 		else
 			return (['status'=>false,'message'=>'Teacher was configured in some of the classes']);
+	}
+
+	public function check_user_role_changed(Request $request)
+	{
+		// Check authentication
+		$user = auth()->user();
+		return (['role_change'=>$user->role_change]);
 	}
 }

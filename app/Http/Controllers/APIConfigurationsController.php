@@ -3910,6 +3910,7 @@ class APIConfigurationsController extends Controller
 	{
 		// Check authentication
 		$user = auth()->user();
-		return (['role_change'=>$user->role_change]);
+		$userdetails = SchoolUsers::where('user_id',$user->user_id)->get()->first();
+		return (['role_change'=>$userdetails->role_change]);
 	}
 }

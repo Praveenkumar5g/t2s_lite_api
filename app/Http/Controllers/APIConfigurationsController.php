@@ -3700,4 +3700,206 @@ class APIConfigurationsController extends Controller
         else
         	return response()->json(['status'=>true,'message'=>'']);
 	}
+
+		public function user_role_change(Request $request)
+	{
+		// Check authentication
+		$user = auth()->user();
+		$main_user_details = app('App\Http\Controllers\APILoginController')->get_user_table_id($user);
+
+		$userall_id = UserAll::where(['user_table_id'=>$main_user_details->id,'user_role'=>$user->user_role])->pluck('id')->first();
+
+		$profile_details = SchoolProfile::where(['id'=>$user->school_profile_id])->first();//Fetch school profile details
+
+		$remove_groups = $add_groups = $change_status =[];
+		$changing_role = $request->changing_role; //get input
+
+		$original_role = $request->original_role;
+
+		$original_user_id = $request->user_id;
+
+		$user_data = (object) ([
+			'user_id'=>$original_user_id,
+			'user_role'=>$original_role
+		]);
+
+		$original_details = app('App\Http\Controllers\APILoginController')->get_user_table_id($user_data);
+
+		$original_userall_id = UserAll::where(['user_table_id'=>$original_details->id,'user_role'=>$original_role])->pluck('id')->first();
+
+		$all_group_ids = UserGroups::where('group_status',Config::get('app.Group_Active'))->pluck('id')->toArray();
+
+		if(($changing_role == Config::get('app.Admin_role') || $changing_role == Config::get('app.Management_role')) && $original_role != $changing_role) //changing role to admin or managment
+		{
+			if($original_role == Config::get('app.Management_role') )
+			{
+
+				$check_exists = UserAdmin::where('mobile_number',$original_details->mobile_number)->pluck('id')->first();
+				if($check_exists=='')
+				{
+		            $change_table_details = new UserAdmin;
+					$remove_groups = ([1]);
+
+					// UserManagements::where('id',$original_details->id)->delete();
+				}
+				else
+					return (['status'=>'false','message'=>'Mobile number already exists as admin']);
+			}
+			else if($original_role == Config::get('app.Admin_role'))
+			{
+				$check_exists = UserManagements::where('mobile_number',$original_details->mobile_number)->pluck('id')->first();
+				if($check_exists=='')
+				{
+					$change_table_details = new UserManagements;
+					$change_table_details->user_category = $request->user_category;
+					$add_groups = ([1]);
+					$group_access = 1;
+				}
+				else
+					return (['status'=>'false','message'=>'Mobile number already exists as management']);
+			}
+			else if($original_role == Config::get('app.Staff_role'))
+			{
+				$change_table_details = new UserStaffs;
+				$change_table_details->user_category = $request->user_category;
+				$change_status = $all_group_ids;
+				$changing_group_access = Config::get('app.Group_Active'); //changing access to group admin
+			}
+		}
+		else if($changing_role == Config::get('app.Staff_role')) //changing role to staff
+		{
+			$user_category = $request->user_category;
+			if($user_category != '')
+			{	
+				$removing_group = $classgroups =[];
+				$removing_group =  ($user_category == Config::get('app.Teaching_staff'))? 5:4; //remove teaching or non-teaching staff based on category selection.
+
+				$classgroups = UserGroupsMapping::where('group_type',2)->pluck('id')->toArray();
+
+				if($original_role == Config::get('app.Admin_role'))
+				{
+					$remove_groups = ([1,$removing_group,$classgroups]);
+					$change_status = $all_group_ids;
+					$changing_group_access = Config::get('app.Group_Deactive'); //changing access to group admin
+				}
+				else if($original_role == Config::get('app.Management_role'))
+				{
+					$admin_management_group_id = UserGroups::where('group_name', 'like', '%Admin-Management%')->pluck('id')->first();
+					$remove_groups = ([1,$admin_management_group_id,$removing_group,$classgroups]);
+					$change_status = $all_group_ids;
+					$changing_group_access = Config::get('app.Group_Deactive'); //changing access to group admin
+				}
+			}
+			else
+				return response()->json(['status'=>false,'message'=>'User Category Required']);
+		}
+
+		$change_table_details->first_name= $original_details->first_name;
+        $change_table_details->mobile_number=$original_details->mobile_number;
+        $change_table_details->email_id = $original_details->emai_id;
+        $change_table_details->profile_image = $original_details->profile_image;
+        $change_table_details->dob = $original_details->dob;
+        $change_table_details->doj = $original_details->doj;
+        $change_table_details->employee_no = $original_details->employee_no;
+	    $change_table_details->created_by=$userall_id;
+    	$change_table_details->created_time=Carbon::now()->timezone('Asia/Kolkata');
+        $change_table_details->save();
+
+        $id =$change_table_details->id;
+
+        $user_id_char = ($changing_role == Config::get('app.Admin_role'))?'A':($changing_role == Config::get('app.Management_role')?'M':'S');
+
+        // generate and update staff id in db 
+        $updated_user_id = $profile_details['school_code'].substr($profile_details['active_academic_year'], -2).$user_id_char.sprintf("%04s", $id);
+        $change_table_details->user_id = $updated_user_id;
+        $change_table_details->save();
+
+        $user_all = UserAll::where('id',$original_userall_id)->get()->first();
+
+        if(!empty($user_all))
+        {
+	        $user_all->user_role=$changing_role;
+	        $user_all->user_table_id=$id;
+	        $user_all->save();
+
+	    	UserGroupsMapping::where('user_tables_id',$original_details->id)->where('user_role',$original_role)->update(['user_table_id'=>$id,'user_role'=>$changing_role]);
+        }
+
+
+        $schoolusers = SchoolUsers::where('user_id',$original_details->user_id)->get()->first();
+        $schoolusers->user_id=$updated_user_id;
+        $schoolusers->user_role=$changing_role;
+        $schoolusers->role_change = 1;
+        $schoolusers->save();
+
+		if(!empty($remove_groups))//remove groups
+			$this->remove_groups($remove_groups,$id,$changing_role);
+
+		if(!empty($add_groups)) //add groups
+			$this->add_groups($add_groups,$id,$changing_role,$group_access);
+
+		if(!empty($change_status)) //add groups
+			$this->change_status($change_status,$id,$changing_role,$changing_group_access);
+
+		// if($changing_role == Config::get('app.Staff_role')
+		// {
+		// 	// given group admin access for class teacher group
+		// 	$class_config = AcademicClassConfiguration::where('')
+		// }
+
+		return (['status'=>true,'message'=>'User role Changed']);
+		exit;
+	}
+
+	// remove groups
+	public function remove_groups($group_ids,$user_table_id,$user_role)
+	{
+		if(!empty($group_ids))
+		{
+			foreach ($group_ids as $key => $value) {
+				// remove group access
+				UserGroupsMapping::where('group_id',$value)->where('user_table_id',$user_table_id)->where('user_role',
+						$user_role)->delete();
+			}
+		}
+	}
+
+	// add groups
+	public function add_groups($group_ids,$user_table_id,$user_role,$group_access)
+	{
+		if(!empty($group_ids))
+		{
+			foreach ($group_ids as $key => $value) {
+				// add group access
+				UserGroupsMapping::insert(['group_id'=>$value,'user_table_id'=>$user_table_id,'group_access'=>$group_access,
+					'user_role'=>$user_role]);
+			}
+		}
+	}
+	// change groups access
+	public function change_status($group_ids,$user_table_id,$user_role,$group_access)
+	{
+		if(!empty($group_ids))
+		{
+			foreach ($group_ids as $key => $value) {
+				// add group access
+				$groups = UserGroupsMapping::where(['user_table_id'=>$user_table_id,'user_role'=>$user_role])->where('group_id',$value)->update(['user_status'=>$group_access]);
+			}
+		}
+	}
+
+	public function check_staff_classes(Request $request)
+	{
+		// Check authentication
+		$user = auth()->user();
+
+		$classteacher = AcademicClassConfiguration::where('class_teacher',$request->class_teacher)->pluck('id')->first();
+
+		$staffs = AcademicSubjectsMapping::where('staff',$class_teacher)->pluck('id')->first();
+
+		if($class_teacher == '' && $staffs == '')
+			return (['status'=>true,'message'=>'']);
+		else
+			return (['status'=>false,'message'=>'Teacher was configured in some of the classes']);
+	}
 }

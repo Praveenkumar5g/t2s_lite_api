@@ -158,6 +158,8 @@ Route::group(['middleware' => 'auth.connect','prefix' => 'user'], function ($rou
     Route::post('/staff_as_parent',[APIConfigurationsController::class,'staff_as_parent']);//Staff as parent
     Route::get('/view_staff_as_parent',[APIConfigurationsController::class,'view_staff_as_parent']);//View Staff as parent
     Route::get('/CheckuserStatus',[APIConfigurationsController::class,'CheckuserStatus']);//check user status
+    Route::post('/user_role_change',[APIConfigurationsController::class,'user_role_change']);//User stattus change
+    Route::post('/check_staff_classes',[APIConfigurationsController::class,'check_staff_classes']);//Check classes for staff 
     
     Route::post('/approval_process', [APICommunicationController::class, 'approval_process']); 
     Route::post('/store_message', [APICommunicationController::class, 'store_message']); 

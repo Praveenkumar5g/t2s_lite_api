@@ -1432,7 +1432,7 @@ class APICommunicationController extends Controller
             foreach ($approval_data as $key => $value) {
                 if(($value['communication_type'] == 2 && (date('Y-m-d',strtotime($value['actioned_time'])) >= date("Y-m-d",strtotime(Carbon::now()->timezone('Asia/Kolkata')))) ) || $value['communication_type'] == 1)
                 {
-                    if($value->communication_type == 2)
+                    if($value['communication_type'] == 2)
                         $fetch_sender_id = UserAll::where('id',$value['created_by'])->first(); 
                     else
                         $fetch_sender_id = CommunicationRecipients::select('user_table_id','user_role')->where(['view_type'=>1,'communication_id'=>$value['id']])->get()->first();

@@ -3893,9 +3893,9 @@ class APIConfigurationsController extends Controller
 		// Check authentication
 		$user = auth()->user();
 
-		$classteacher = AcademicClassConfiguration::where('class_teacher',$request->class_teacher)->pluck('id')->first();
+		$classteacher = AcademicClassConfiguration::where('class_teacher',$request->staff_id)->pluck('id')->first();
 
-		$staffs = AcademicSubjectsMapping::where('staff',$class_teacher)->pluck('id')->first();
+		$staffs = AcademicSubjectsMapping::where('staff',$request->staff_id)->pluck('id')->first();
 
 		if($class_teacher == '' && $staffs == '')
 			return (['status'=>true,'message'=>'']);

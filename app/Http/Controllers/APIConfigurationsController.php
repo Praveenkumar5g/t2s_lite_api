@@ -3856,7 +3856,7 @@ class APIConfigurationsController extends Controller
 			$this->add_groups($add_groups,$id,$changing_role,$group_access);
 
 		if(!empty($change_status)) //add groups
-			$this->change_status($change_status,$id,$changing_role,$changing_group_access);
+			$this->change_status($change_status,$id,$changing_role,$changing_group_access,$original_details->id,$original_role);
 
 		// if($changing_role == Config::get('app.Staff_role')
 		// {
@@ -3894,15 +3894,15 @@ class APIConfigurationsController extends Controller
 		}
 	}
 	// change groups access
-	public function change_status($group_ids,$user_table_id,$user_role,$group_access)
+	public function change_status($group_ids,$user_table_id,$user_role,$group_access,$original_id,$original_role)
 	{
 		if(!empty($group_ids))
 		{
 			foreach ($group_ids as $key => $value) {
 				// add group access
-				$check_exists = UserGroupsMapping::where(['user_table_id'=>$user_table_id,'user_role'=>$user_role])->where('group_id',$value)->get()->first();
+				$check_exists = UserGroupsMapping::where(['user_table_id'=>$original_id,'user_role'=>$original_role])->where('group_id',$value)->get()->first();
 				if(!empty($check_exists))
-					$check_exists = $check_exists->update(['user_status'=>$group_access]);
+					$check_exists = $check_exists->update(['group_access'=>$group_access,'user_table_id'=>$user_table_id,'user_role'=>$user_role]);
 				else
 				{
 					if($user_role == Config::get('app.Admin_role') || $user_role == Config::get('app.Management_role'))

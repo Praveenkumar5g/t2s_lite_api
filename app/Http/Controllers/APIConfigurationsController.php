@@ -3701,7 +3701,7 @@ class APIConfigurationsController extends Controller
         	return response()->json(['status'=>true,'message'=>'']);
 	}
 
-		public function user_role_change(Request $request)
+	public function user_role_change(Request $request)
 	{
 		// Check authentication
 		$user = auth()->user();
@@ -3775,6 +3775,7 @@ class APIConfigurationsController extends Controller
 			$user_category = $request->user_category;
 			if($user_category != '')
 			{	
+				$change_table_details = new UserStaffs;
 				$removing_group = $classgroups =[];
 				$removing_group =  ($user_category == Config::get('app.Teaching_staff'))? 5:4; //remove teaching or non-teaching staff based on category selection.
 				AcademicSubjectsMapping::where('staff',$original_details->id)->update(['staff'=>null,'updated_by'=>$userall_id]);

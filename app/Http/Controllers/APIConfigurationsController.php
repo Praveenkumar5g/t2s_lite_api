@@ -3825,7 +3825,7 @@ class APIConfigurationsController extends Controller
 	        $user_all->user_table_id=$id;
 	        $user_all->save();
 
-	    	UserGroupsMapping::where('user_tables_id',$original_details->id)->where('user_role',$original_role)->update(['user_table_id'=>$id,'user_role'=>$changing_role]);
+	    	UserGroupsMapping::where('user_table_id',$original_details->id)->where('user_role',$original_role)->update(['user_table_id'=>$id,'user_role'=>$changing_role]);
         }
 
 

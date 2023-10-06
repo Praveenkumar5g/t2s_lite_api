@@ -3900,7 +3900,13 @@ class APIConfigurationsController extends Controller
 		{
 			foreach ($group_ids as $key => $value) {
 				// add group access
-				$groups = UserGroupsMapping::where(['user_table_id'=>$user_table_id,'user_role'=>$user_role])->where('group_id',$value)->update(['user_status'=>$group_access]);
+				$check_exists = UserGroupsMapping::where(['user_table_id'=>$user_table_id,'user_role'=>$user_role])->where('group_id',$value)->get()->first();
+				if(!empty($check_exists))
+					$check_exists = $check_exists->update(['user_status'=>$group_access]);
+				else
+				{
+					UserGroupsMapping::insert(['user_table_id'=>$user_table_id,'user_role'=>$user_role,'group_access'=>1]);
+				}
 			}
 		}
 	}

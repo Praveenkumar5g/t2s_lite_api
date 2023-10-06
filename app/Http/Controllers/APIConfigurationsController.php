@@ -3740,7 +3740,7 @@ class APIConfigurationsController extends Controller
 		            $change_table_details = new UserAdmin;
 					$remove_groups = ([1]);
 
-					// UserManagements::where('id',$original_details->id)->delete();
+					UserManagements::where('id',$original_details->id)->delete();
 				}
 				else
 					return (['status'=>'false','message'=>'Mobile number already exists as admin']);
@@ -3754,6 +3754,8 @@ class APIConfigurationsController extends Controller
 					$change_table_details->user_category = $request->user_category;
 					$add_groups = ([1]);
 					$group_access = 1;
+
+					UserAdmin::where('id',$original_details->id)->delete();
 				}
 				else
 					return (['status'=>'false','message'=>'Mobile number already exists as management']);
@@ -3764,6 +3766,8 @@ class APIConfigurationsController extends Controller
 				$change_table_details->user_category = $request->user_category;
 				$change_status = $all_group_ids;
 				$changing_group_access = Config::get('app.Group_Active'); //changing access to group admin
+
+				UserStaffs::where('id',$original_details->id)->delete();
 			}
 		}
 		else if($changing_role == Config::get('app.Staff_role')) //changing role to staff
@@ -3782,6 +3786,8 @@ class APIConfigurationsController extends Controller
 					$remove_groups = ([1,$removing_group,$classgroups]);
 					$change_status = $all_group_ids;
 					$changing_group_access = Config::get('app.Group_Deactive'); //changing access to group admin
+
+					UserAdmin::where('id',$original_details->id)->delete();
 				}
 				else if($original_role == Config::get('app.Management_role'))
 				{
@@ -3789,6 +3795,8 @@ class APIConfigurationsController extends Controller
 					$remove_groups = ([1,$admin_management_group_id,$removing_group,$classgroups]);
 					$change_status = $all_group_ids;
 					$changing_group_access = Config::get('app.Group_Deactive'); //changing access to group admin
+
+					UserManagements::where('id',$original_details->id)->delete();
 				}
 			}
 			else
@@ -3810,7 +3818,7 @@ class APIConfigurationsController extends Controller
 
         $id =$change_table_details->id;
 
-        $user_id_char = ($changing_role == Config::get('app.Admin_role'))?'A':($changing_role == Config::get('app.Management_role')?'M':'S');
+        $user_id_char = ($changing_role == Config::get('app.Admin_role'))?'A':($changing_role == Config::get('app.Management_role')?'M':'T');
 
         // generate and update staff id in db 
         $updated_user_id = $profile_details['school_code'].substr($profile_details['active_academic_year'], -2).$user_id_char.sprintf("%04s", $id);

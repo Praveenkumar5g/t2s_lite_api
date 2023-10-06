@@ -3779,7 +3779,8 @@ class APIConfigurationsController extends Controller
 				$removing_group =  ($user_category == Config::get('app.Teaching_staff'))? 5:4; //remove teaching or non-teaching staff based on category selection.
 				AcademicSubjectsMapping::where('staff',$original_details->id)->update(['staff'=>null,'updated_by'=>$userall_id]);
 				AcademicClassConfiguration::where('class_teacher',$original_details->id)->update(['class_teacher'=>null,'updated_by'=>$userall_id]);
-				$classgroups = UserGroupsMapping::where('group_type',2)->pluck('id')->toArray();
+				$deletinggroup_ids = UserGroups::where('group_type',2)->pluck('id')->toArray();
+				$classgroups = UserGroupsMapping::whereIn('group_id',$deletinggroup_ids)->pluck('id')->toArray();
 
 				if($original_role == Config::get('app.Admin_role'))
 				{

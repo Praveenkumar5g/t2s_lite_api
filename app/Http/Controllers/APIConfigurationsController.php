@@ -3905,7 +3905,7 @@ class APIConfigurationsController extends Controller
 					$check_exists = $check_exists->update(['user_status'=>$group_access]);
 				else
 				{
-					UserGroupsMapping::insert(['user_table_id'=>$user_table_id,'user_role'=>$user_role,'group_access'=>1]);
+					UserGroupsMapping::insert(['user_table_id'=>$user_table_id,'user_role'=>$user_role,'group_access'=>1,'group_id'=>$value]);
 				}
 			}
 		}

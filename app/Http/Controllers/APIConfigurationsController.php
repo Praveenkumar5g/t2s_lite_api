@@ -1844,7 +1844,7 @@ class APIConfigurationsController extends Controller
 		// Save last login in DB
         $user = auth()->user();
         $member_parent_list = [];
-        $parent_list = UserStudents::select('user_students.first_name as student_name','p.id','p.user_category','p.mobile_number','p.user_status','p.profile_image as parent_profile_image','user_students.profile_image as student_profile_image','user_students.id as student_id','user_students.dob as dob','user_students.admission_number as admission_number','user_students.id as class_config','p.first_name')->join('user_students_mapping as sm','sm.student','=','user_students.id')->join('user_parents as p','p.id','=','sm.parent');
+        $parent_list = UserStudents::select('user_students.first_name as student_name','p.id','p.user_category','p.mobile_number','p.user_status','p.profile_image as parent_profile_image','user_students.profile_image as student_profile_image','user_students.id as student_id','user_students.dob as dob','user_students.admission_number as admission_number','user_students.class_config as class_config','p.first_name')->join('user_students_mapping as sm','sm.student','=','user_students.id')->join('user_parents as p','p.id','=','sm.parent');
         if(isset($request->search) && $request->search!='')
             $parent_list = $parent_list->where('p.first_name', 'like', '%' . $request->search . '%')->orWhere('p.mobile_number', 'like', '%' . $request->search . '%');
         	

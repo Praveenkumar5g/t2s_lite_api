@@ -3814,6 +3814,7 @@ class APIConfigurationsController extends Controller
         $change_table_details->mobile_number=$original_details->mobile_number;
         $change_table_details->email_id = $original_details->emai_id;
         $change_table_details->profile_image = $original_details->profile_image;
+        $change_table_details->user_id = $original_details->user_id;
         $change_table_details->dob = $original_details->dob;
         $change_table_details->doj = $original_details->doj;
         $change_table_details->employee_no = $original_details->employee_no;
@@ -3825,12 +3826,12 @@ class APIConfigurationsController extends Controller
 
         $id =$change_table_details->id;
 
-        $user_id_char = ($changing_role == Config::get('app.Admin_role'))?'A':($changing_role == Config::get('app.Management_role')?'M':'T');
+        // $user_id_char = ($changing_role == Config::get('app.Admin_role'))?'A':($changing_role == Config::get('app.Management_role')?'M':'T');
 
-        // generate and update staff id in db 
-        $updated_user_id = $profile_details['school_code'].substr($profile_details['active_academic_year'], -2).$user_id_char.sprintf("%04s", $id);
-        $change_table_details->user_id = $updated_user_id;
-        $change_table_details->save();
+        // // generate and update staff id in db 
+        // $updated_user_id = $profile_details['school_code'].substr($profile_details['active_academic_year'], -2).$user_id_char.sprintf("%04s", $id);
+        // $change_table_details->user_id = $updated_user_id;
+        // $change_table_details->save();
 
         $user_all = UserAll::where('id',$original_userall_id)->get()->first();
 
@@ -3845,7 +3846,7 @@ class APIConfigurationsController extends Controller
 
 
         $schoolusers = SchoolUsers::where('user_id',$original_details->user_id)->get()->first();
-        $schoolusers->user_id=$updated_user_id;
+        // $schoolusers->user_id=$updated_user_id;
         $schoolusers->user_role=$changing_role;
         $schoolusers->role_change = 1;
         $schoolusers->save();
@@ -3937,11 +3938,12 @@ class APIConfigurationsController extends Controller
 		$user = auth()->user();
 		$userdetails = SchoolUsers::where('user_id',$user->user_id)->get()->first();
 		$role_change = $userdetails->role_change;
+		$token= Auth::login($userdetails);
 		if($userdetails->role_change == 1)
 		{
 			$userdetails->role_change = 0;
 			$userdetails->save();
 		}
-		return (['role_change'=>$role_change]);
+		return (['role_change'=>$role_change,'user_id'=>$userdetails->user_id,'user_role'=>$userdetails->user_role,'token'=>$token]);
 	}
 }

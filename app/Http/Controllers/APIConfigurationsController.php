@@ -3767,7 +3767,8 @@ class APIConfigurationsController extends Controller
 			}
 			else if($original_role == Config::get('app.Staff_role'))
 			{
-				$change_table_details->user_category = $request->user_category;
+				if(isset($request->user_category))
+					$change_table_details->user_category = $request->user_category;
 				$change_status = $all_group_ids;
 				$changing_group_access = Config::get('app.Group_Active'); //changing access to group admin
 
@@ -3932,6 +3933,12 @@ class APIConfigurationsController extends Controller
 		// Check authentication
 		$user = auth()->user();
 		$userdetails = SchoolUsers::where('user_id',$user->user_id)->get()->first();
-		return (['role_change'=>$userdetails->role_change]);
+		$role_change = $userdetails->role_change;
+		if($userdetails->role_change == 1)
+		{
+			$userdetails->role_change = 0;
+			$userdetails->save();
+		}
+		return (['role_change'=>$role_change]);
 	}
 }

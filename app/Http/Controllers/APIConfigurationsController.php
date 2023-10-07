@@ -3907,7 +3907,10 @@ class APIConfigurationsController extends Controller
 				else
 				{
 					if($user_role == Config::get('app.Admin_role') || $user_role == Config::get('app.Management_role'))
-						UserGroupsMapping::insert(['user_table_id'=>$user_table_id,'user_role'=>$user_role,'group_access'=>1,'group_id'=>$value]);
+					{
+						if(($value == 1 && $user_role == Config::get('app.Management_role')) || $value!= 1)
+							UserGroupsMapping::insert(['user_table_id'=>$user_table_id,'user_role'=>$user_role,'group_access'=>1,'group_id'=>$value]);
+					}
 				}
 			}
 		}

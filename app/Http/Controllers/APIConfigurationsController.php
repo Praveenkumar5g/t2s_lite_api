@@ -3944,6 +3944,9 @@ class APIConfigurationsController extends Controller
 			$userdetails->role_change = 0;
 			$userdetails->save();
 		}
-		return (['role_change'=>$role_change,'user_id'=>$userdetails->user_id,'user_role'=>$userdetails->user_role,'token'=>$token]);
+
+		$school_name = SchoolProfile::where('id',$userdetails->school_profile_id)->pluck('school_name')->first();//get all schools list
+
+		return (['role_change'=>$role_change,'user_id'=>$userdetails->user_id,'user_role'=>$userdetails->user_role,'token'=>$token,'school_name'=>$school_name]);
 	}
 }

@@ -12,6 +12,7 @@ use App\Http\Controllers\Controller;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Excel as ExcelExcel;
 use App\Models\AcademicClassConfiguration;
 use App\Exports\MapClassesSectionsExport;

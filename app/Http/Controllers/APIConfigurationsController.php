@@ -3774,6 +3774,9 @@ class APIConfigurationsController extends Controller
 				$change_status = $all_group_ids;
 				$changing_group_access = Config::get('app.Group_Active'); //changing access to group admin
 
+				AcademicClassConfiguration::where('class_teacher',$original_details->id)->update(['class_teacher'=>null]);
+				AcademicSubjectsMapping::where('staff',$original_details->id)->update(['staff'=>null]);
+
 				UserStaffs::where('id',$original_details->id)->delete();
 			}
 		}

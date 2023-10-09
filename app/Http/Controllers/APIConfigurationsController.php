@@ -3756,7 +3756,8 @@ class APIConfigurationsController extends Controller
 				$check_exists = UserManagements::where('mobile_number',$original_details->mobile_number)->pluck('id')->first();
 				if($check_exists=='')
 				{
-					$change_table_details->user_category = $request->user_category;
+					if(isset($request->user_category) && $changing_role != Config::get('app.Admin_role') && $request->user_category>0)
+						$change_table_details->user_category = $request->user_category;
 					$add_groups = ([1]);
 					$group_access = 1;
 
@@ -3767,7 +3768,7 @@ class APIConfigurationsController extends Controller
 			}
 			else if($original_role == Config::get('app.Staff_role'))
 			{
-				if(isset($request->user_category))
+				if(isset($request->user_category) && $changing_role != Config::get('app.Admin_role') && $request->user_category>0)
 					$change_table_details->user_category = $request->user_category;
 				$change_status = $all_group_ids;
 				$changing_group_access = Config::get('app.Group_Active'); //changing access to group admin

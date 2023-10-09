@@ -3818,7 +3818,7 @@ class APIConfigurationsController extends Controller
         $change_table_details->dob = $original_details->dob;
         $change_table_details->doj = $original_details->doj;
         $change_table_details->employee_no = $original_details->employee_no;
-        if(isset($request->user_category) && $changing_role != Config::get('app.Admin_role'))
+        if(isset($request->user_category) && $changing_role != Config::get('app.Admin_role') && $request->user_category>0)
         	$change_table_details->user_category = $request->user_category;
 	    $change_table_details->created_by=$userall_id;
     	$change_table_details->created_time=Carbon::now()->timezone('Asia/Kolkata');

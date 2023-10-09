@@ -1878,15 +1878,15 @@ class APIConfigurationsController extends Controller
         $list = ($currentPage <= 0)?$parent_list:$tempdata['data'];
         	
         foreach ($list as $key => $value) {
-        	$student_id = UserStudentsMapping::where('parent',$value['id'])->pluck('student')->toArray();
-            $student_details = UserStudents::whereIn('id',$student_id)->get()->first();
+        	// $student_id = UserStudentsMapping::where('parent',$value['id'])->pluck('student')->toArray();
+            // $student_details = UserStudents::whereIn('id',$student_id)->get()->first();
             // echo '<pre>';print_r($student_details);
             $parent_list_data[$index] = $value;
         	$user_category = (strtolower($value['user_category']) == 1)?'F/O':'M/O';
         	$parent_list_data[$index]['student_name'] = ($user_category.' '.((isset($value['student_name']))?$value['student_name']:''));
         	$classessections =[];
-        	if(isset($student_details->class_config))
-        		$classessections = AcademicClassConfiguration::select('id','class_id','section_id','division_id','class_teacher')->where('id',$student_details->class_config)->get()->first();
+        	if(isset($value['class_config']))
+        		$classessections = AcademicClassConfiguration::select('id','class_id','section_id','division_id','class_teacher')->where('id',$value['class_config'])->get()->first();
         	$parent_list_data[$index]['class'] = (!empty($classessections))?$classessections->classsectionName():'';
         	$parent_list_data[$index]['class_teacher'] = (!empty($classessections))?UserStaffs::where('id',$classessections->class_teacher)->pluck('first_name')->first():'';
         	$index++;

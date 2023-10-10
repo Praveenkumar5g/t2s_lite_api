@@ -1595,7 +1595,7 @@ class APICommunicationController extends Controller
 
                 $list = $this->array_user_details($value); //fetch individual user details
 
-                if(!empty($list))
+                if(!empty($list['user_details']))
                 {
                     if($value['user_role'] == Config::get('app.Parent_role')) //for parent fetch student details
                     {

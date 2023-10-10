@@ -1312,8 +1312,8 @@ class APICommunicationController extends Controller
             else if($role == Config::get('app.Staff_role'))
             {
                 $user_details['designation'] = $data['user_category'];
-                $user_details['dob'] = $data['dob'];
-                $user_details['doj'] = $data['doj'];
+                $user_details['dob'] = date('d-m-Y',strtotime($data['dob']));
+                $user_details['doj'] = date('d-m-Y',strtotime($data['doj']));
                 $user_details['employee_no'] = $data['employee_no'];
                 $user_details['department'] = $data['department'];
                 $classessections = AcademicClassConfiguration::select('id','class_id','section_id','division_id','class_teacher')->where('class_teacher',$data['id'])->get()->first();

@@ -3831,7 +3831,7 @@ class APIConfigurationsController extends Controller
 
         $id =$change_table_details->id;
 
-        UserGroupsMapping::where('user_table_id',$original_details->id)->where('user_role',$original_role)->update(['user_table_id'=>$id,'user_role'=>$changing_role]);
+        CommunicationRecipients::where('user_table_id',$original_details->id)->where('user_role',$original_role)->update(['user_table_id'=>$id,'user_role'=>$changing_role]);
 
         // $user_id_char = ($changing_role == Config::get('app.Admin_role'))?'A':($changing_role == Config::get('app.Management_role')?'M':'T');
 

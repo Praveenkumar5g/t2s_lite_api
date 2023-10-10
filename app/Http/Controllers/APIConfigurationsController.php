@@ -3859,7 +3859,7 @@ class APIConfigurationsController extends Controller
         $schoolusers->save();
 
 		if(!empty($remove_groups))//remove groups
-			$this->remove_groups($remove_groups,$original_details->id,$original_role);
+			$this->remove_groups($remove_groups,$id,$changing_role);
 
 		if(!empty($add_groups)) //add groups
 			$this->add_groups($add_groups,$id,$changing_role,$group_access);

@@ -61,6 +61,9 @@ Route::group(['middleware' => 'auth.webcheck'], function ($router) {
     Route::post('/usermanagement/checkStaffMobilenoexists',[WebUserManagementController::class,'checkStaffMobilenoexists']);
     Route::get('/usermanagement/editStaffdetails',[WebUserManagementController::class,'editStaffdetails']);
     Route::post('/usermanagement/updateStaff',[WebUserManagementController::class,'updateStaff']);
+    Route::post('/usermanagement/checkClassteacherexists',[WebUserManagementController::class,'checkClassteacherexists']);
+    Route::post('/usermanagement/checkuseraccountdetails',[WebUserManagementController::class,'checkuseraccountdetails']);
+    Route::post('/usermanagement/checksubjectaccess',[WebUserManagementController::class,'checksubjectaccess']);
     /*Staff Ends*/
     /*user management -- Ends*/
 });

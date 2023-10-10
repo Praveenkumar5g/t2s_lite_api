@@ -51,7 +51,17 @@
 											</div>
 
 											<div class="form-group col-4">
-												<label>Division Name <span class="mandatory_field">*</span></label>
+												<label>User Category <span class="mandatory_field">*</span></label>
+							                  	<select class="custom-select input-group" id="user_category" name="user_category">
+							                  		<option value=''>Select User Category</option>
+								                    @foreach($user_category as $user_category_key => $user_category_value)
+								                    	<option value="{{$user_category_value['id']}}">{{$user_category_value['category_name']}}</option>
+								                    @endforeach
+							                  	</select>
+											</div>
+											
+											<div class="form-group col-4">
+												<label>Division Name </label>
 							                  	<select class="custom-select input-group" id="division_name" name="division_name">
 							                  		<option value=''>Select Division Name</option>
 								                    @foreach($division as $division_key => $division_value)
@@ -76,23 +86,13 @@
 											</div>
 
 											<div class="form-group col-4">
-												<label>Specialized In <span class="mandatory_field">*</span></label>
+												<label>Specialized In</label>
 							                  	<select class="custom-select input-group" id="specialized_in" name="specialized_in">
 							                  		<option value=''>Select Specialized In</option>
 								                    
 							                  	</select>
 											</div>
 
-											<div class="form-group col-4">
-												<label>User Category <span class="mandatory_field">*</span></label>
-							                  	<select class="custom-select input-group" id="user_category" name="user_category">
-							                  		<option value=''>Select User Category</option>
-								                    @foreach($user_category as $user_category_key => $user_category_value)
-								                    	<option value="{{$user_category_value['id']}}">{{$user_category_value['category_name']}}</option>
-								                    @endforeach
-							                  	</select>
-											</div>
-											
 											<div class="form-group col-4">
 												<label>Department</label>
 							                  	<select class="custom-select input-group" id="department" name="department">
@@ -259,17 +259,15 @@
 										<div class="row">
 											<div class="form-group col-4 rowcount">
 												<label>Subject </label>
-							                  	<select class="custom-select input-group" id="staffsubject" name="staffsubject[0]">
-							                  		<option value=''>Select Subject</option>
-								                   
+							                  	<select class="custom-select input-group staffsubject" id="staffsubject" name="staffsubject[0]">
+							                  		<option value=''>Select Subject</option>			                   
 							                  	</select>
 											</div>
 
 											<div class="form-group col-4">
 												<label>Subject Teacher For </label>
-							                  	<select class="custom-select input-group" id="subjectteacher" name="subjectteacher[0]">
-							                  		<option value=''>Select Class - Section</option>
-								                    
+							                  	<select class="custom-select input-group select2 subjectteacher" id="subjectteacher" data-id=0 name="subjectteacher[0][]" multiple>
+							                  		<option value=''>Select Class - Section</option>	                    
 							                  	</select>
 											</div>
 
@@ -311,6 +309,7 @@
 	<script src="{!! asset('assets/js/responsive.bootstrap4.min.js') !!}"></script>
 	<script type="text/javascript">
 		$(document).ready(function(){
+			$('.select2').select2();
 			var class_section = subjects = '';
 			$('#division_name').change(function() {
 				$.get("{{url('usermanagement/subject_classes?id=')}}"+$(this).val(),function(response){ 
@@ -337,6 +336,8 @@
 						  	$(option).html(value.class_section);
 						  	$('#class_section,#subjectteacher').append(option);
 						});
+						// Initialize select2
+ 						initailizeSelect2();
 					}
 				})
 			})
@@ -345,20 +346,21 @@
    				var staffhtml = '';
    				i++;
    				staffhtml+='<div class="form-group col-4 rowcount remove_'+i+'"><label>Subject </label>';
-   				staffhtml+='<select class="custom-select input-group" id="staffsubject['+i+']" name="staffsubject['+i+']"><option value="">Select Subject</option>';
+   				staffhtml+='<select class="custom-select input-group staffsubject" id="staffsubject['+i+']" name="staffsubject['+i+']"><option value="">Select Subject</option>';
    				$(subjects).each(function(  index, value ) {
    					staffhtml+='<option value='+value.id+'>'+value.subject_name+'</option>';
    				})
    				staffhtml+='</select></div>';
    				staffhtml+='<div class="form-group col-4 remove_'+i+'"><label>Subject Teacher For </label>';
-   				staffhtml+='<select class="custom-select input-group" id="subjectteacher['+i+']" name="subjectteacher['+i+']"><option value="">Select Class - Section</option>';
+   				staffhtml+='<select class="custom-select input-group select2 subjectteacher" data-id='+i+' id="subjectteacher['+i+']" name="subjectteacher['+i+'][]" multiple><option value="">Select Class - Section</option>';
    				$(class_section).each(function(  index, value ) {
    					staffhtml+='<option value='+value.id+'>'+value.class_section+'</option>';
    				})
    				staffhtml+='</select></div><div class="form-group col-2 remove_'+i+'"><label style="color: white;"> add more</label><button type="button" name="addmore" data-attr='+i+' id="addmore" class="btn btn-danger remove-tr input-group">Remove</button></div>';
 							              
        			$(".dynamicstaffclass").append(staffhtml);
-
+       			// Initialize select2
+ 				initailizeSelect2();
     		});
 
 			$('#profile_image').change(function(){
@@ -427,8 +429,13 @@
 					staff_name: {
 						required: true,
 					},
-					division_name: {
+					user_category: {
 						required: true,
+					},
+					division_name: {
+						required: function(element) {
+				        	return $('#user_category').val() == 3;
+				      	},
 					},
 					mobile_number: {
 						required: true,
@@ -449,10 +456,9 @@
 		                }
 					},
 					specialized_in: {
-						required: true,
-					},
-					user_category: {
-						required: true,
+						required: function(element) {
+				        	return $('#user_category').val() == 3;
+				      	},
 					},
 					class_section: {
 						required: function(element) {
@@ -473,6 +479,90 @@
 		                    data: {
 		                        employee_no: function() {
 		                            return $("#employee_no").val();
+		                        },
+		                    },		     
+		                }
+					},
+					esi_no: {
+						remote: {
+		                    url: "{{url('usermanagement/checkuseraccountdetails')}}",
+		                    type: "post",
+		                    'headers': {
+			                   'X-CSRF-TOKEN': '{{ csrf_token() }}'
+			                },
+		                    data: {
+		                        esi_no: function() {
+		                            return $("#esi_no").val();
+		                        },
+		                    },		     
+		                }
+					},
+					oasis_no: {
+						remote: {
+		                    url: "{{url('usermanagement/checkuseraccountdetails')}}",
+		                    type: "post",
+		                    'headers': {
+			                   'X-CSRF-TOKEN': '{{ csrf_token() }}'
+			                },
+		                    data: {
+		                        oasis_no: function() {
+		                            return $("#oasis_no").val();
+		                        },
+		                    },		     
+		                }
+					},
+					emis_no: {
+						remote: {
+		                    url: "{{url('usermanagement/checkuseraccountdetails')}}",
+		                    type: "post",
+		                    'headers': {
+			                   'X-CSRF-TOKEN': '{{ csrf_token() }}'
+			                },
+		                    data: {
+		                        emis_no: function() {
+		                            return $("#emis_no").val();
+		                        },
+		                    },		     
+		                }
+					},
+					aadhar_no: {
+						remote: {
+		                    url: "{{url('usermanagement/checkuseraccountdetails')}}",
+		                    type: "post",
+		                    'headers': {
+			                   'X-CSRF-TOKEN': '{{ csrf_token() }}'
+			                },
+		                    data: {
+		                        aadhar_no: function() {
+		                            return $("#aadhar_no").val();
+		                        },
+		                    },		     
+		                }
+					},
+					pan_card_no: {
+						remote: {
+		                    url: "{{url('usermanagement/checkuseraccountdetails')}}",
+		                    type: "post",
+		                    'headers': {
+			                   'X-CSRF-TOKEN': '{{ csrf_token() }}'
+			                },
+		                    data: {
+		                        pan_card_no: function() {
+		                            return $("#pan_card_no").val();
+		                        },
+		                    },		     
+		                }
+					},
+					account_no: {
+						remote: {
+		                    url: "{{url('usermanagement/checkuseraccountdetails')}}",
+		                    type: "post",
+		                    'headers': {
+			                   'X-CSRF-TOKEN': '{{ csrf_token() }}'
+			                },
+		                    data: {
+		                        account_no: function() {
+		                            return $("#account_no").val();
 		                        },
 		                    },		     
 		                }
@@ -504,6 +594,24 @@
 						required: 'Employee no field is required',
 						remote: "Given Employee number already exists",
 					},
+					esi_no: {
+						remote: "Given ESI number already exists",
+					},
+					oasis_no: {
+						remote: "Given Oasis number already exists",
+					},
+					pan_card_no: {
+						remote: "Given Pan Card number already exists",
+					},
+					account_no: {
+						remote: "Given Account number already exists",
+					},
+					emis_no: {
+						remote: "Given EMIS number already exists",
+					},
+					aadhar_no: {
+						remote: "Given Aadhar number already exists",
+					},
 					dob: {
 						required: 'DOB is required',
 					},
@@ -532,17 +640,88 @@
 			      	// }
 			    },
 			    submitHandler: function(form) {
-			    	form.submit();
+			    	$.post("{{url('usermanagement/checkClassteacherexists')}}", {class_section:$('#class_section').val()}, function(response){ 
+				      	if(response == 'false')
+				      	{
+				      		swal({
+							  	title: "Are you sure?",
+							  	text: $('#class_section :selected').text()+" already mapped with another staff as class teacher, do you want to continue?",
+							  	type: "warning",
+							  	showCancelButton: true,
+							  	confirmButtonClass: "btn-danger",
+							  	confirmButtonText: "Yes",
+							  	cancelButtonText: "No",
+							}).then((result) => {
+								console.log(result);
+							  	if (result.value) {
+							    	form.submit();
+							  	} else {
+							  		swal("Cancelled", "Please enter a valid "+data.tag+" mobile number", "error");
+							  	}
+							});
+				     	}
+				     	else
+				     		form.submit();
+				    });
 			    }
 			})
 			return false;
 		});
 
+	
+
 	    $(document).on('click', '.remove-tr', function(){  
 	    	var i = $(this).attr('data-attr');
 	        $('.remove_'+i).remove();
-	    });  
+	    }); 
 
+	    function initailizeSelect2(){
+	    	$('.select2').select2();
+	    } 
+
+
+	   	$(document).on('change', '.subjectteacher', function(){ 
+	    	var staffsubject ='';
+	    	var id =$(this).attr('data-id');
+	    	var class_section = $(this ).val();
+			$(".staffsubject").each(function(index){
+				if(id == index)
+			    	staffsubject = $(this).val();
+			});
+	    	if(staffsubject != '')
+	    	{	    		
+		    	$.post("{{url('usermanagement/checksubjectaccess')}}", {class_section:class_section,staffsubject:staffsubject}, function(response){ 
+			      	if(response == 'false')
+			      	{
+				    	swal({
+						  	title: "Are you sure?",
+						  	text: "Selected Class was already mapped with another staff, do you want to continue?",
+						  	type: "warning",
+						  	showCancelButton: true,
+						  	confirmButtonClass: "btn-danger",
+						  	confirmButtonText: "Yes",
+						  	cancelButtonText: "No",
+						}).then((result) => {
+						  	if (result.value) {
+						    	
+						  	} else {
+						  		swal("Cancelled", "Please select some other class-section", "error");
+						  	}
+						});
+					}
+				});
+	    	}
+	    	else
+	    	{
+	    		swal({
+				  	title: "Warning!",
+				  	text: "Please Select Subject",
+				  	type: "warning",
+				  	confirmButtonClass: "btn-danger",
+				  	confirmButtonText: "OK",
+				});
+	    	}
+	    }); 
 	</script>
 
 @endsection

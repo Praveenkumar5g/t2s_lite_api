@@ -222,7 +222,8 @@ class V2APICommunicationController extends Controller
             $messages['prev_page_url'] = $tempdata['prev_page_url'];
             $messages['from'] = $tempdata['from'];
             $messages['to'] = $tempdata['to'];
-
+            $messages['data'] =[];
+            
             if($currentPage > 0){
 
                 $read_count = CommunicationRecipients::select(DB::raw('count(*) as count'),'communication_id','communication_type')->where(['message_status'=>Config::get('app.Read')])->groupBy('communication_id','communication_type')->get()->toArray(); //get read count based on notification id.

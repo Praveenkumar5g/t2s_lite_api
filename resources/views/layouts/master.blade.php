@@ -20,6 +20,8 @@
 		<link rel='stylesheet' href='https://cdn.jsdelivr.net/npm/sweetalert2@7.12.15/dist/sweetalert2.min.css'></link>
 
 		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.13.1/css/bootstrap-select.css" />
+		<link href="{!! asset('assets/css/select2.min.css') !!}" rel="stylesheet" type="text/css"/>
+    	<link href="{!! asset('assets/css/select2-bootstrap.min.css') !!}" rel="stylesheet" type="text/css"/>
 	</head>
 	<body class="hold-transition sidebar-mini layout-fixed">
 		<div class="wrapper">
@@ -59,6 +61,7 @@
 		<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.3.0/js/bootstrap-datepicker.min.js"></script>
 		<script src="https://cdn.jsdelivr.net/npm/sweetalert2@7.12.15/dist/sweetalert2.all.min.js"></script>
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.13.1/js/bootstrap-select.min.js"></script> 
+		<script  src="{!! asset('assets/js/select2.full.min.js') !!}"  type="text/javascript"></script>
 		<script type="text/javascript">
 			$.ajaxSetup({
 			    headers: {

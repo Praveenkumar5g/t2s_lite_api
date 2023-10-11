@@ -1617,7 +1617,17 @@ class WebUserManagementController extends Controller
 
         $data['classteacher'] = AcademicClassConfiguration::Where('class_teacher',$request->id)->pluck('id')->first();
 
-        $data['teaching_staff'] = AcademicSubjectsMapping::select('subject','class_config')->where('staff',$request->id)->get()->toArray();
+        $teaching_staff = array_unique(AcademicSubjectsMapping::where('staff',$request->id)->pluck('subject')->toArray());
+
+        $teachingstaff_list = [];
+        foreach($teaching_staff as $key=>$value)
+        {
+            $teachingstaff_list[] =([
+                'subject' => $value,
+                'class_config'=>AcademicSubjectsMapping::where('subject',$value)->where('staff',$request->id)->pluck('class_config')->toArray()
+            ]);
+        }
+        $data['teaching_staff'] = $teachingstaff_list;
         // echo '<pre>';print_r($data);exit;
         return view('UserManagement.editstaff',$data);
     }

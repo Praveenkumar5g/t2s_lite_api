@@ -270,7 +270,7 @@
 										<div class="row">
 											<div class="form-group col-4">
 												<label>Subject </label>
-							                  	<select class="custom-select input-group staffsubject" id="staffsubject" name="staffsubject[0][]" multiple>
+							                  	<select class="custom-select input-group staffsubject" id="staffsubject" name="staffsubject[0]">
 							                  		<option value=''>Select Subject</option>
 								                   	@foreach($subjects as $subject_key => $subject_value)
 								                    	<option value="{{$subject_value['id']}}" {{ isset($teaching_staff[0]) && $subject_value['id'] ==  $teaching_staff[0]['subject'] ? 'selected':''}}>{{$subject_value['subject_name']}}</option>

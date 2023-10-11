@@ -1842,6 +1842,33 @@ class WebUserManagementController extends Controller
     }
 
     //Check account details unqiue
+    public function checkuseraccountdetails(Request $request)
+    {
+        $checkuseraccountdetails = UserStaffs::where('user_status',1);
+        if(isset($request->id)!='')
+            $checkuseraccountdetails = $checkuseraccountdetails->where('id','!=',$request->id);
+        if(isset($request->esi_no))
+            $checkuseraccountdetails = $checkuseraccountdetails->where('esi_no',$request->esi_no);
+        else if(isset($request->oasis_no))
+            $checkuseraccountdetails = $checkuseraccountdetails->where('oasis',$request->oasis_no);
+        else if(isset($request->emis_no))
+            $checkuseraccountdetails = $checkuseraccountdetails->where('emis',$request->emis_no);
+        else if(isset($request->aadhar_no))
+            $checkuseraccountdetails = $checkuseraccountdetails->where('aadhar_no',$request->aadhar_no);
+        else if(isset($request->pan_card_no))
+            $checkuseraccountdetails = $checkuseraccountdetails->where('pan_card',$request->pan_card_no);
+        else if(isset($request->account_no))
+            $checkuseraccountdetails = $checkuseraccountdetails->where('account_no',$request->account_no);
+
+        $checkuseraccountdetails = $checkuseraccountdetails->pluck('id')->first();
+
+        if($checkuseraccountdetails !='')
+            echo 'false';
+        else
+            echo 'true';
+    }
+
+    //Check account details unqiue
     public function checksubjectaccess(Request $request)
     {
         $checksubjectaccess = AcademicSubjectsMapping::where('subject',$request->staffsubject)->whereIn('class_config',$request->class_section);

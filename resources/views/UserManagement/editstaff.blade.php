@@ -165,14 +165,14 @@
 											<div class="form-group col-4">
 												<label>Oasis No</label>
 												<div class="input-group">
-													<input type="text" id="oasis_no" class="form-control form-control-1 input-sm" name="oasis_no" placeholder="Oasis No" value="{{isset($staff_list['oasis_no'])?$staff_list['oasis_no']:''}}">
+													<input type="text" id="oasis_no" class="form-control form-control-1 input-sm" name="oasis_no" placeholder="Oasis No" value="{{isset($staff_list['oasis'])?$staff_list['oasis']:''}}">
 												</div>
 											</div>
 
 											<div class="form-group col-4">
 												<label>EMIS No</label>
 												<div class="input-group">
-													<input type="text" id="emis_no" class="form-control form-control-1 input-sm" name="emis_no" placeholder="EMIS No" value="{{isset($staff_list['emis_no'])?$staff_list['emis_no']:''}}">
+													<input type="text" id="emis_no" class="form-control form-control-1 input-sm" name="emis_no" placeholder="EMIS No" value="{{isset($staff_list['emis'])?$staff_list['emis']:''}}">
 												</div>
 											</div>
 

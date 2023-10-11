@@ -473,7 +473,7 @@
 			$('.dob,.doj').datepicker({
 			    autoclose: true,
 			    setDate: new Date(),
-			    format: 'dd-mm-yyyy'
+			    format: 'yyyy-mm-dd'
 			});
 
 			$("#addstaff").validate({

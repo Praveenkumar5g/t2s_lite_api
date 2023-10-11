@@ -3792,24 +3792,15 @@ class APIConfigurationsController extends Controller
 				AcademicClassConfiguration::where('class_teacher',$original_details->id)->update(['class_teacher'=>null,'updated_by'=>$userall_id]);
 				$deletinggroup_ids = UserGroups::where('group_type',2)->pluck('id')->toArray();
 				$classgroups = UserGroupsMapping::whereIn('group_id',$deletinggroup_ids)->pluck('id')->toArray();
-
+				$admin_management_group_id = UserGroups::where('group_name', 'like', '%Admin-Management%')->pluck('id')->first();
+				$remove_groups = ([1,$admin_management_group_id,$removing_group,$classgroups]);
+				$change_status = $all_group_ids;
+				$changing_group_access = Config::get('app.Group_Deactive'); //changing access to group admin
+				
 				if($original_role == Config::get('app.Admin_role'))
-				{
-					$remove_groups = ([1,$removing_group,$classgroups]);
-					$change_status = $all_group_ids;
-					$changing_group_access = Config::get('app.Group_Deactive'); //changing access to group admin
-
 					UserAdmin::where('id',$original_details->id)->delete();
-				}
 				else if($original_role == Config::get('app.Management_role'))
-				{
-					$admin_management_group_id = UserGroups::where('group_name', 'like', '%Admin-Management%')->pluck('id')->first();
-					$remove_groups = ([1,$admin_management_group_id,$removing_group,$classgroups]);
-					$change_status = $all_group_ids;
-					$changing_group_access = Config::get('app.Group_Deactive'); //changing access to group admin
-
 					UserManagements::where('id',$original_details->id)->delete();
-				}
 			}
 			else
 				return response()->json(['status'=>false,'message'=>'User Category Required']);

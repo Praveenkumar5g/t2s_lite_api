@@ -1587,6 +1587,22 @@ class WebUserManagementController extends Controller
             echo 'true';
     }
 
+    public function checkClassteacherexists(Request $request)
+    {
+
+        $check_exists = AcademicClassConfiguration::where('id',$request->class_section);
+        
+        if(isset($request->id)!='')
+            $check_exists = $check_exists->where('class_teacher','!=',$request->id);
+
+        $check_exists = $check_exists->pluck('class_teacher')->first();
+
+        if($check_exists !='')
+            echo 'false';
+        else
+            echo 'true';
+    }
+
     public function editStaffdetails(Request $request)
     {
         $user_data = Session::get('user_data');

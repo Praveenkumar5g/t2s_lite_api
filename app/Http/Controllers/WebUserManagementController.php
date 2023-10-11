@@ -1450,7 +1450,7 @@ class WebUserManagementController extends Controller
 
             $staff_id = $staff_details->id;
             // generate and update staff id in db 
-            $userstaff_id = $profile_details['school_code'].substr($profile_details['active_academic_year'], -2).'S'.sprintf("%04s", $staff_id);
+            $userstaff_id = $profile_details['school_code'].substr($profile_details['active_academic_year'], -2).'T'.sprintf("%04s", $staff_id);
             $staff_details->user_id = $userstaff_id;
             $staff_details->save();
             

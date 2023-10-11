@@ -1860,7 +1860,7 @@ class WebUserManagementController extends Controller
             $staff_details->save();
             
             if(isset($request->mobile_number))
-                SchoolUsers::where('user_id',$staff_details->user_id)->update(['user_mobile_number',$request->mobile_number]);
+                SchoolUsers::where('user_id',$staff_details->user_id)->update(['user_mobile_number'=>$request->mobile_number]);
             
            return back()->with('success','Updated Successfully');
         }

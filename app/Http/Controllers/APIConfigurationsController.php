@@ -3796,7 +3796,7 @@ class APIConfigurationsController extends Controller
 				$remove_groups = ([1,$admin_management_group_id,$removing_group,$classgroups]);
 				$change_status = $all_group_ids;
 				$changing_group_access = Config::get('app.Group_Deactive'); //changing access to group admin
-				
+
 				if($original_role == Config::get('app.Admin_role'))
 					UserAdmin::where('id',$original_details->id)->delete();
 				else if($original_role == Config::get('app.Management_role'))
@@ -3888,8 +3888,11 @@ class APIConfigurationsController extends Controller
 		{
 			foreach ($group_ids as $key => $value) {
 				// add group access
-				UserGroupsMapping::insert(['group_id'=>$value,'user_table_id'=>$user_table_id,'group_access'=>$group_access,
-					'user_role'=>$user_role]);
+				$check_exists = UserGroupsMapping::where(['user_table_id'=>$user_table_id,'user_role'=>$user_role])->where('group_id',$value)->get()->first();
+				if(empty($check_exists))
+				{
+					UserGroupsMapping::insert(['group_id'=>$value,'user_table_id'=>$user_table_id,'group_access'=>$group_access,'user_role'=>$user_role]);
+				}
 			}
 		}
 	}

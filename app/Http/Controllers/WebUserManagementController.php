@@ -1393,7 +1393,7 @@ class WebUserManagementController extends Controller
                 $image = $name.''.time().'.'.$filedata->extension();
                 $filename = str_replace(["-",","," ","/"], '_', $image);
                 $filedata->move(public_path().'/uploads/'.$profile_details['school_code'].'/personal_details', $filename);
-                $pan_card_image =public_path('/').'/uploads/'.$profile_details['school_code'].'/personal_details/'.$filename;
+                $pan_card_image =url('/').'/uploads/'.$profile_details['school_code'].'/personal_details/'.$filename;
             }
 
             if(!empty($request->bank_passbook))
@@ -1411,8 +1411,8 @@ class WebUserManagementController extends Controller
                 $pass_book_image =url('/').'/uploads/'.$profile_details['school_code'].'/personal_details/'.$filename;
             }
             $department_name = '';
-            if(isset($request->department) && $request->department!='')
-                $department_name = AcademicSubjects::where('id',$request->department)->pluck('subject_name')->first();
+            // if(isset($request->department) && $request->department!='')
+            //     $department_name = AcademicSubjects::where('id',$request->department)->pluck('subject_name')->first();
             // insert student details
             $staff_details = new UserStaffs;
             $staff_details->first_name= $request->staff_name;
@@ -1421,7 +1421,7 @@ class WebUserManagementController extends Controller
             $staff_details->email_id=$request->email_address;    
             $staff_details->specialized_in=$request->specialized_in; 
             $staff_details->user_category=$request->user_category; 
-            $staff_details->department=$department_name;    
+            $staff_details->department=$request->department;    
             $staff_details->employee_no=$request->employee_no;    
             $staff_details->dob=date('Y-m-d',strtotime($request->dob));
             $staff_details->doj=date('Y-m-d',strtotime($request->doj));
@@ -1713,7 +1713,7 @@ class WebUserManagementController extends Controller
                 $image = $name.''.time().'.'.$filedata->extension();
                 $filename = str_replace(["-",","," ","/"], '_', $image);
                 $filedata->move(public_path().'/uploads/'.$profile_details['school_code'].'/personal_details', $filename);
-                $pan_card_image =public_path('/').'/uploads/'.$profile_details['school_code'].'/personal_details/'.$filename;
+                $pan_card_image =url('/').'/uploads/'.$profile_details['school_code'].'/personal_details/'.$filename;
             }
 
             if(!empty($request->bank_passbook))
@@ -1823,8 +1823,8 @@ class WebUserManagementController extends Controller
                 }
             }
             $department_name = '';
-            if(isset($request->department) && $request->department!='')
-                $department_name = AcademicSubjects::where('id',$request->department)->pluck('subject_name')->first();
+            // if(isset($request->department) && $request->department!='')
+                // $department_name = AcademicSubjects::where('id',$request->department)->pluck('subject_name')->first();
             
             $staff_details->first_name= $request->staff_name;
             $staff_details->division_id= $request->division_name;
@@ -1832,7 +1832,7 @@ class WebUserManagementController extends Controller
             $staff_details->email_id=$request->email_address;    
             $staff_details->specialized_in=$request->specialized_in; 
             $staff_details->user_category=$request->user_category; 
-            $staff_details->department=$department_name;    
+            $staff_details->department=$request->department;    
             $staff_details->employee_no=$request->employee_no;    
             $staff_details->dob=date('Y-m-d',strtotime($request->dob));
             $staff_details->doj=date('Y-m-d',strtotime($request->doj));
@@ -1897,15 +1897,18 @@ class WebUserManagementController extends Controller
     //Check account details unqiue
     public function checksubjectaccess(Request $request)
     {
-        $checksubjectaccess = AcademicSubjectsMapping::where('subject',$request->staffsubject)->whereIn('class_config',$request->class_section);
-        if(isset($request->id)!='')
-            $checksubjectaccess = $checksubjectaccess->where('staff','!=',$request->id);
-        $checksubjectaccess = $checksubjectaccess->pluck('id')->first();
+        if($request->staffsubject != '' && $request->class_section!='')
+        {
+            $checksubjectaccess = AcademicSubjectsMapping::where('subject',$request->staffsubject)->whereIn('class_config',$request->class_section);
+            if(isset($request->id)!='')
+                $checksubjectaccess = $checksubjectaccess->where('staff','!=',$request->id);
+            $checksubjectaccess = $checksubjectaccess->pluck('class_config')->first();
 
-        if($checksubjectaccess !='')
-            echo 'false';
-        else
-            echo 'true';
+            if($checksubjectaccess!='')
+                echo $checksubjectaccess;
+            else
+                echo 'true';
+        }
     }
     /*Staff Ends*/
 

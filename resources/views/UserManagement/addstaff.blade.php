@@ -60,8 +60,8 @@
 							                  	</select>
 											</div>
 											
-											<div class="form-group col-4">
-												<label>Division Name </label>
+											<div class="form-group col-4 teaching">
+												<label>Division Name <span class="mandatory_field">*</span></label>
 							                  	<select class="custom-select input-group" id="division_name" name="division_name">
 							                  		<option value=''>Select Division Name</option>
 								                    @foreach($division as $division_key => $division_value)
@@ -85,7 +85,7 @@
 												</div>
 											</div>
 
-											<div class="form-group col-4">
+											<div class="form-group col-4 teaching">
 												<label>Specialized In</label>
 							                  	<select class="custom-select input-group" id="specialized_in" name="specialized_in">
 							                  		<option value=''>Select Specialized In</option>
@@ -93,7 +93,7 @@
 							                  	</select>
 											</div>
 
-											<div class="form-group col-4">
+											<div class="form-group col-4 teaching">
 												<label>Department</label>
 							                  	<select class="custom-select input-group" id="department" name="department">
 							                  		<option value=''>Select Department</option>
@@ -232,7 +232,7 @@
 									            </div>
 											</div>
 
-											<div class="form-group col-4">
+											<div class="form-group col-4 teaching">
 												<label>Class Teacher <span class="mandatory_field">*</span></label>
 												<div class="input-group">
 													<div class="form-check">
@@ -256,7 +256,7 @@
 											
 										</div>
 										<hr>
-										<div class="row">
+										<div class="row teaching">
 											<div class="form-group col-4 rowcount">
 												<label>Subject </label>
 							                  	<select class="custom-select input-group staffsubject" id="staffsubject" name="staffsubject[0]">
@@ -310,6 +310,13 @@
 	<script type="text/javascript">
 		$(document).ready(function(){
 			$('.select2').select2();
+			$('.teaching').hide();
+			$('#user_category').change(function(){
+				if($('#user_category :selected').val() == 3)
+					$('.teaching').show();
+				else
+					$('.teaching').hide();
+			});
 			var class_section = subjects = '';
 			$('#division_name').change(function() {
 				$.get("{{url('usermanagement/subject_classes?id=')}}"+$(this).val(),function(response){ 
@@ -640,29 +647,7 @@
 			      	// }
 			    },
 			    submitHandler: function(form) {
-			    	$.post("{{url('usermanagement/checkClassteacherexists')}}", {class_section:$('#class_section').val()}, function(response){ 
-				      	if(response == 'false')
-				      	{
-				      		swal({
-							  	title: "Are you sure?",
-							  	text: $('#class_section :selected').text()+" already mapped with another staff as class teacher, do you want to continue?",
-							  	type: "warning",
-							  	showCancelButton: true,
-							  	confirmButtonClass: "btn-danger",
-							  	confirmButtonText: "Yes",
-							  	cancelButtonText: "No",
-							}).then((result) => {
-								console.log(result);
-							  	if (result.value) {
-							    	form.submit();
-							  	} else {
-							  		swal("Cancelled", "Please enter a valid "+data.tag+" mobile number", "error");
-							  	}
-							});
-				     	}
-				     	else
-				     		form.submit();
-				    });
+			    	form.submit();			    
 			    }
 			})
 			return false;
@@ -683,15 +668,21 @@
 	   	$(document).on('change', '.subjectteacher', function(){ 
 	    	var staffsubject ='';
 	    	var id =$(this).attr('data-id');
-	    	var class_section = $(this ).val();
+	    	let class_section = $(this ).val();
+	    	var all_values = [];
+			var current_instance = $(this);
+	    	$("#subjectteacher option:selected").each(function(index){
+	    		if($(this).val() !='')
+	    			all_values.push($(this).val());	    		
+			});
 			$(".staffsubject").each(function(index){
 				if(id == index)
 			    	staffsubject = $(this).val();
 			});
-	    	if(staffsubject != '')
+	    	if(staffsubject != '' && class_section!='')
 	    	{	    		
 		    	$.post("{{url('usermanagement/checksubjectaccess')}}", {class_section:class_section,staffsubject:staffsubject}, function(response){ 
-			      	if(response == 'false')
+			      	if(response != 'true')
 			      	{
 				    	swal({
 						  	title: "Are you sure?",
@@ -705,7 +696,8 @@
 						  	if (result.value) {
 						    	
 						  	} else {
-						  		swal("Cancelled", "Please select some other class-section", "error");
+						  		all_values.splice($.inArray(response,all_values),1);
+						  		current_instance.val(all_values).trigger('change');
 						  	}
 						});
 					}
@@ -721,7 +713,32 @@
 				  	confirmButtonText: "OK",
 				});
 	    	}
-	    }); 
+	    });
+
+	    $(document).on('change', '#class_section', function(){ 
+			$.post("{{url('usermanagement/checkClassteacherexists')}}", {class_section:$('#class_section').val()}, function(response){
+		      	if(response == 'false')
+		      	{
+		      		swal({
+					  	title: "Are you sure?",
+					  	text: $('#class_section :selected').text()+" already mapped with another staff as class teacher, do you want to continue?",
+					  	type: "warning",
+					  	showCancelButton: true,
+					  	confirmButtonClass: "btn-danger",
+					  	confirmButtonText: "Yes",
+					  	cancelButtonText: "No",
+					}).then((result) => {
+						console.log(result);
+					  	if (result.value) {
+					    	// form.submit();
+					  	} else {
+					  		$('#class_section').val(null);
+					  	}
+					});
+		     	}
+			});
+	    	
+	    });  
 	</script>
 
 @endsection

@@ -61,8 +61,8 @@
 							                  	</select>
 											</div>
 											
-											<div class="form-group col-4">
-												<label>Division Name</label>
+											<div class="form-group col-4 teaching">
+												<label>Division Name<span class="mandatory_field">*</span></label>
 							                  	<select class="custom-select input-group" id="division_name" name="division_name">
 							                  		<option value=''>Select Division Name</option>
 								                    @foreach($division as $division_key => $division_value)
@@ -86,7 +86,7 @@
 												</div>
 											</div>
 
-											<div class="form-group col-4">
+											<div class="form-group col-4 teaching">
 												<label>Specialized In</label>
 							                  	<select class="custom-select input-group" id="specialized_in" name="specialized_in">
 							                  		<option value=''>Select Specialized In</option>
@@ -96,7 +96,7 @@
 							                  	</select>
 											</div>
 
-											<div class="form-group col-4">
+											<div class="form-group col-4 teaching">
 												<label>Department</label>
 							                  	<select class="custom-select input-group" id="department" name="department">
 							                  		<option value=''>Select Department</option>
@@ -218,7 +218,7 @@
 												<div class="input-group">
 													<input class="form-control" name="pan_card" type="file" id="pan_card">
 												</div>
-												<div class="pan_cardholder" style="display:none;">
+												<div class="pan_cardholder">
 									                <img id="pan_cardimgPreview" src="{{isset($staff_list['pan_card_image'])?$staff_list['pan_card_image']:'#'}}" alt="pic"  style="max-width: 100px;max-height: 100px;min-width: 100px;min-height: 100px;" />
 									            </div>
 											</div>
@@ -241,7 +241,7 @@
 									            </div>
 											</div>
 
-											<div class="form-group col-4">
+											<div class="form-group col-4 teaching">
 												<label>Class Teacher <span class="mandatory_field">*</span></label>
 												<div class="input-group">
 													<div class="form-check">
@@ -267,7 +267,7 @@
 											
 										</div>
 										<hr>
-										<div class="row">
+										<div class="row teaching">
 											<div class="form-group col-4">
 												<label>Subject </label>
 							                  	<select class="custom-select input-group staffsubject" id="staffsubject" name="staffsubject[0]">
@@ -280,7 +280,7 @@
 
 											<div class="form-group col-4">
 												<label>Subject Teacher For </label>
-							                  	<select class="custom-select input-group select2" id="subjectteacher" name="subjectteacher[0][]" multiple>							                  		<option value=''>Select Class - Section</option>
+							                  	<select class="custom-select input-group select2 subjectteacher" id="subjectteacher" name="subjectteacher[0][]" multiple>							<option value=''>Select Class - Section</option>
 								                    @foreach($class_configs as $class_config_key => $class_config_value)
 								                    	<option value="{{$class_config_value['id']}}" {{isset($teaching_staff[0]) && in_array($class_config_value['id'],$teaching_staff[0]['class_config']) ? 'selected':''}}>{{$class_config_value['class_section']}}</option>
 								                    @endforeach
@@ -293,7 +293,7 @@
 											</div>
 
 										</div>
-										<div class="row dynamicstaffclass">
+										<div class="row dynamicstaffclass teaching">
 											@for($i=1;$i< count($teaching_staff); $i++)
 												<div class="form-group col-4 rowcount">
 													<label>Subject </label>
@@ -307,10 +307,11 @@
 
 												<div class="form-group col-4">
 													<label>Subject Teacher For </label>
-								                  	<select class="custom-select input-group" id="subjectteacher" name="subjectteacher[{{$i}}][]">
+								                  	<select class="custom-select input-group select2 subjectteacher" id="subjectteacher" name="subjectteacher[{{$i}}][]" multiple>
 								                  		<option value=''>Select Class - Section</option>
 									                    @foreach($class_configs as $class_config_key => $class_config_value)
-									                    	<option value="{{$class_config_value['id']}}" {{isset($teaching_staff[$i]) && $class_config_value['id'] ==  $teaching_staff[$i]['class_config'] ? 'selected':''}}>{{$class_config_value['class_section']}}</option>
+									                    	<option value="{{$class_config_value['id']}}" {{isset($teaching_staff[$i]) && in_array($class_config_value['id'],$teaching_staff[$i]['class_config']) ? 'selected':''}}>
+									                    		{{$class_config_value['class_section']}}</option>
 									                    @endforeach
 								                  	</select>
 												</div>
@@ -351,6 +352,18 @@
 	<script type="text/javascript">
 		$(document).ready(function(){
 			$('.select2').select2();
+			var user_category = $('#user_category :selected').val();
+			if(user_category == 3)
+				$('.teaching').show();
+			else
+				$('.teaching').hide();
+			$('#user_category').change(function(){
+				if($('#user_category :selected').val() == 3)
+					$('.teaching').show();
+				else
+					$('.teaching').hide();
+			});
+
 			$("#division_name").change(function() {
 				$.get("{{url('usermanagement/subject_classes?id=')}}"+$(this).val(),function(response){ 
 					var data = JSON.parse(response);
@@ -398,7 +411,7 @@
 		   					staffhtml+='<option value='+value.id+'>'+value.subject_name+'</option>';
 		   				})
 		   				staffhtml+='</select></div>';
-		   				staffhtml+='<div class="form-group col-4 remove_'+i+'"><label>Subject Teacher For </label>';
+		   				staffhtml+='<div class="form-group col-4 subjectteacher remove_'+i+'"><label>Subject Teacher For </label>';
 		   				staffhtml+='<select class="custom-select input-group" id="subjectteacher['+i+']" name="subjectteacher['+i+']"><option value="">Select Class - Section</option>';
 		   				$(class_section).each(function(  index, value ) {
 		   					staffhtml+='<option value='+value.id+'>'+value.class_section+'</option>';
@@ -700,29 +713,7 @@
 			      	// }
 			    },
 			    submitHandler: function(form) {
-			    	$.post("{{url('usermanagement/checkClassteacherexists')}}", {class_section:$('#class_section').val(),id:$('#staff_id').val()}, function(response){ 
-				      	if(response == 'false')
-				      	{
-				      		swal({
-							  	title: "Are you sure?",
-							  	text: $('#class_section :selected').text()+" already mapped with another staff as class teacher, do you want to continue?",
-							  	type: "warning",
-							  	showCancelButton: true,
-							  	confirmButtonClass: "btn-danger",
-							  	confirmButtonText: "Yes",
-							  	cancelButtonText: "No",
-							}).then((result) => {
-								console.log(result);
-							  	if (result.value) {
-							    	form.submit();
-							  	} else {
-							  		swal("Cancelled", "Please enter a valid "+data.tag+" mobile number", "error");
-							  	}
-							});
-				     	}
-				     	else
-				     		form.submit();
-				    });
+					form.submit();
 			    }
 			})
 			return false;
@@ -741,15 +732,21 @@
 	   	$(document).on('change', '.subjectteacher', function(){ 
 	    	var staffsubject ='';
 	    	var id =$(this).attr('data-id');
-	    	var class_section = $(this ).val();
+	    	let class_section = $(this ).val();
+	    	var all_values = [];
+			var current_instance = $(this);
+	    	$("#subjectteacher option:selected").each(function(index){
+	    		if($(this).val() !='')
+	    			all_values.push($(this).val());	    		
+			});
 			$(".staffsubject").each(function(index){
 				if(id == index)
 			    	staffsubject = $(this).val();
 			});
-	    	if(staffsubject != '')
+	    	if(staffsubject != '' && class_section!='')
 	    	{	    		
 		    	$.post("{{url('usermanagement/checksubjectaccess')}}", {class_section:class_section,staffsubject:staffsubject,id:$('#staff_id').val()}, function(response){ 
-			      	if(response == 'false')
+			      	if(response != 'true')
 			      	{
 				    	swal({
 						  	title: "Are you sure?",
@@ -763,7 +760,8 @@
 						  	if (result.value) {
 						    	
 						  	} else {
-						  		swal("Cancelled", "Please select some other class-section", "error");
+						  		all_values.splice($.inArray(response,all_values),1);
+						  		current_instance.val(all_values).trigger('change');
 						  	}
 						});
 					}
@@ -779,6 +777,31 @@
 				  	confirmButtonText: "OK",
 				});
 	    	}
+	    });
+
+	   	$(document).on('change', '#class_section', function(){ 
+			$.post("{{url('usermanagement/checkClassteacherexists')}}", {class_section:$('#class_section').val(),id:$('#staff_id').val()}, function(response){ 
+		      	if(response == 'false')
+		      	{
+		      		swal({
+					  	title: "Are you sure?",
+					  	text: $('#class_section :selected').text()+" already mapped with another staff as class teacher, do you want to continue?",
+					  	type: "warning",
+					  	showCancelButton: true,
+					  	confirmButtonClass: "btn-danger",
+					  	confirmButtonText: "Yes",
+					  	cancelButtonText: "No",
+					}).then((result) => {
+						console.log(result);
+					  	if (result.value) {
+					    	// form.submit();
+					  	} else {
+					  		$('#class_section').val(null);
+					  	}
+					});
+		     	}
+			});
+	    	
 	    });
 	</script>
 

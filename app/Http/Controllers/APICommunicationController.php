@@ -1315,7 +1315,8 @@ class APICommunicationController extends Controller
                 $user_details['dob'] = date('d-m-Y',strtotime($data['dob']));
                 $user_details['doj'] = date('d-m-Y',strtotime($data['doj']));
                 $user_details['employee_no'] = $data['employee_no'];
-                $user_details['department'] = $data['department'];
+                $department_name = AcademicSubjects::where('id',$data['department'])->pluck('subject_name')->first();
+                $user_details['department'] = $department_name;
                 $classessections = AcademicClassConfiguration::select('id','class_id','section_id','division_id','class_teacher')->where('class_teacher',$data['id'])->get()->first();
                 $user_details['class'] = (!empty($classessections))?$classessections->classsectionName():'';
 

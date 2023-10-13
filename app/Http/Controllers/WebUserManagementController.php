@@ -1833,7 +1833,7 @@ class WebUserManagementController extends Controller
             $staffsubjects = $request->staffsubject;
             $subjectteacher = $request->subjectteacher;
             
-            if($countstaffsubjects >0)
+            if($countstaffsubjects >0 && $request->user_category == 3)
             {
                 for ($i=0; $i < $countstaffsubjects; $i++) { 
                     if($staffsubjects[$i] !='' && $subjectteacher[$i] != '')

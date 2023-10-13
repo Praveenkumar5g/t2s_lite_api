@@ -280,7 +280,7 @@
 
 											<div class="form-group col-4">
 												<label>Subject Teacher For </label>
-							                  	<select class="custom-select input-group select2 subjectteacher" id="subjectteacher" name="subjectteacher[0][]" multiple>							<option value=''>Select Class - Section</option>
+							                  	<select class="custom-select input-group select2 subjectteacher" id="subjectteacher" name="subjectteacher[0][]" data-id=0 multiple>							<option value=''>Select Class - Section</option>
 								                    @foreach($class_configs as $class_config_key => $class_config_value)
 								                    	<option value="{{$class_config_value['id']}}" {{isset($teaching_staff[0]) && in_array($class_config_value['id'],$teaching_staff[0]['class_config']) ? 'selected':''}}>{{$class_config_value['class_section']}}</option>
 								                    @endforeach
@@ -307,7 +307,7 @@
 
 												<div class="form-group col-4">
 													<label>Subject Teacher For </label>
-								                  	<select class="custom-select input-group select2 subjectteacher" id="subjectteacher" name="subjectteacher[{{$i}}][]" multiple>
+								                  	<select class="custom-select input-group select2 subjectteacher" id="subjectteacher" name="subjectteacher[{{$i}}][]" data-id={{$i}} multiple>
 								                  		<option value=''>Select Class - Section</option>
 									                    @foreach($class_configs as $class_config_key => $class_config_value)
 									                    	<option value="{{$class_config_value['id']}}" {{isset($teaching_staff[$i]) && in_array($class_config_value['id'],$teaching_staff[$i]['class_config']) ? 'selected':''}}>

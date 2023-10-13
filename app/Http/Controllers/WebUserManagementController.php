@@ -1882,7 +1882,11 @@ class WebUserManagementController extends Controller
                 // $department_name = AcademicSubjects::where('id',$request->department)->pluck('subject_name')->first();
             
             $staff_details->first_name= $request->staff_name;
-            $staff_details->division_id= $request->division_name;
+            if($request->user_category==3)
+                $staff_details->division_id= $request->division_name;
+            else
+                $staff_details->division_id = null;
+
             $staff_details->mobile_number=$request->mobile_number;    
             $staff_details->email_id=$request->email_address;    
             $staff_details->specialized_in=$request->specialized_in; 

@@ -1743,6 +1743,23 @@ class WebUserManagementController extends Controller
 
             if($request->classteacher == 'yes')
             {
+                // remove old class details while change division - start
+                if($staff_details->division_id != $request->division_id)
+                {
+                    // fetch all the division except newly selected one
+                    $class_config_list = AcademicClassConfiguration::where('division_id','!=',$request->division_id)->pluck('id')->toArray();
+
+                    AcademicSubjectsMapping::whereIn('class_config',$class_config_list)->where('staff',$staff_details->id)->update(['staff'=>null]);
+
+                    AcademicClassConfiguration::where('class_teacher',$staff_details->id)->where('division_id','!=',$request->division_id)->update(['class_teacher'=>null]);
+
+                    $staff_group_list = UserGroups::where('group_type',2)->where('group_status',Config::get('app.Group_Active'))->whereIn('class_config',$class_config_list)->pluck('id')->toArray();
+
+                    UserGroupsMapping::where('user_role',Config::get('app.Staff_role'))->whereIn('group_id',$staff_group_list)->where('user_table_id',$staff_details->id)->delete();
+
+                }
+                // remove old class details while change division - end
+
                 $old_class_teacher = AcademicClassConfiguration::where('class_teacher',$staff_details->id)->pluck('id')->first();
                 if($request->class_section != $old_class_teacher)
                 {                    
@@ -1783,7 +1800,7 @@ class WebUserManagementController extends Controller
             $countstaffsubjects = count($request->staffsubject);
             $staffsubjects = $request->staffsubject;
             $subjectteacher = $request->subjectteacher;
-
+            
             if($countstaffsubjects >0)
             {
                 for ($i=0; $i < $countstaffsubjects; $i++) { 

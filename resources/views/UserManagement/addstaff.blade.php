@@ -358,7 +358,7 @@
    					staffhtml+='<option value='+value.id+'>'+value.subject_name+'</option>';
    				})
    				staffhtml+='</select></div>';
-   				staffhtml+='<div class="form-group col-4 remove_'+i+'"><label>Subject Teacher For </label>';
+   				staffhtml+='<div class="form-group col-4 subjectteacher remove_'+i+'"><label>Subject Teacher For </label>';
    				staffhtml+='<select class="custom-select input-group select2 subjectteacher" data-id='+i+' id="subjectteacher['+i+']" name="subjectteacher['+i+'][]" multiple><option value="">Select Class - Section</option>';
    				$(class_section).each(function(  index, value ) {
    					staffhtml+='<option value='+value.id+'>'+value.class_section+'</option>';
@@ -698,6 +698,13 @@
 						  	} else {
 						  		all_values.splice($.inArray(response,all_values),1);
 						  		current_instance.val(all_values).trigger('change');
+						  		swal({
+								  	title: "Warning!",
+								  	text: "Please Select Subject",
+								  	type: "warning",
+								  	confirmButtonClass: "btn-danger",
+								  	confirmButtonText: "OK",
+								});
 						  	}
 						});
 					}

@@ -1747,6 +1747,28 @@ class WebUserManagementController extends Controller
 
             $staff_details = UserStaffs::where(['id'=>$request->staff_id])->get()->first(); 
 
+            if($request->user_category == 3 && $staff_details->user_category != $request->user_category)
+            {              
+                UserGroupsMapping::where('user_role',Config::get('app.Staff_role'))->where('group_id',5)->where('user_table_id',$staff_details->id)->delete();
+                $check_exists_nonteaching = UserGroupsMapping::where('user_role',Config::get('app.Staff_role'))->where('group_id',4)->where('user_table_id',$staff_details->id)->first();
+                if(empty($check_exists_nonteaching))
+                    UserGroupsMapping::insert(['user_role'=>Config::get('app.Staff_role'),'group_id'=>4,'user_table_id'=>$staff_details->id,'group_access'=>2]);
+            }
+            else if($request->user_category == 4 && $staff_details->user_category != $request->user_category)
+            {
+                UserGroupsMapping::where('user_role',Config::get('app.Staff_role'))->where('group_id',4)->where('user_table_id',$staff_details->id)->delete();
+                $check_exists_nonteaching = UserGroupsMapping::where('user_role',Config::get('app.Staff_role'))->where('group_id',5)->where('user_table_id',$staff_details->id)->first();
+                if(empty($check_exists_nonteaching))
+                    UserGroupsMapping::insert(['user_role'=>Config::get('app.Staff_role'),'group_id'=>5,'user_table_id'=>$staff_details->id,'group_access'=>2]);
+
+                AcademicSubjectsMapping::where('staff',$staff_details->id)->update(['staff'=>null]);
+                
+                $staff_group_list = UserGroups::where('group_type',2)->where('group_status',Config::get('app.Group_Active'))->pluck('id')->toArray();
+
+                UserGroupsMapping::where('user_role',Config::get('app.Staff_role'))->whereIn('group_id',$staff_group_list)->where('user_table_id',$staff_details->id)->delete();
+
+            }
+
             if($request->classteacher == 'yes')
             {
                 // remove old class details while change division - start
@@ -1801,6 +1823,10 @@ class WebUserManagementController extends Controller
 
                     UserGroupsMapping::insert(['group_id'=>$group_id,'user_role'=>Config::get('app.Staff_role'),'group_access'=>1,'user_table_id'=>$staff_details->id,'user_status'=>1]);
                 }
+            }
+            else //check already assigned as classteacher
+            {   
+                AcademicClassConfiguration::where('class_teacher',$staff_details->id)->where('division_id','!=',$request->division_id)->update(['class_teacher'=>null]);
             }
 
             $countstaffsubjects = count($request->staffsubject);

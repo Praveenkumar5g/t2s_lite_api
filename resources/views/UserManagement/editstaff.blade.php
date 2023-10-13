@@ -255,7 +255,7 @@
 												</div>
 											</div>
 
-											<div class="form-group col-4 classteacher_classsection " style="display:{{$classteacher!='' && $staff_list['user_category'] == 3?'block':'none'}};">
+											<div class="form-group col-4 classteacher_classsection teaching" style="display:{{$classteacher!='' && $staff_list['user_category'] == 3?'block':'none'}};">
 												<label>Class Teacher For <span class="mandatory_field">*</span></label>
 							                  	<select class="custom-select input-group" id="class_section" name="class_section">
 							                  		<option value=''>Select Class - Section</option>

@@ -1514,6 +1514,12 @@ class WebUserManagementController extends Controller
 
                             $teachergroup_id = UserGroups::where('class_config',$subjectteacher[$i][$subject_teacher_i])->pluck('id')->first();
 
+                            if(empty($check_existing_teacherdetails))
+                            {
+                                AcademicSubjectsMapping::insert(['class_config'=>$subjectteacher[$i][$subject_teacher_i],'subject'=>$staffsubjects[$i],'staff'=>null]);
+                                $check_existing_teacherdetails = AcademicSubjectsMapping::where('class_config',$subjectteacher[$i][$subject_teacher_i])->where('subject',$staffsubjects[$i])->get()->first();
+                            }
+
                             if(!empty($check_existing_teacherdetails) && $check_existing_teacherdetails->staff != '')
                             {
                                 //Check whether class teacher also a subject teacher for same class 
@@ -1813,6 +1819,12 @@ class WebUserManagementController extends Controller
                             // remove old records
 
                             $check_existing_teacherdetails = AcademicSubjectsMapping::where('class_config',$subjectteacher[$i][$subject_teacher_i])->where('subject',$staffsubjects[$i])->get()->first();
+
+                            if(empty($check_existing_teacherdetails))
+                            {
+                                AcademicSubjectsMapping::insert(['class_config'=>$subjectteacher[$i][$subject_teacher_i],'subject'=>$staffsubjects[$i],'staff'=>null]);
+                                $check_existing_teacherdetails = AcademicSubjectsMapping::where('class_config',$subjectteacher[$i][$subject_teacher_i])->where('subject',$staffsubjects[$i])->get()->first();
+                            }
 
                             $teachergroup_id = UserGroups::where('class_config',$subjectteacher[$i][$subject_teacher_i])->pluck('id')->first();
                             if(!empty($check_existing_teacherdetails) && $check_existing_teacherdetails->staff != '')

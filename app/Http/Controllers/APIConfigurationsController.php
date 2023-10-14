@@ -1568,7 +1568,7 @@ class APIConfigurationsController extends Controller
 			return response()->json(compact('school_name','user_role','group_list'));
 		}
 		else
-			return response()->json(['message'=>'No groups Configured!...']);
+			return response()->json(['status'=>false,'message'=>'No groups Configured!...']);
 	}
 
 	public function classes_group(Request $request)

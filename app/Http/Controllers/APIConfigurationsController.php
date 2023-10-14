@@ -1693,7 +1693,7 @@ class APIConfigurationsController extends Controller
 			return response()->json(compact('school_name','user_category','class_group'));
 		}
 		else
-			return response()->json(['message'=>'No groups Configured!...']);
+			return response()->json(['status'=>false,'message'=>'No groups Configured!...']);
 	}
 
 	// Configurations tags
@@ -3728,8 +3728,6 @@ class APIConfigurationsController extends Controller
 
 		$original_userall_id = UserAll::where(['user_table_id'=>$original_details->id,'user_role'=>$original_role])->pluck('id')->first();
 
-		$all_group_ids = UserGroups::where('group_status',Config::get('app.Group_Active'))->pluck('id')->toArray();
-
 		if(($changing_role == Config::get('app.Admin_role') || $changing_role == Config::get('app.Management_role')) && $original_role != $changing_role) //changing role to admin or managment
 		{
 		    if($changing_role == Config::get('app.Admin_role'))
@@ -3771,7 +3769,7 @@ class APIConfigurationsController extends Controller
 			{
 				if(isset($request->user_category) && $changing_role != Config::get('app.Admin_role') && $request->user_category>0)
 					$change_table_details->user_category = $request->user_category;
-				$change_status = $all_group_ids;
+				$change_status = UserGroups::where('group_status',Config::get('app.Group_Active'))->where('id','!=',1)->pluck('id')->toArray();
 				$changing_group_access = Config::get('app.Group_Active'); //changing access to group admin
 
 				AcademicClassConfiguration::where('class_teacher',$original_details->id)->update(['class_teacher'=>null]);
@@ -3792,9 +3790,13 @@ class APIConfigurationsController extends Controller
 				AcademicClassConfiguration::where('class_teacher',$original_details->id)->update(['class_teacher'=>null,'updated_by'=>$userall_id]);
 				$deletinggroup_ids = UserGroups::where('group_type',2)->pluck('id')->toArray();
 				$classgroups = UserGroupsMapping::whereIn('group_id',$deletinggroup_ids)->pluck('id')->toArray();
+
 				$admin_management_group_id = UserGroups::where('group_name', 'like', '%Admin-Management%')->pluck('id')->first();
-				$remove_groups = ([1,$admin_management_group_id,$removing_group,$classgroups]);
-				$change_status = $all_group_ids;
+				$change_status = ([2,3]);
+				$user_category_group[] = ($user_category == Config::get('app.Teaching_staff'))?4:5;
+				$change_status = array_merge($change_status,$user_category_group);
+				$remove_groups = ([1,$removing_group,$admin_management_group_id]);
+				$remove_groups = array_merge($remove_groups,$deletinggroup_ids);
 				$changing_group_access = Config::get('app.Group_Deactive'); //changing access to group admin
 
 				if($original_role == Config::get('app.Admin_role'))
@@ -3838,8 +3840,6 @@ class APIConfigurationsController extends Controller
 	        $user_all->user_role=$changing_role;
 	        $user_all->user_table_id=$id;
 	        $user_all->save();
-
-	    	UserGroupsMapping::where('user_table_id',$original_details->id)->where('user_role',$original_role)->update(['user_table_id'=>$id,'user_role'=>$changing_role]);
         }
 
 
@@ -3850,8 +3850,7 @@ class APIConfigurationsController extends Controller
         $schoolusers->save();
 
 		if(!empty($remove_groups))//remove groups
-			$this->remove_groups($remove_groups,$id,$changing_role);
-
+			$this->remove_groups($remove_groups,$original_details->id,$original_role);
 		if(!empty($add_groups)) //add groups
 			$this->add_groups($add_groups,$id,$changing_role,$group_access);
 
@@ -3907,19 +3906,25 @@ class APIConfigurationsController extends Controller
 				$check_original_user_exists = UserGroupsMapping::insert(['user_table_id'=>$user_table_id,'user_role'=>$user_role,'group_access'=>1,'group_id'=>$value]);
 				if(!empty($check_exists) && empty($check_original_user_exists))
 				{
-					if(($user_role == Config::get('app.Admin_role') && $value == 1) || $user_role == Config::get('app.Management_role') || $user_role == Config::get('app.Staff_role'))
-						$check_exists = $check_exists->update(['group_access'=>$group_access,'user_table_id'=>$user_table_id,'user_role'=>$user_role]);
+					if($user_role == Config::get('app.Admin_role') || $user_role == Config::get('app.Management_role') || $user_role == Config::get('app.Staff_role'))
+					{
+						if($value !=1 || ($value == 1 && $user_role == Config::get('app.Management_role')))
+							$check_exists = $check_exists->update(['group_access'=>$group_access,'user_table_id'=>$user_table_id,'user_role'=>$user_role]);
+					}
 				}
 				else if(empty($check_original_user_exists))
 				{
 					if($user_role == Config::get('app.Admin_role') || $user_role == Config::get('app.Management_role'))
 					{
 						if(($value == 1 && $user_role == Config::get('app.Management_role')) || $value!= 1)
+						{
 							UserGroupsMapping::insert(['user_table_id'=>$user_table_id,'user_role'=>$user_role,'group_access'=>1,'group_id'=>$value]);
+						}
 					}
 				}
 			}
 		}
+		UserGroupsMapping::where(['user_table_id'=>$original_id,'user_role'=>$original_role])->whereIn('group_id',$group_ids)->delete();
 	}
 
 	public function check_staff_classes(Request $request)

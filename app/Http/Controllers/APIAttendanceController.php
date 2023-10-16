@@ -116,7 +116,7 @@ class APIAttendanceController extends Controller
 
             $class_leave_total = count(Attendance::where('class_config',$class_sec_value->id)->where('attendance_date', 'like', '%' .$attendance_date. '%')->where('session_type',1)->whereIn('user_table_id',$student_ids)->where('attendance_status',3)->pluck('id')->toArray());
 
-            $class_students_count = count(UserStudents::where('class_config',$class_sec_value->id)->where('user_status',Config::get('app.Group_Active'))->whereIn('user_table_id',$student_ids)->pluck('id')->toArray());//get students count  
+            $class_students_count = count(UserStudents::where('class_config',$class_sec_value->id)->where('user_status',Config::get('app.Group_Active'))->where('user_status',1)->pluck('id')->toArray());//get students count  
 
             // Get individual class and section attendance details 
             $attendance[] = ([

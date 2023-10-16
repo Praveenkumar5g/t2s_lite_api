@@ -49,7 +49,7 @@ class APIAttendanceController extends Controller
 
         $present_total = $absent_total = $leave_total = $present_percentage = $absent_percentage = $absent_percentage = 0;
         $session_type = 1;
-        $present_total = count(Attendance::where('attendance_date', 'like', '%' .$attendance_date. '%')->where('session_type',1)->where('attendance_status',1)->pluck('id')->toArray());
+        $present_total = count(Attendance::where('sattendance_date', 'like', '%' .$attendance_date. '%')->where('session_type',1)->where('attendance_status',1)->pluck('id')->toArray());
 
         $absent_total = count(Attendance::where('attendance_date', 'like', '%' .$attendance_date. '%')->where('session_type',1)->where('attendance_status',2)->pluck('id')->toArray());
 

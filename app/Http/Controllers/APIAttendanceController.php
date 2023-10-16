@@ -233,7 +233,7 @@ class APIAttendanceController extends Controller
         
         foreach ($attendance_records as $attendance_key => $attendance_value) {
             // code...
-            $attendance_entry = $check_entry = Attendance::where('class_config',$request->class_config)->where('attendance_date', 'like', '%' .$attendance_date. '%')->where('user_table_id',$attendance_key)->first();
+            $attendance_entry = $check_entry = Attendance::where('attendance_date', 'like', '%' .$attendance_date. '%')->where('user_table_id',$attendance_key)->first();
 
             if(empty($attendance_entry))
             {

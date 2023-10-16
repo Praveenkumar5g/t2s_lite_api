@@ -382,7 +382,7 @@
         		}
       		});
 
-      		$('.classteacher').change(function(){
+      		$('.classteacher').click(function(){
       			if($(this).val() == 'yes')
       				$('.classteacher_classsection').show();
       			else

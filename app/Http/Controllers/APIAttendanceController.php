@@ -81,13 +81,15 @@ class APIAttendanceController extends Controller
 
         $present_total = $absent_total = $leave_total = $present_percentage = $absent_percentage = $absent_percentage = 0;
         $session_type = 1;
-        $present_total = count(Attendance::where('attendance_date', 'like', '%' .$attendance_date. '%')->where('session_type',1)->where('attendance_status',1)->pluck('id')->toArray());
+        $student_ids = UserStudents::where('user_status',1)->pluck('id')->toArray();
 
-        $absent_total = count(Attendance::where('attendance_date', 'like', '%' .$attendance_date. '%')->where('session_type',1)->where('attendance_status',2)->pluck('id')->toArray());
+        $present_total = count(Attendance::where('attendance_date', 'like', '%' .$attendance_date. '%')->whereIn('user_table_id',$student_ids)->where('session_type',1)->where('attendance_status',1)->pluck('id')->toArray());
 
-        $leave_total = count(Attendance::where('attendance_date', 'like', '%' .$attendance_date. '%')->where('session_type',1)->where('attendance_status',3)->pluck('id')->toArray());
+        $absent_total = count(Attendance::where('attendance_date', 'like', '%' .$attendance_date. '%')->whereIn('user_table_id',$student_ids)->where('session_type',1)->where('attendance_status',2)->pluck('id')->toArray());
 
-        $students_count = count(UserStudents::where('user_status',Config::get('app.Group_Active'))->pluck('id')->toArray());//get students count 
+        $leave_total = count(Attendance::where('attendance_date', 'like', '%' .$attendance_date. '%')->whereIn('user_table_id',$student_ids)->where('session_type',1)->where('attendance_status',3)->pluck('id')->toArray());
+
+        $students_count = count(UserStudents::where('user_status',Config::get('app.Group_Active'))->where('user_status',1)->pluck('id')->toArray());//get students count 
 
         $left_students = $students_count - ($present_total+$absent_total+$leave_total); //student left to mark attendance
         

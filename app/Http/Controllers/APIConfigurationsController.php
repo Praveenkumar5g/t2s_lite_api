@@ -3743,8 +3743,8 @@ class APIConfigurationsController extends Controller
 				$check_exists = UserAdmin::where('mobile_number',$original_details->mobile_number)->pluck('id')->first();
 				if($check_exists=='')
 				{
-					$remove_groups = ([1]);
-
+					$change_status = UserGroups::where('group_status',Config::get('app.Group_Active'))->where('id','!=',1)->pluck('id')->toArray();
+					$changing_group_access = Config::get('app.Group_Active'); //changing access to group admin
 					UserManagements::where('id',$original_details->id)->delete();
 				}
 				else
@@ -3757,7 +3757,8 @@ class APIConfigurationsController extends Controller
 				{
 					if(isset($request->user_category) && $changing_role != Config::get('app.Admin_role') && $request->user_category>0)
 						$change_table_details->user_category = $request->user_category;
-					$add_groups = ([1]);
+					$change_status = UserGroups::where('group_status',Config::get('app.Group_Active'))->pluck('id')->toArray();
+					$changing_group_access = Config::get('app.Group_Active');
 					$group_access = 1;
 
 					UserAdmin::where('id',$original_details->id)->delete();

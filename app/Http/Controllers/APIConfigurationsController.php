@@ -2481,6 +2481,11 @@ class APIConfigurationsController extends Controller
 
    			$student_id = $student_details->id;
 
+   			if(isset($student_details->class_config) && $student_details->class_config !='' && $request->class_config !='' && $student_details->class_config != $request->class_config)
+            {
+            	Attendance::where('id',$student_id)->where('class_config',$student_details->class_config)->update(['class_config'=>$request->class_config]);
+            }
+
    			// generate and update student id in db 
             $userstudent_id = $profile_details['school_code'].substr($profile_details['active_academic_year'], -2).'S'.sprintf("%04s", $student_id);
             $student_details->user_id = $userstudent_id;

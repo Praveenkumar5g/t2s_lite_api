@@ -41,6 +41,7 @@ use App\Exports\StudentsExport;
 use App\Models\AcademicClasses;
 use App\Models\UserManagements;
 use App\Imports\StudentsImport;
+use App\Models\Attendance;
 use App\Imports\SectionsImport;
 use App\Exports\SectionsExport;
 use App\Models\UserCategories;

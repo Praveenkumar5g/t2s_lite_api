@@ -1762,6 +1762,8 @@ class WebUserManagementController extends Controller
                     UserGroupsMapping::insert(['user_role'=>Config::get('app.Staff_role'),'group_id'=>5,'user_table_id'=>$staff_details->id,'group_access'=>2]);
 
                 AcademicSubjectsMapping::where('staff',$staff_details->id)->update(['staff'=>null]);
+
+                AcademicClassConfiguration::where('class_teacher',$staff_details->id)->update(['class_teacher'=>null]);
                 
                 $staff_group_list = UserGroups::where('group_type',2)->where('group_status',Config::get('app.Group_Active'))->pluck('id')->toArray();
 

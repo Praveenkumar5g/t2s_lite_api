@@ -280,13 +280,13 @@
 
 											<div class="form-group col-4">
 												<label>Subject Teacher For </label>
-							                  	<select class="custom-select input-group select2 subjectteacher" id="subjectteacher" name="subjectteacher[0][]" data-id=0 multiple>							<option value=''>Select Class - Section</option>
+							                  	<select class="custom-select input-group select2 subjectteacher" id="subjectteacher_0" name="subjectteacher[0][]" data-id=0 multiple>							<option value=''>Select Class - Section</option>
 								                    @foreach($class_configs as $class_config_key => $class_config_value)
 								                    	<option value="{{$class_config_value['id']}}" {{isset($teaching_staff[0]) && in_array($class_config_value['id'],$teaching_staff[0]['class_config']) ? 'selected':''}}>{{$class_config_value['class_section']}}</option>
 								                    @endforeach
 							                  	</select>
 											</div>
-
+											<input type="text" name="selected_values[0]" id="selected_values_0" class="selected_value" value=""/>
 											<div class="form-group col-2">
 												<label style="color: white;"> add more</label>
 												<button type="button" name="addmore" id="addmore" class="btn btn-success input-group">+ Add More</button>
@@ -307,7 +307,7 @@
 
 												<div class="form-group col-4">
 													<label>Subject Teacher For </label>
-								                  	<select class="custom-select input-group select2 subjectteacher" id="subjectteacher" name="subjectteacher[{{$i}}][]" data-id={{$i}} multiple>
+								                  	<select class="custom-select input-group select2 subjectteacher" id="subjectteacher_{{$i}}" name="subjectteacher[{{$i}}][]" data-id={{$i}} multiple>
 								                  		<option value=''>Select Class - Section</option>
 									                    @foreach($class_configs as $class_config_key => $class_config_value)
 									                    	<option value="{{$class_config_value['id']}}" {{isset($teaching_staff[$i]) && in_array($class_config_value['id'],$teaching_staff[$i]['class_config']) ? 'selected':''}}>
@@ -315,7 +315,7 @@
 									                    @endforeach
 								                  	</select>
 												</div>
-
+												<input type="text" name="selected_values[{{$i}}]" id="selected_values_{{$i}}" class="selected_value" value=""/>
 												<div class="form-group col-2 remove_{{$i}}">
 													<label style="color: white;"> add more</label>
 													<button type="button" name="addmore" data-attr={{$i}} id="addmore" class="btn btn-danger remove-tr input-group">Remove</button>
@@ -369,11 +369,11 @@
 					var data = JSON.parse(response);
 					if(response)
 					{
-						$("#specialized_in option,#department option,#class_section option,#subjectteacher option,#staffsubject option").remove();
+						$("#specialized_in option,#department option,#class_section option,#subjectteacher_0 option,#staffsubject option").remove();
 						$('#specialized_in').append("<option value=''>Select Specialized In</option>");
 						$('#department').append("<option value=''>Select Department</option>");
 						$('#class_section').append("<option value=''>Select Class - Section</option>");
-						$('#subjectteacher').append("<option value=''>Select Class - Section</option>");
+						$('#subjectteacher_0').append("<option value=''>Select Class - Section</option>");
 						$('#staffsubject').append("<option value=''>Select Subject</option>");						
 						$(data.subjects).each(function(  index, value ) {
 						  	option = $("<option></option>");
@@ -385,7 +385,7 @@
 						  	option = $("<option></option>");
 						  	$(option).val(value.id);
 						  	$(option).html(value.class_section);
-						  	$('#class_section,#subjectteacher').append(option);
+						  	$('#class_section,#subjectteacher_0').append(option);
 						});
 						// Initialize select2
  						initailizeSelect2();
@@ -412,11 +412,11 @@
 		   				})
 		   				staffhtml+='</select></div>';
 		   				staffhtml+='<div class="form-group col-4 remove_'+i+'"><label>Subject Teacher For </label>';
-		   				staffhtml+='<select class="custom-select input-group subjectteacher select2" data-id='+i+' id="subjectteacher['+i+']" name="subjectteacher['+i+'][]" multiple><option value="">Select Class - Section</option>';
+		   				staffhtml+='<select class="custom-select input-group subjectteacher select2" data-id='+i+' id="subjectteacher_'+i+'" name="subjectteacher['+i+'][]" multiple><option value="">Select Class - Section</option>';
 		   				$(class_section).each(function(  index, value ) {
 		   					staffhtml+='<option value='+value.id+'>'+value.class_section+'</option>';
 		   				})
-		   				staffhtml+='</select></div><div class="form-group col-2 remove_'+i+'"><label style="color: white;"> add more</label><button type="button" name="addmore" data-attr='+i+' id="addmore" class="btn btn-danger remove-tr input-group">Remove</button></div>';
+		   				staffhtml+='</select></div><input type="hidden" name="selected_values['+i+']" class="selected_value" id="selected_values_'+i+'" value=""/><div class="form-group col-2 remove_'+i+'"><label style="color: white;"> add more</label><button type="button" name="addmore" data-attr='+i+' id="addmore" class="btn btn-danger remove-tr input-group">Remove</button></div>';
 									              
 		       			$(".dynamicstaffclass").append(staffhtml);
 
@@ -732,20 +732,36 @@
 	   	$(document).on('change', '.subjectteacher', function(){ 
 	    	var staffsubject ='';
 	    	var id =$(this).attr('data-id');
-	    	let class_section = $(this ).val();
+	    	let class_section = '';
 	    	var all_values = [];
 			var current_instance = $(this);
-	    	$("#subjectteacher option:selected").each(function(index){
+	    	$("#subjectteacher_"+id+" option:selected").each(function(index){
 	    		if($(this).val() !='')
-	    			all_values.push($(this).val());	    		
+	    			all_values.push($(this).val());	 
+			});
+			$(".subjectteacher").each(function(index){
+				if(id == index)
+					class_section = $(this ).val();
 			});
 			$(".staffsubject").each(function(index){
+
 				if(id == index)
 			    	staffsubject = $(this).val();
 			});
-	    	if(staffsubject != '' && class_section!='')
+			var selected_value = '';
+			var checked_values = [];
+			$('.selected_value').each(function(index){
+				if(index == id)
+					selected_value = $(this).val();
+			});
+
+			if(selected_value != '')
+				checked_values = selected_value.split(',');
+
+			var final_value  = class_section[class_section.length - 1];	
+	    	if(staffsubject != '' && class_section!='' && $.inArray(final_value,checked_values)<=-1 )
 	    	{	    		
-		    	$.post("{{url('usermanagement/checksubjectaccess')}}", {class_section:class_section,staffsubject:staffsubject,id:$('#staff_id').val()}, function(response){ 
+		    	$.post("{{url('usermanagement/checksubjectaccess')}}", {class_section:final_value,staffsubject:staffsubject,id:$('#staff_id').val()}, function(response){ 
 			      	if(response != 'true')
 			      	{
 				    	swal({
@@ -758,7 +774,13 @@
 						  	cancelButtonText: "No",
 						}).then((result) => {
 						  	if (result.value) {
-						    	
+						    	if(selected_value == '')
+						    		$('#selected_values_'+id).val(final_value);
+						    	else
+						    	{
+						    		checked_values.push(final_value);
+						    		$('#selected_values_'+id).val(checked_values.join());
+						    	}
 						  	} else {
 						  		all_values.splice($.inArray(response,all_values),1);
 						  		current_instance.val(all_values).trigger('change');
@@ -771,6 +793,16 @@
 								});
 						  	}
 						});
+					}
+					else
+					{
+						if(selected_value == '')
+				    		$('#selected_values_'+id).val(final_value);
+				    	else
+				    	{
+				    		checked_values.push(final_value);
+				    		$('#selected_values_'+id).val(checked_values.join());
+				    	}
 					}
 				});
 	    	}

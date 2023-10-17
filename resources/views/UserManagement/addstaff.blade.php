@@ -266,11 +266,11 @@
 
 											<div class="form-group col-4">
 												<label>Subject Teacher For </label>
-							                  	<select class="custom-select input-group select2 subjectteacher" id="subjectteacher" data-id=0 name="subjectteacher[0][]" multiple>
+							                  	<select class="custom-select input-group select2 subjectteacher" id="subjectteacher_0" data-id=0 name="subjectteacher[0][]" multiple>
 							                  		<option value=''>Select Class - Section</option>	                    
 							                  	</select>
 											</div>
-
+											<input type="text" name="selected_values[0]" id="selected_values_0" class="selected_value" value=""/>
 											<div class="form-group col-2">
 												<label style="color: white;"> add more</label>
 												<button type="button" name="addmore" id="addmore" class="btn btn-success input-group">+ Add More</button>
@@ -323,11 +323,11 @@
 					var data = JSON.parse(response);
 					if(response)
 					{
-						$("#specialized_in option,#department option,#class_section option,#subjectteacher option,#staffsubject option").remove();
+						$("#specialized_in option,#department option,#class_section option,#subjectteacher_0 option,#staffsubject option").remove();
 						$('#specialized_in').append("<option value=''>Select Specialized In</option>");
 						$('#department').append("<option value=''>Select Department</option>");
 						$('#class_section').append("<option value=''>Select Class - Section</option>");
-						$('#subjectteacher').append("<option value=''>Select Class - Section</option>");
+						$('#subjectteacher_0').append("<option value=''>Select Class - Section</option>");
 						$('#staffsubject').append("<option value=''>Select Subject</option>");
 						class_section = data.class_configs;
 						subjects = data.subjects;
@@ -341,7 +341,7 @@
 						  	option = $("<option></option>");
 						  	$(option).val(value.id);
 						  	$(option).html(value.class_section);
-						  	$('#class_section,#subjectteacher').append(option);
+						  	$('#class_section,#subjectteacher_0').append(option);
 						});
 						// Initialize select2
  						initailizeSelect2();
@@ -359,11 +359,11 @@
    				})
    				staffhtml+='</select></div>';
    				staffhtml+='<div class="form-group col-4 remove_'+i+'"><label>Subject Teacher For </label>';
-   				staffhtml+='<select class="custom-select input-group select2 subjectteacher" data-id='+i+' id="subjectteacher['+i+']" name="subjectteacher['+i+'][]" multiple><option value="">Select Class - Section</option>';
+   				staffhtml+='<select class="custom-select input-group select2 subjectteacher" data-id='+i+' id="subjectteacher_'+i+'" name="subjectteacher['+i+'][]" multiple><option value="">Select Class - Section</option>';
    				$(class_section).each(function(  index, value ) {
    					staffhtml+='<option value='+value.id+'>'+value.class_section+'</option>';
    				})
-   				staffhtml+='</select></div><div class="form-group col-2 remove_'+i+'"><label style="color: white;"> add more</label><button type="button" name="addmore" data-attr='+i+' id="addmore" class="btn btn-danger remove-tr input-group">Remove</button></div>';
+   				staffhtml+='</select></div><input type="text" name="selected_values['+i+']" class="selected_value" id="selected_values_'+i+'" value=""/><div class="form-group col-2 remove_'+i+'"><label style="color: white;"> add more</label><button type="button" name="addmore" data-attr='+i+' id="addmore" class="btn btn-danger remove-tr input-group">Remove</button></div>';
 							              
        			$(".dynamicstaffclass").append(staffhtml);
        			// Initialize select2
@@ -665,23 +665,38 @@
 	    } 
 
 
-	   	$(document).on('change', '.subjectteacher', function(){ 
+	    $(document).on('change', '.subjectteacher', function(){ 	    	
 	    	var staffsubject ='';
 	    	var id =$(this).attr('data-id');
-	    	let class_section = $(this ).val();
+	    	let class_section = '';
 	    	var all_values = [];
 			var current_instance = $(this);
-	    	$("#subjectteacher option:selected").each(function(index){
+	    	$("#subjectteacher_"+id+" option:selected").each(function(index){
 	    		if($(this).val() !='')
-	    			all_values.push($(this).val());	    		
+	    			all_values.push($(this).val());	 
+			});
+			$(".subjectteacher").each(function(index){
+				if(id == index)
+					class_section = $(this ).val();
 			});
 			$(".staffsubject").each(function(index){
 				if(id == index)
 			    	staffsubject = $(this).val();
 			});
-	    	if(staffsubject != '' && class_section!='')
+			var selected_value = '';
+			var checked_values = [];
+			$('.selected_value').each(function(index){
+				if(index == id)
+					selected_value = $(this).val();
+			});
+
+			if(selected_value != '')
+				checked_values = selected_value.split(',');
+
+			var final_value  = class_section[class_section.length - 1];	
+	    	if(staffsubject != '' && class_section!='' && $.inArray(final_value,checked_values)<=-1 )
 	    	{	    		
-		    	$.post("{{url('usermanagement/checksubjectaccess')}}", {class_section:class_section,staffsubject:staffsubject}, function(response){ 
+		    	$.post("{{url('usermanagement/checksubjectaccess')}}", {class_section:final_value,staffsubject:staffsubject}, function(response){
 			      	if(response != 'true')
 			      	{
 				    	swal({
@@ -694,7 +709,14 @@
 						  	cancelButtonText: "No",
 						}).then((result) => {
 						  	if (result.value) {
-						    	
+						  		if(selected_value == '')
+						    		$('#selected_values_'+id).val(final_value);
+						    	else
+						    	{
+						    		checked_values.push(final_value);
+						    		$('#selected_values_'+id).val(checked_values.join());
+						    	}
+
 						  	} else {
 						  		all_values.splice($.inArray(response,all_values),1);
 						  		current_instance.val(all_values).trigger('change');
@@ -708,6 +730,17 @@
 						  	}
 						});
 					}
+					else
+					{
+						console.log("else"+final_value)
+						if(selected_value == '')
+				    		$('#selected_values_'+id).val(final_value);
+				    	else
+				    	{
+				    		checked_values.push(final_value);
+				    		$('#selected_values_'+id).val(checked_values.join());
+				    	}
+					}
 				});
 	    	}
 	    	else
@@ -720,7 +753,7 @@
 				  	confirmButtonText: "OK",
 				});
 	    	}
-	    });
+	    }); 
 
 	    $(document).on('change', '#class_section', function(){ 
 			$.post("{{url('usermanagement/checkClassteacherexists')}}", {class_section:$('#class_section').val()}, function(response){

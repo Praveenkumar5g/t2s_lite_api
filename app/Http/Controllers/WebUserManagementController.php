@@ -1958,7 +1958,7 @@ class WebUserManagementController extends Controller
     {
         if($request->staffsubject != '' && $request->class_section!='')
         {
-            $checksubjectaccess = AcademicSubjectsMapping::where('subject',$request->staffsubject)->whereIn('class_config',$request->class_section);
+            $checksubjectaccess = AcademicSubjectsMapping::where('subject',$request->staffsubject)->where('class_config',$request->class_section);
             if(isset($request->id)!='')
                 $checksubjectaccess = $checksubjectaccess->where('staff','!=',$request->id);
             $checksubjectaccess = $checksubjectaccess->pluck('class_config')->first();

@@ -490,6 +490,7 @@ class APILoginController extends Controller
                 $student_class = UserStudents::where('id',$request->student_id)->pluck('class_config')->first();
                 $student_group_id = UserGroups::where('class_config',$student_class)->pluck('id')->first();
                 $student_list = UserStudentsMapping::where('parent',$parent_list[0])->where('student','!=',$request->student_id)->pluck('student')->toArray();
+                $activate_student_list = UserStudents::whereIn('id',$student_list)->where('user_status',1)->pluck('id')->toArray();
                 if(strtolower($request->app_deactivation)=='no')
                     UserStudents::where('id',$request->student_id)->update(['user_status'=>3]);
                 else if($request->status == 1 || strtolower($request->app_deactivation)=='yes')
@@ -500,7 +501,7 @@ class APILoginController extends Controller
                     $parent_user_id = UserParents::where('id',$parent_value)->pluck('user_id')->first();
                     $schoolusers = SchoolUsers::where('user_id',$parent_user_id)->where('user_role',Config::get('app.Parent_role'))->get()->first();
                     $user_table_id = $this->get_user_table_id($schoolusers);
-                    if($request->group_id == '' && empty($student_list) && strtolower($request->app_deactivation)=='yes')
+                    if($request->group_id == '' && empty($activate_student_list) && strtolower($request->app_deactivation)=='yes')
                     {
                         // update the status
                         $schoolusers->user_status=$request->status;

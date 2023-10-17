@@ -1125,11 +1125,16 @@ class APICommunicationController extends Controller
 
     public function user_details($userdetails)
     {
+        $user_category = '';
+        $user_details = [];
         if($userdetails->user_role == Config::get('app.Management_role'))
         {
-            $management_categories = array_column(UserCategories::select('id','category_name')->where('user_role',Config::get('app.Management_role'))->get()->toArray(),'category_name','id');
             $user_details = UserManagements::where(['id'=>$userdetails->user_table_id])->get()->first();
-            $user_category = $management_categories[$user_details->user_category];
+            if(!empty($user_details))
+            {
+                $management_categories = array_column(UserCategories::select('id','category_name')->where('user_role',Config::get('app.Management_role'))->get()->toArray(),'category_name','id');
+                $user_category = $management_categories[$user_details->user_category];
+            }
         }
         else if($userdetails->user_role == Config::get('app.Admin_role'))//check role and get current user id
         {
@@ -1138,9 +1143,12 @@ class APICommunicationController extends Controller
         }
         else if($userdetails->user_role == Config::get('app.Staff_role'))
         {
-            $staff_categories = array_column(UserCategories::select('id','category_name')->where('user_role',Config::get('app.Staff_role'))->get()->toArray(),'category_name','id');
             $user_details = UserStaffs::where(['id'=>$userdetails->user_table_id])->get()->first();
-            $user_category = isset($user_details->user_category)?$staff_categories[$user_details->user_category]:'';
+            if(!empty($user_details))
+            {
+                $staff_categories = array_column(UserCategories::select('id','category_name')->where('user_role',Config::get('app.Staff_role'))->get()->toArray(),'category_name','id');
+                $user_category = isset($user_details->user_category)?$staff_categories[$user_details->user_category]:'';
+            }
         }
         else if($userdetails->user_role == Config::get('app.Parent_role'))
         {

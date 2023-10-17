@@ -270,7 +270,7 @@
 							                  		<option value=''>Select Class - Section</option>	                    
 							                  	</select>
 											</div>
-											<input type="text" name="selected_values[0]" id="selected_values_0" class="selected_value" value=""/>
+											<input type="hidden" name="selected_values[0]" id="selected_values_0" class="selected_value" value=""/>
 											<div class="form-group col-2">
 												<label style="color: white;"> add more</label>
 												<button type="button" name="addmore" id="addmore" class="btn btn-success input-group">+ Add More</button>
@@ -363,7 +363,7 @@
    				$(class_section).each(function(  index, value ) {
    					staffhtml+='<option value='+value.id+'>'+value.class_section+'</option>';
    				})
-   				staffhtml+='</select></div><input type="text" name="selected_values['+i+']" class="selected_value" id="selected_values_'+i+'" value=""/><div class="form-group col-2 remove_'+i+'"><label style="color: white;"> add more</label><button type="button" name="addmore" data-attr='+i+' id="addmore" class="btn btn-danger remove-tr input-group">Remove</button></div>';
+   				staffhtml+='</select></div><input type="hidden" name="selected_values['+i+']" class="selected_value" id="selected_values_'+i+'" value=""/><div class="form-group col-2 remove_'+i+'"><label style="color: white;"> add more</label><button type="button" name="addmore" data-attr='+i+' id="addmore" class="btn btn-danger remove-tr input-group">Remove</button></div>';
 							              
        			$(".dynamicstaffclass").append(staffhtml);
        			// Initialize select2

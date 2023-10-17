@@ -286,7 +286,7 @@
 								                    @endforeach
 							                  	</select>
 											</div>
-											<input type="text" name="selected_values[0]" id="selected_values_0" class="selected_value" value=""/>
+											<input type="hidden" name="selected_values[0]" id="selected_values_0" class="selected_value" value=""/>
 											<div class="form-group col-2">
 												<label style="color: white;"> add more</label>
 												<button type="button" name="addmore" id="addmore" class="btn btn-success input-group">+ Add More</button>
@@ -315,7 +315,7 @@
 									                    @endforeach
 								                  	</select>
 												</div>
-												<input type="text" name="selected_values[{{$i}}]" id="selected_values_{{$i}}" class="selected_value" value=""/>
+												<input type="hidden" name="selected_values[{{$i}}]" id="selected_values_{{$i}}" class="selected_value" value=""/>
 												<div class="form-group col-2 remove_{{$i}}">
 													<label style="color: white;"> add more</label>
 													<button type="button" name="addmore" data-attr={{$i}} id="addmore" class="btn btn-danger remove-tr input-group">Remove</button>

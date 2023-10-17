@@ -2422,11 +2422,6 @@ class APIConfigurationsController extends Controller
         if(isset($request->gender))
         	$gender = (isset($request->gender) && strtolower($request->gender) == 'male')?1:((isset($request->gender) && strtolower($request->gender) == 'female')?2:3);
 
-        if(isset($student_details->class_config) && $student_details->class_config !='' && $request->class_config !='' && $student_details->class_config != $request->class_config)
-        {
-        	Attendance::where('sid',$student_id)->where('class_config',$student_details->class_config)->update(['class_config'=>$request->class_config]);
-        }
-
         //check image exists
    		$image ='';
    		$profile_image_path ='';
@@ -2476,6 +2471,11 @@ class APIConfigurationsController extends Controller
             	$student_details->gender=$gender;
             if(isset($request->dob))
             	$student_details->dob=date('Y-m-d',strtotime($request->dob));
+
+            if(isset($student_details->class_config) && $student_details->class_config !='' && $request->class_config !='' && $student_details->class_config != $request->class_config)
+            {
+            	Attendance::where('id',$student_id)->where('class_config',$student_details->class_config)->update(['class_config'=>$request->class_config]);
+            }
 
             $student_details->class_config=$request->class_config;
 

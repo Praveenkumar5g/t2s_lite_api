@@ -481,33 +481,8 @@ class APILoginController extends Controller
         Config::set('database.connections.school_db.password',$config_school->school_db_pass);
         Config::set('database.connections.school_db.database',$config_school->school_db_name);
         DB::reconnect('school_db');
-
-        if($request->mobile_number!='')
-        {
-            $schoolusers = SchoolUsers::where('user_mobile_number',$request->mobile_number)->where('user_role',$request->user_role)->where('school_profile_id',$user->school_profile_id)->get()->first();
-            if($request->group_id == '' && (strtolower($request->app_deactivation)=='yes' || $request->status == 1))
-            {
-                // update the status
-                $schoolusers->user_status=$request->status;
-                $schoolusers->save();
-            }
-
-            $user_table_id = $this->get_user_table_id($schoolusers);
-            if($request->group_id == '' && (strtolower($request->app_deactivation)=='yes'  || $request->status == 1) && !empty($user_table_id))
-            {
-                
-                $user_table_id->user_status=$request->status;
-                $user_table_id->save();
-            }
-            if(!empty($user_table_id))// Update status to all the groups 
-                $groups = UserGroupsMapping::where(['user_table_id'=>$user_table_id->id,'user_role'=>$request->user_role]);
-
-            if($request->group_id != '')
-                $groups = $groups->where('group_id',$request->group_id);
-            $groups = $groups->update(['user_status'=>$request->status]);
-
-        }
-        else if($request->student_id !='' && $request->user_role == 4)
+        
+        if($request->student_id !='' && $request->user_role == 4)
         {
             $parent_list = UserStudentsMapping::where('student',$request->student_id)->pluck('parent')->toArray();
             if(!empty($parent_list))
@@ -552,6 +527,31 @@ class APILoginController extends Controller
                     $groups = $groups->update(['user_status'=>$request->status]);
                 }
             } 
+        }
+        else if($request->mobile_number!='')
+        {
+            $schoolusers = SchoolUsers::where('user_mobile_number',$request->mobile_number)->where('user_role',$request->user_role)->where('school_profile_id',$user->school_profile_id)->get()->first();
+            if($request->group_id == '' && (strtolower($request->app_deactivation)=='yes' || $request->status == 1))
+            {
+                // update the status
+                $schoolusers->user_status=$request->status;
+                $schoolusers->save();
+            }
+
+            $user_table_id = $this->get_user_table_id($schoolusers);
+            if($request->group_id == '' && (strtolower($request->app_deactivation)=='yes'  || $request->status == 1) && !empty($user_table_id))
+            {
+                
+                $user_table_id->user_status=$request->status;
+                $user_table_id->save();
+            }
+            if(!empty($user_table_id))// Update status to all the groups 
+                $groups = UserGroupsMapping::where(['user_table_id'=>$user_table_id->id,'user_role'=>$request->user_role]);
+
+            if($request->group_id != '')
+                $groups = $groups->where('group_id',$request->group_id);
+            $groups = $groups->update(['user_status'=>$request->status]);
+
         }
         
         if($request->group_id == '')

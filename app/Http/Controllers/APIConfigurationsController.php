@@ -2475,7 +2475,7 @@ class APIConfigurationsController extends Controller
 
             if(isset($student_details->class_config) && $student_details->class_config !='' && $request->class_config !='' && $student_details->class_config != $request->class_config)
             {
-            	Attendance::where('id',$student_id)->where('class_config',$student_details->class_config)->update(['class_config'=>$request->class_config]);
+            	Attendance::where('id',$student_details->id)->where('class_config',$student_details->class_config)->update(['class_config'=>$request->class_config]);
             }
 
             $student_details->class_config=$request->class_config;

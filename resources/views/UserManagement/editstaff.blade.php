@@ -285,8 +285,9 @@
 								                    	<option value="{{$class_config_value['id']}}" {{isset($teaching_staff[0]) && in_array($class_config_value['id'],$teaching_staff[0]['class_config']) ? 'selected':''}}>{{$class_config_value['class_section']}}</option>
 								                    @endforeach
 							                  	</select>
+							                  	<?php $chosen_values =  isset($teaching_staff[0]['class_config'])?implode(',',$teaching_staff[0]['class_config']):'';?>
 											</div>
-											<input type="hidden" name="selected_values[0]" id="selected_values_0" class="selected_value" value=""/>
+											<input type="hidden" name="selected_values[0]" id="selected_values_0" class="selected_value" value="{{$chosen_values}}" />
 											<div class="form-group col-2">
 												<label style="color: white;"> add more</label>
 												<button type="button" name="addmore" id="addmore" class="btn btn-success input-group">+ Add More</button>
@@ -314,8 +315,10 @@
 									                    		{{$class_config_value['class_section']}}</option>
 									                    @endforeach
 								                  	</select>
+													<?php $chosen_values = '';
+								                  	$chosen_values =  isset($teaching_staff[$i]['class_config'])?implode(',',$teaching_staff[$i]['class_config']):'';?>
 												</div>
-												<input type="hidden" name="selected_values[{{$i}}]" id="selected_values_{{$i}}" class="selected_value" value=""/>
+												<input type="hidden" name="selected_values[{{$i}}]" id="selected_values_{{$i}}" class="selected_value" value="{{$chosen_values}}" />
 												<div class="form-group col-2 remove_{{$i}}">
 													<label style="color: white;"> add more</label>
 													<button type="button" name="addmore" data-attr={{$i}} id="addmore" class="btn btn-danger remove-tr input-group">Remove</button>

@@ -1771,7 +1771,7 @@ class WebUserManagementController extends Controller
 
             }
 
-            if($request->classteacher == 'yes')
+            if($request->classteacher == 'yes' && $request->user_category == 3)
             {
                 // remove old class details while change division - start
                 if($staff_details->division_id != $request->division_id)

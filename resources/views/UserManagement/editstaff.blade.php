@@ -758,7 +758,7 @@
 			if(selected_value != '')
 				checked_values = selected_value.split(',');
 
-			var final_value  = class_section[class_section.length - 1];	
+			var final_value  = class_section.filter(x => !checked_values.includes(x));
 	    	if(staffsubject != '' && class_section!='' && $.inArray(final_value,checked_values)<=-1 )
 	    	{	    		
 		    	$.post("{{url('usermanagement/checksubjectaccess')}}", {class_section:final_value,staffsubject:staffsubject,id:$('#staff_id').val()}, function(response){ 

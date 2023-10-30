@@ -87,7 +87,7 @@ class WelcomeController extends Controller
         }
         $name = explode('.',$files->getClientOriginalName())[0];
         $image = $name.''.time().'.'.$files->extension();
-        $files->move(public_path().env('SAMPLE_CONFIG_URL').$school_code.$target_file, $image);
-        return public_path().env('SAMPLE_CONFIG_URL').$school_code.$target_file.$image;
+        $files->move(public_path().'/'.env('SAMPLE_CONFIG_URL').$school_code.$target_file, $image);
+        return public_path().'/'.env('SAMPLE_CONFIG_URL').$school_code.$target_file.$image;
     }
 }

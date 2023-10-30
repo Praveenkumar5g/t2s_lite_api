@@ -2434,7 +2434,7 @@ class APIConfigurationsController extends Controller
 
         if($user->user_role == Config::get('app.Admin_role'))//check role and get current user id
             $user_table_id = UserAdmin::where(['user_id'=>$user->user_id])->pluck('id')->first();
-        else if($user->user_role == Config::get('app.Admin_role'))//check role and get current user id
+        else if($user->user_role == Config::get('app.Management_role'))//check role and get current user id
             $user_table_id = UserManagements::where(['user_id'=>$user->user_id])->pluck('id')->first();
 
         $userall_id = UserAll::where(['user_table_id'=>$user_table_id,'user_role'=>$user->user_role])->pluck('id')->first();

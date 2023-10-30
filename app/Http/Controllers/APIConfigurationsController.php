@@ -2424,9 +2424,9 @@ class APIConfigurationsController extends Controller
 		Configurations::where('school_profile_id',$user->school_profile_id)->update(['management'=>1]);
 
 		if($request->id=='')
-            return response()->json('Management user added Successfully!...');
+            return response()->json(['status'=>true,'message'=>'Management user added Successfully!...']);
        	else
-            return response()->json('Management details updated Successfully!...');
+            return response()->json(['status'=>true,'message'=>'Management details updated Successfully!...']);
     }
 
     // edit admin details

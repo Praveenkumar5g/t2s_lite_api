@@ -82,8 +82,6 @@ class WelcomeController extends Controller
     {
         $path = public_path('/'.env('SAMPLE_CONFIG_URL').$school_code.$target_file);//
 
-        echo $path;exit;
-
         if(!File::isDirectory($path)){ //check path already exists
             File::makeDirectory($path, 0777, true, true);
         }

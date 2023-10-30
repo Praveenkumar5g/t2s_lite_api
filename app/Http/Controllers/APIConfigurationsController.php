@@ -2374,7 +2374,7 @@ class APIConfigurationsController extends Controller
         $management_details->first_name= $request->management_name;
         $management_details->mobile_number=$request->mobile_number;
         if($image!='')
-        	$management_details->profile_image = ($image!='')?public_path(env('SAMPLE_CONFIG_URL').'managements/'.$image):'';
+        	$management_details->profile_image = ($image!='')?$image:'';
         $management_details->email_id=$request->email_address;
         $management_details->user_category=$request->user_category;
         $management_details->employee_no=$request->employee_no;
@@ -2485,7 +2485,7 @@ class APIConfigurationsController extends Controller
         $admin_details->first_name= $request->admin_name;
         $admin_details->mobile_number=$request->mobile_number;
         if($image!='')
-        	$admin_details->profile_image = ($image!='')?public_path(env('SAMPLE_CONFIG_URL').'admins/'.$image):'';
+        	$admin_details->profile_image = ($image!='')$image:'';
         $admin_details->email_id=$request->email_address;
        	$admin_details->employee_no=$request->employee_no;
         $admin_details->dob=date('Y-m-d',strtotime($request->dob));

@@ -80,7 +80,9 @@ class WelcomeController extends Controller
 
     public function profile_file_upload($school_code,$files,$attachment_type,$target_file)
     {
-        $path = public_path('uploads/'.$school_code);//
+        $path = public_path('/'.env('SAMPLE_CONFIG_URL').$school_code.$target_file);//
+
+        echo $path;exit;
 
         if(!File::isDirectory($path)){ //check path already exists
             File::makeDirectory($path, 0777, true, true);

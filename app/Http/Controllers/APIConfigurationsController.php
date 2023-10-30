@@ -2411,7 +2411,7 @@ class APIConfigurationsController extends Controller
 
             $schoolusers = new SchoolUsers;
             $schoolusers->school_profile_id=$user->school_profile_id;
-            $schoolusers->user_id=$usermanagement_id;
+            $schoolusers->user_id=$management_user_id;
             $schoolusers->user_password=bcrypt($request->mobile_number);
 	        $schoolusers->user_role=Config::get('app.Management_role');
 	        $schoolusers->user_status=Config::get('app.Group_Active');

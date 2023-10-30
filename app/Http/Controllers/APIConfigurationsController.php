@@ -2421,7 +2421,7 @@ class APIConfigurationsController extends Controller
         $schoolusers->user_email_id=$request->email_address;
         $schoolusers->save();
 		
-		Configurations::where('school_profile_id',$user->school_profile_id)->update(['managements'=>1]);
+		Configurations::where('school_profile_id',$user->school_profile_id)->update(['management'=>1]);
 
 		if($request->id=='')
             return response()->json('Management user added Successfully!...');

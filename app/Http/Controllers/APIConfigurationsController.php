@@ -1776,7 +1776,7 @@ class APIConfigurationsController extends Controller
 		// Save last login in DB
         $user = auth()->user();
         $member_staff_list = [];
-        $staff_list = UserStaffs::select('id','first_name','mobile_number','user_category','user_status','dob','doj','employee_no','department','profile_image','user_id');
+        $staff_list = UserStaffs::select('id','first_name','mobile_number','user_category','user_status','dob','doj','employee_no','department','profile_image','user_id','email_id');
         if(isset($request->search) && $request->search!='')
         {
         	$category = (strpos('teaching staff',strtolower($request->search)))?Config::get('app.Teaching_staff'):((strpos('non teaching staff',strtolower($request->search)))?Config::get('app.Non-Teaching_staff'):'');
@@ -1823,6 +1823,7 @@ class APIConfigurationsController extends Controller
         		'first_name' => $value['first_name'],
 	        	'mobile_number' => $value['mobile_number'],
 	        	'user_id' => $value['user_id'],
+	        	'email_id' => $value['email_id'],
 	        	'user_category' => ($value['user_category'] ==Config::get('app.Teaching_staff'))?'Teaching_staff':'Non_teaching_staff',
 	        	'dob' => $value['dob'],
 	            'doj' => $value['doj'],
@@ -1846,7 +1847,7 @@ class APIConfigurationsController extends Controller
 		// Save last login in DB
         $user = auth()->user();
         $member_parent_list = [];
-        $parent_list = UserStudents::select('user_students.first_name as student_name','p.id','p.user_category','p.mobile_number','p.user_status','p.profile_image as parent_profile_image','user_students.profile_image as student_profile_image','user_students.id as student_id','user_students.dob as dob','user_students.admission_number as admission_number','user_students.class_config as class_config','p.first_name')->join('user_students_mapping as sm','sm.student','=','user_students.id')->join('user_parents as p','p.id','=','sm.parent');
+        $parent_list = UserStudents::select('user_students.first_name as student_name','p.id','p.user_category','p.mobile_number','p.user_status','p.profile_image as parent_profile_image','user_students.profile_image as student_profile_image','user_students.id as student_id','user_students.dob as dob','user_students.admission_number as admission_number','user_students.class_config as class_config','p.first_name','p.email_id')->join('user_students_mapping as sm','sm.student','=','user_students.id')->join('user_parents as p','p.id','=','sm.parent');
         if(isset($request->search) && $request->search!='')
             $parent_list = $parent_list->where('p.first_name', 'like', '%' . $request->search . '%')->orWhere('p.mobile_number', 'like', '%' . $request->search . '%');
         	
@@ -3793,7 +3794,7 @@ class APIConfigurationsController extends Controller
 		// Save last login in DB
         $user = auth()->user();
         $member_admin_list= [];
-        $admin_list = UserAdmin::select('id','first_name','mobile_number','user_status','dob','doj','employee_no','profile_image','user_id');
+        $admin_list = UserAdmin::select('id','first_name','mobile_number','user_status','dob','doj','employee_no','profile_image','user_id','email_id');
         if(isset($request->search) && $request->search!='')
         {
         	$admin_list = $admin_list->where('first_name', 'like', '%' . $request->search . '%')->orWhere('mobile_number', 'like', '%' . $request->search . '%')->orWhere('dob', 'like', '%' . $request->search . '%')->orWhere('doj', 'like', '%' . $request->search . '%')->orWhere('employee_no', 'like', '%' . $request->search . '%');
@@ -3834,6 +3835,7 @@ class APIConfigurationsController extends Controller
 	        	'first_name' => $value['first_name'],
 	        	'mobile_number' => $value['mobile_number'],
 	        	'user_id' => $value['user_id'],
+	        	'email_id' => $value['email_id'],
 	    	 	'dob' => $value['dob'],
 	            'doj' => $value['doj'],
 	            'employee_no' => $value['employee_no'],
@@ -3854,7 +3856,7 @@ class APIConfigurationsController extends Controller
 		// Save last login in DB
         $user = auth()->user();
         $member_management_list = [];
-        $management_list = UserManagements::select('id','first_name','mobile_number','user_category','user_status','dob','doj','employee_no','profile_image','user_id');
+        $management_list = UserManagements::select('id','first_name','mobile_number','user_category','user_status','dob','doj','employee_no','profile_image','user_id','email_id');
         if(isset($request->search) && $request->search!='')
         {
         	$category = (strpos('main head',strtolower($request->search)))?6:((strpos('chairman',strtolower($request->search)))?7:((strpos('principal',strtolower($request->search)))?8:((strpos('headmaster',strtolower($request->search)))?8:'')));
@@ -3901,6 +3903,7 @@ class APIConfigurationsController extends Controller
 	        	'mobile_number' => $value['mobile_number'],
 	        	'user_id' => $value['user_id'],
 	        	'user_category' => $value['user_category'],
+	        	'email_id' => $value['email_id'],
 	        	'dob' => $value['dob'],
 	            'doj' => $value['doj'],
 	            'employee_no' => $value['employee_no'],

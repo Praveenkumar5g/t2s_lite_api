@@ -1302,6 +1302,10 @@ class APICommunicationController extends Controller
                 'mobile_no'=>$data->mobile_number,
                 'profile'=>$data->profile_image,
                 "last_login"=>($userdata->last_login!=null)?$userdata->last_login:null,
+                "dob" => date('d-m-Y',strtotime($data->dob)),
+                "doj"=> date('d-m-Y',strtotime($data->doj)),
+                "employee_no" => $data->employee_no,
+                "email_address"=>$data->email_id
             ]);
 
             if( $role== Config::get('app.Management_role') || $role == Config::get('app.Admin_role'))
@@ -1309,9 +1313,6 @@ class APICommunicationController extends Controller
             else if($role == Config::get('app.Staff_role'))
             {
                 $user_details['designation'] = $data['user_category'];
-                $user_details['dob'] = date('d-m-Y',strtotime($data['dob']));
-                $user_details['doj'] = date('d-m-Y',strtotime($data['doj']));
-                $user_details['employee_no'] = $data['employee_no'];
                 $department_name = AcademicSubjects::where('id',$data['department'])->pluck('subject_name')->first();
                 $user_details['department'] = $department_name;
                 $classessections = AcademicClassConfiguration::select('id','class_id','section_id','division_id','class_teacher')->where('class_teacher',$data['id'])->get()->first();
@@ -1353,6 +1354,7 @@ class APICommunicationController extends Controller
                 'mobile_no'=>null,
                 'profile'=>null,
                 "designation"=> null,
+                "email_address"=>null,
                 "last_login"=>null,
                 "dob"=>null,
                 "doj"=>null,

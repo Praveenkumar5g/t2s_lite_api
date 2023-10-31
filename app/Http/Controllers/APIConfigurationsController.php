@@ -2354,6 +2354,7 @@ class APIConfigurationsController extends Controller
         	$management_details->created_by=$userall_id;
         	$management_details->created_time=Carbon::now()->timezone('Asia/Kolkata');
         }
+        $target_file = "/management/";
         if(isset($request->employee_no) && $request->employee_no!='')
         {
         	$check_exists = $this->checkEmployeeno($management_id,Config::get('app.Management_role'),$request->employee_no);
@@ -2366,11 +2367,10 @@ class APIConfigurationsController extends Controller
     	if(count($_FILES)>0)
         {
             if($request->hasfile('photo')) {
-                $image = app('App\Http\Controllers\WelcomeController')->profile_file_upload($school_profile['school_code'],$request->file('photo'),$request->attachment_type);
+                $image = app('App\Http\Controllers\WelcomeController')->profile_file_upload($school_profile['school_code'],$request->file('photo'),$request->attachment_type,$target_file);
             }           
         }
-
-    	//save staff details
+       	//save staff details
         $management_details->first_name= $request->management_name;
         $management_details->mobile_number=$request->mobile_number;
         if($image!='')
@@ -2514,7 +2514,7 @@ class APIConfigurationsController extends Controller
         $schoolusers = SchoolUsers::where('user_id',$admin_user_id)->get()->first(); //update email address in common login table
         if($request->id=='')
         {
-            $all_group_ids = UserGroups::pluck('id')->toArray();
+            $all_group_ids = UserGroups::where('group_name','!=','Admin-Management')->pluck('id')->toArray();
 
 	        foreach($all_group_ids as $group_key => $group_id)
 	        {

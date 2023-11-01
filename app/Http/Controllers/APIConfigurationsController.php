@@ -2515,7 +2515,7 @@ class APIConfigurationsController extends Controller
         $schoolusers = SchoolUsers::where('user_id',$admin_user_id)->get()->first(); //update email address in common login table
         if($request->id=='')
         {
-            $all_group_ids = UserGroups::where('group_name','!=','Admin-Management')->pluck('id')->toArray();
+            $all_group_ids = UserGroups::where('id','!=',1)->pluck('id')->toArray();
 
 	        foreach($all_group_ids as $group_key => $group_id)
 	        {

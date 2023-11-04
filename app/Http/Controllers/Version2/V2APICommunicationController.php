@@ -187,13 +187,14 @@ class V2APICommunicationController extends Controller
                 $newsevents_id_list =$newsevents_id_list->pluck('id')->toArray();
             }
 
+            // Chat message ids
             $chat_ids = CommunicationRecipients::where('user_table_id',$userdetails->id)->where('user_role',$user->user_role)->where('communication_type',1)->whereIn('communication_id',$communication_id_list)->get()->toArray();
 
             // newsevent ids
-            $newsevent_ids = CommunicationRecipients::where('user_table_id',$userdetails->id)->where('user_role',$user->user_role)->where('communication_type',1)->whereIn('communication_id',$newsevents_id_list)->get()->toArray();
+            $newsevent_ids = CommunicationRecipients::where('user_table_id',$userdetails->id)->where('user_role',$user->user_role)->where('communication_type',2)->whereIn('communication_id',$newsevents_id_list)->get()->toArray();
 
             // homework ids
-            $homework_ids = CommunicationRecipients::where('user_table_id',$userdetails->id)->where('user_role',$user->user_role)->where('communication_type',1)->whereIn('communication_id',$communication_id_list)->get()->toArray();
+            $homework_ids = CommunicationRecipients::where('user_table_id',$userdetails->id)->where('user_role',$user->user_role)->where('communication_type',4)->whereIn('communication_id',$communication_id_list)->get()->toArray();
 
             $notification_ids = array_merge($chat_ids,$newsevent_ids,$homework_ids);
 

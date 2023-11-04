@@ -620,7 +620,6 @@ class APICommunicationController extends Controller
             }
 
             $chat_ids = CommunicationRecipients::where('user_table_id',$userdetails->id)->where('user_role',$user->user_role)->where('communication_type',1)->whereIn('communication_id',$communication_id_list)->get()->toArray();
-
             // newsevent ids
             $newsevent_ids = CommunicationRecipients::where('user_table_id',$userdetails->id)->where('user_role',$user->user_role)->where('communication_type',1)->whereIn('communication_id',$newsevents_id_list)->get()->toArray();
 
@@ -630,7 +629,8 @@ class APICommunicationController extends Controller
             $notification_ids = array_merge($chat_ids,$newsevent_ids,$homework_ids);
 
             $datesort = array_column($notification_ids,'actioned_time');
-            array_multisort($datesort, SORT_ASC, $notification_ids);
+            array_multisort($datesort, SORT_DESC, $notification_ids);
+            $notification_ids = array_unique($notification_ids,SORT_REGULAR);
 
             // echo '<pre>';print_r($class_messages);;exit;
             $read_count = CommunicationRecipients::select(DB::raw('count(*) as count'),'communication_id','communication_type')->where(['message_status'=>Config::get('app.Read')])->groupBy('communication_id','communication_type')->get()->toArray(); //get read count based on notification id.

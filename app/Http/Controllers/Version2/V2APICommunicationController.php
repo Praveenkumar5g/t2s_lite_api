@@ -199,6 +199,7 @@ class V2APICommunicationController extends Controller
 
             $datesort = array_column($notification_ids,'actioned_time');
             array_multisort($datesort, SORT_DESC, $notification_ids);
+            $notification_ids = array_unique($notification_ids,SORT_REGULAR);
 
             // echo '<pre>';print_r($class_messages);;exit;
             // $currentPage = LengthAwarePaginator::resolveCurrentPage(); // Get current page form url e.x. &page=1

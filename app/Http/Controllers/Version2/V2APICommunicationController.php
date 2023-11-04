@@ -188,16 +188,18 @@ class V2APICommunicationController extends Controller
             }
 
             // Chat message ids
-            $chat_ids = CommunicationRecipients::where('user_table_id',$userdetails->id)->where('user_role',$user->user_role)->where('communication_type',1)->whereIn('communication_id',$communication_id_list)->get()->toArray();
+            $user_common_notificationids = CommunicationRecipients::where(['user_table_id'=>$userdetails->id,'user_role'=>$user->user_role]);
+            
+            $chat_ids = $user_common_notificationids->where('communication_type',1)->whereIn('communication_id',$communication_id_list)->get()->toArray();
 
             // newsevent ids
-            $newsevent_ids = CommunicationRecipients::where('user_table_id',$userdetails->id)->where('user_role',$user->user_role)->where('communication_type',2)->whereIn('communication_id',$newsevents_id_list)->get()->toArray();
+            $newsevent_ids = $user_common_notificationids->where('communication_type',2)->whereIn('communication_id',$newsevents_id_list)->get()->toArray();
 
             // homework ids
-            $homework_ids = CommunicationRecipients::where('user_table_id',$userdetails->id)->where('user_role',$user->user_role)->where('communication_type',4)->whereIn('communication_id',$communication_id_list)->get()->toArray();
+            $homework_ids =$user_common_notificationids->where('communication_type',4)->whereIn('communication_id',$communication_id_list)->get()->toArray();
 
             $notification_ids = array_merge($chat_ids,$newsevent_ids,$homework_ids);
-
+            
             $datesort = array_column($notification_ids,'actioned_time');
             array_multisort($datesort, SORT_DESC, $notification_ids);
             $notification_ids = array_unique($notification_ids,SORT_REGULAR);

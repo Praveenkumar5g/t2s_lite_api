@@ -187,17 +187,25 @@ class V2APICommunicationController extends Controller
                 $newsevents_id_list =$newsevents_id_list->pluck('id')->toArray();
             }
 
-            // $notification_ids = CommunicationRecipients::where(['user_table_id'=>$userdetails->id,'user_role'=>$user->user_role])->whereIn('communication_id',$communication_id_list)->orderBy('actioned_time')->get()->toArray(); //Fetch applicable notification ids from table for logged in user.
+            // Chat message ids
+            $chat_ids = CommunicationRecipients::where(['user_table_id'=>$userdetails->id,'user_role'=>$user->user_role]);
 
-            // $read_count = CommunicationRecipients::select(DB::raw('count(*) as count'),'communication_id')->where(['message_status'=>Config::get('app.Read')])->groupBy('communication_id')->get()->toArray(); //get read count based on notification id.
-            // $readcount_data = array_column($read_count,'count','communication_id');
-            $notification_ids = CommunicationRecipients::where(function($query) use ($communication_id_list,$userdetails,$user) {
-                    $query->where(['user_table_id'=>$userdetails->id,'user_role'=>$user->user_role,'communication_type'=>1])->whereIn('communication_id',$communication_id_list);
-                })->orwhere(function($query) use ($userdetails,$user,$newsevents_id_list) {
-                    $query->where(['user_table_id'=>$userdetails->id,'user_role'=>$user->user_role,'communication_type'=>2])->whereIn('communication_id',$newsevents_id_list);
-                })->orwhere(function($query) use ($userdetails,$user,$communication_id_list) {
-                    $query->where(['user_table_id'=>$userdetails->id,'user_role'=>$user->user_role,'communication_type'=>4])->whereIn('communication_id',$communication_id_list);
-                })->orderBy('actioned_time','DESC')->get()->toArray(); //Fetch applicable notification ids from table for logged in user.
+            $query_newsevent_ids = clone $chat_ids;
+            $query_homework_ids = clone $chat_ids;
+            
+            $chat_ids = $chat_ids->where('communication_type',1)->whereIn('communication_id',$communication_id_list)->get()->toArray();
+
+            // newsevent ids
+            $newsevent_ids = $query_newsevent_ids->where('communication_type',2)->whereIn('communication_id',$newsevents_id_list)->get()->toArray();
+
+            // homework ids
+            $homework_ids =$query_homework_ids->where('communication_type',4)->whereIn('communication_id',$communication_id_list)->get()->toArray();
+
+            $notification_ids = array_merge($chat_ids,$newsevent_ids,$homework_ids);
+            
+            $datesort = array_column($notification_ids,'actioned_time');
+            array_multisort($datesort, SORT_DESC, $notification_ids);
+            $notification_ids = array_unique($notification_ids,SORT_REGULAR);
 
             // echo '<pre>';print_r($class_messages);;exit;
             // $currentPage = LengthAwarePaginator::resolveCurrentPage(); // Get current page form url e.x. &page=1

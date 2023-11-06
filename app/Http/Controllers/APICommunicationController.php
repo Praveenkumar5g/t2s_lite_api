@@ -620,20 +620,22 @@ class APICommunicationController extends Controller
             }
 
             // Chat message ids
-            $user_common_notificationids = CommunicationRecipients::where(['user_table_id'=>$userdetails->id,'user_role'=>$user->user_role]);
+            $chat_ids = CommunicationRecipients::where(['user_table_id'=>$userdetails->id,'user_role'=>$user->user_role]);
+
+            $query_newsevent_ids = clone $chat_ids;
+            $query_homework_ids = clone $chat_ids;
             
-            $chat_ids = $user_common_notificationids->where('communication_type',1)->whereIn('communication_id',$communication_id_list)->get()->toArray();
+            $chat_ids = $chat_ids->where('communication_type',1)->whereIn('communication_id',$communication_id_list)->get()->toArray();
 
             // newsevent ids
-            $newsevent_ids = $user_common_notificationids->where('communication_type',2)->whereIn('communication_id',$newsevents_id_list)->get()->toArray();
+            $newsevent_ids = $query_newsevent_ids->where('communication_type',2)->whereIn('communication_id',$newsevents_id_list)->get()->toArray();
 
             // homework ids
-            $homework_ids =$user_common_notificationids->where('communication_type',4)->whereIn('communication_id',$communication_id_list)->get()->toArray();
+            $homework_ids =$query_homework_ids->where('communication_type',4)->whereIn('communication_id',$communication_id_list)->get()->toArray();
 
             $notification_ids = array_merge($chat_ids,$newsevent_ids,$homework_ids);
 
             $datesort = array_column($notification_ids,'actioned_time');
-            array_multisort($datesort, SORT_ASC, $notification_ids);
 
             // echo '<pre>';print_r($class_messages);;exit;
             $read_count = CommunicationRecipients::select(DB::raw('count(*) as count'),'communication_id','communication_type')->where(['message_status'=>Config::get('app.Read')])->groupBy('communication_id','communication_type')->get()->toArray(); //get read count based on notification id.

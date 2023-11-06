@@ -196,7 +196,7 @@ class V2APICommunicationController extends Controller
             $chat_ids = $chat_ids->where('communication_type',1)->whereIn('communication_id',$communication_id_list)->get()->toArray();
 
             // newsevent ids
-            $newsevent_ids = $query_newsevent_ids->where('communiscation_type',2)->whereIn('communication_id',$newsevents_id_list)->get()->toArray();
+            $newsevent_ids = $query_newsevent_ids->where('communication_type',2)->whereIn('communication_id',$newsevents_id_list)->get()->toArray();
 
             // homework ids
             $homework_ids =$query_homework_ids->where('communication_type',4)->whereIn('communication_id',$communication_id_list)->get()->toArray();

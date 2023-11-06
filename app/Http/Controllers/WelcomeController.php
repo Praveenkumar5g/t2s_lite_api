@@ -10,6 +10,8 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\Models\CommunicationAttachments;
 use App\Models\Communications;
+use App\Models\NewsEventsAttachments;
+use App\Models\NewsEvents;
 use File;
 
 class WelcomeController extends Controller
@@ -44,7 +46,7 @@ class WelcomeController extends Controller
        
     }
 
-    public function newsevents_file_upload($school_code,$files,$newsevents_id,$attachment_type,$newevents_id)
+    public function newsevents_file_upload($school_code,$files,$newsevents_id,$attachment_type)
     {
         $path = public_path('uploads/'.$school_code);//
 

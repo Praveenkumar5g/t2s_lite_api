@@ -2540,6 +2540,140 @@ class APIConfigurationsController extends Controller
             return response()->json(['status'=>true,'message'=>'Admin details updated Successfully!...']);
     }
 
+    // edit Staff details
+    public function create_update_staff(Request $request)
+    {
+    	// Check authenticate user
+        $user = auth()->user();
+
+        if($user->user_role == Config::get('app.Admin_role'))//check role and get current user id
+            $user_table_id = UserAdmin::where(['user_id'=>$user->user_id])->pluck('id')->first();
+        else if($user->user_role == Config::get('app.Management_role'))//check role and get current user id
+            $user_table_id = UserManagements::where(['user_id'=>$user->user_id])->pluck('id')->first();
+
+        $userall_id = UserAll::where(['user_table_id'=>$user_table_id,'user_role'=>$user->user_role])->pluck('id')->first();
+        $staff_details = [];
+        if($request->id!='')// fetch selected management user details 
+        {
+        	$staff_details = UserStaffs::where('id',$request->id)->get()->first();
+        	$staff_details->updated_by=$userall_id;
+    		$staff_details->updated_time=Carbon::now()->timezone('Asia/Kolkata');
+    		$staff_id =$staff_details->id;
+    		$staff_user_id= $staff_details->user_id;
+        }
+        else
+        {
+        	$staff_id = '';
+        	$staff_details = new UserStaffs();
+        	$staff_details->created_by=$userall_id;
+        	$staff_details->created_time=Carbon::now()->timezone('Asia/Kolkata');
+        }
+
+        $target_file = '/staff/';
+        if(isset($request->employee_no) && $request->employee_no!='')
+        {
+        	$check_exists = $this->checkEmployeeno($staff_id,Config::get('app.Staff_role'),$request->employee_no);
+        	if($check_exists)
+        		 return response()->json(['status'=>false,'message'=>'Given Employee no already exists!...']);
+        }
+        if(isset($request->mobile_number) && $request->mobile_number!='')
+        {
+        	$check_exists = $this->checkmobileno($staff_id,Config::get('app.Staff_role'),$request->mobile_number);
+        	if($check_exists)
+        		 return response()->json(['status'=>false,'message'=>'Given Mobile no already exists!...']);
+        }
+
+        $schoolcode = $school_profile = SchoolProfile::where(['id'=>$user['school_profile_id']])->get()->first();//get school code from school profile
+    	$image ='';
+    	if(count($_FILES)>0)
+        {
+            if($request->hasfile('photo')) {
+                $image = app('App\Http\Controllers\WelcomeController')->profile_file_upload($school_profile['school_code'],$request->file('photo'),$request->attachment_type,$target_file);
+            }           
+        }
+
+    	//save staff details
+        $staff_details->first_name= $request->staff_name;
+        $staff_details->mobile_number=$request->mobile_number;
+        if($image!='')
+        	$staff_details->profile_image = ($image!='')?$image:'';
+        $staff_details->email_id=$request->email_address;
+        $staff_details->user_category=$request->user_category;
+        $staff_details->employee_no=$request->employee_no;
+        $staff_details->dob=date('Y-m-d',strtotime($request->dob));
+        $staff_details->doj=date('Y-m-d',strtotime($request->doj));
+
+
+        $staff_details->save();
+
+        $id = $staff_details->id;
+
+        if($request->id=='')
+        {
+        	$staff_id =$staff_details->id; // staff id
+
+        	// generate and update staff id in db 
+            $staff_user_id = $school_profile->school_code.substr($school_profile->active_academic_year, -2).'T'.sprintf("%04s", $staff_id);
+            $staff_details->user_id = $staff_user_id;
+            $staff_details->save();
+
+            $user_all = new UserAll;
+            $user_all->user_table_id=$staff_id;
+            $user_all->user_role=Config::get('app.Staff_role');
+            $user_all->save();
+        }
+
+        $schoolusers = SchoolUsers::where('user_id',$staff_user_id)->get()->first(); //update email address in common login table
+        if($request->id=='')
+        {
+            $all_group_ids = ([2,3]);
+
+	        foreach($all_group_ids as $group_key => $group_id)
+	        {
+	        	UserGroupsMapping::insert(['group_id'=>$group_id,'user_table_id'=>$id,'user_role'=>Config::get('app.Staff_role'),'group_access'=>Config::get('app.Group_Deactive'),'user_status'=>Config::get('app.Group_Active')]);
+	        }
+
+            $schoolusers = new SchoolUsers;
+            $schoolusers->school_profile_id=$user->school_profile_id;
+            $schoolusers->user_id=$staff_user_id;
+            $schoolusers->user_password=bcrypt($request->mobile_number);
+        	$schoolusers->user_role=Config::get('app.Admin_role');
+        	$schoolusers->user_status=Config::get('app.Group_Active');
+        }
+
+        $schoolusers->user_mobile_number=$request->mobile_number;
+        $schoolusers->user_email_id=$request->email_address;
+        $schoolusers->save();
+
+        
+
+        if($request->user_category == 3 && $staff_details->user_category != $request->user_category)
+        {              
+            UserGroupsMapping::where('user_role',Config::get('app.Staff_role'))->where('group_id',5)->where('user_table_id',$staff_details->id)->delete();
+            $check_exists_nonteaching = UserGroupsMapping::where('user_role',Config::get('app.Staff_role'))->where('group_id',4)->where('user_table_id',$staff_details->id)->first();
+            if(empty($check_exists_nonteaching))
+                UserGroupsMapping::insert(['user_role'=>Config::get('app.Staff_role'),'group_id'=>4,'user_table_id'=>$staff_details->id,'group_access'=>2]);
+        }
+        else if($request->user_category == 4 && $staff_details->user_category != $request->user_category)
+        {
+            UserGroupsMapping::where('user_role',Config::get('app.Staff_role'))->where('group_id',4)->where('user_table_id',$staff_details->id)->delete();
+            $check_exists_nonteaching = UserGroupsMapping::where('user_role',Config::get('app.Staff_role'))->where('group_id',5)->where('user_table_id',$staff_details->id)->first();
+            if(empty($check_exists_nonteaching))
+                UserGroupsMapping::insert(['user_role'=>Config::get('app.Staff_role'),'group_id'=>5,'user_table_id'=>$staff_details->id,'group_access'=>2]);
+
+            AcademicSubjectsMapping::where('staff',$staff_details->id)->update(['staff'=>null]);
+            AcademicClassConfiguration::where('class_teacher',$staff_details->id)->update(['class_teacher'=>null]);
+            $staff_group_list = UserGroups::where('group_type',2)->where('group_status',Config::get('app.Group_Active'))->pluck('id')->toArray();
+
+            UserGroupsMapping::where('user_role',Config::get('app.Staff_role'))->whereIn('group_id',$staff_group_list)->where('user_table_id',$staff_details->id)->delete();
+        }
+		
+		if($request->id=='')
+            return response()->json(['status'=>true,'message'=>'Admin user added Successfully!...']);
+       	else
+            return response()->json(['status'=>true,'message'=>'Admin details updated Successfully!...']);
+    }
+
     // Check employee no
     public function checkEmployeeno($id,$user_role,$employee_no)
     {

@@ -162,6 +162,7 @@ Route::group(['middleware' => 'auth.connect','prefix' => 'user'], function ($rou
     Route::post('/check_staff_classes',[APIConfigurationsController::class,'check_staff_classes']);//Check classes for staff 
     Route::get('check_user_role_changed',[APIConfigurationsController::class,'check_user_role_changed']);//user role change status
     Route::post('create_update_admin',[APIConfigurationsController::class,'create_update_admin']);//create and update admin details
+    Route::post('create_update_staff',[APIConfigurationsController::class,'create_update_staff']);//create and update staff details
 
     Route::post('/approval_process', [APICommunicationController::class, 'approval_process']); 
     Route::post('/store_message', [APICommunicationController::class, 'store_message']); 

@@ -1273,4 +1273,704 @@ class WebUserManagementController extends Controller
         echo json_encode($parents);
     }
 
+    // SMS log details
+    public function smslog()
+    {
+        $data['parents'] = UserStudents::select('id','first_name')->where('user_status',1)->get()->toArray();
+        $data['class_configs'] = AcademicClassConfiguration::select('academic_class_configuration.id',DB::raw("CONCAT(c.class_name,'-',s.section_name) as class_section"))->join('academic_classes as c', 'c.id', '=', 'academic_class_configuration.class_id')->join('academic_sections as s', 's.id', '=', 'academic_class_configuration.section_id')->get()->toArray();
+        return view('UserManagement.smslog',$data);
+    }
+
+
+    /*Staff Starts*/
+    // Get Staff details for search
+    public function staffs()
+    {
+        return view('UserManagement.stafflist');
+    }
+
+    // get list of staff details
+    public function getStaff_list(Request $request)
+    {
+        $user_list =[];
+        if ($request->ajax()) {
+            $data = UserStaffs::leftjoin('academic_class_configuration as acc', 'user_staffs.id', '=', 'acc.class_teacher');
+
+            if($request->name!='')
+                $data = $data->where('user_staffs.first_name', 'like', '%' .$request->name. '%');
+           
+            if($request->employee_no!='')
+                $data = $data->where('user_staffs.employee_no', 'like', '%' .$request->employee_no. '%');
+            if($request->mobile_no!='')
+                $data = $data->where('user_staffs.mobile_number', 'like', '%' .$request->mobile_no. '%');
+           
+            $data = $data->orderBy('user_staffs.created_time','desc')->get(['user_staffs.id as id','user_staffs.user_id','user_staffs.first_name','user_staffs.employee_no', 'user_staffs.mobile_number','user_staffs.user_category','acc.id as class_config','user_staffs.user_status']);
+
+            foreach ($data as $key => $value) {            
+                $user_list[$value->id]['id']=$value->id;
+                $user_list[$value->id]['user_id']=$value->user_id;
+                $user_list[$value->id]['first_name']=$value->first_name;
+                $user_list[$value->id]['mobile_number']=$value->mobile_number;
+                $user_list[$value->id]['employee_no']=$value->employee_no;
+                $user_list[$value->id]['class_config_id']=$value->class_config;
+                $user_list[$value->id]['class_section']=($value->class_config!='')?$value->classsectionName():'';
+                $user_list[$value->id]['staff_status']=$value->user_status;
+                
+            }
+
+            return Datatables::of($user_list)->addIndexColumn()
+                ->addColumn('edit_staff', function($row){
+                    $actionBtn = '<a href="'.url('usermanagement/editStaffdetails?id='.$row['id']).'" class="edit btn btn-success btn-sm"><i class="fas fa-edit nav-icon"></i></a>';
+                    return $actionBtn;
+                })
+                ->rawColumns(['edit_staff'])
+                ->make(true);
+        }
+    }
+
+    // Redirect to add student page
+    public function addStaff(Request $request)
+    {
+        $data['division'] = AcademicDivisions::select('id','division_name')->get()->toArray();
+        $data['user_category'] = UserCategories::select('id','category_name')->where('user_role',Config::get('app.Staff_role'))->get()->toArray();
+        return view('UserManagement.addstaff',$data);
+    }
+
+    // Store Staff 
+    public function storeStaff(Request $request)
+    {
+        if(!empty($request->all()))
+        {
+            // echo '<pre>';print_r($request->all());exit;
+            $user = Session::get('user_data');
+            $profile_details = SchoolProfile::where(['id'=>$user->school_profile_id])->first();//Fetch school profile details 
+            // get the common id to insert
+            if($user->user_role == Config::get('app.Admin_role'))//check role and get current user id
+                $user_table_id = UserAdmin::where(['user_id'=>$user->user_id])->pluck('id')->first();
+
+            $userall_id = UserAll::where(['user_table_id'=>$user_table_id,'user_role'=>$user->user_role])->pluck('id')->first();//get common id 
+
+            $profile_image_path = $aadhar_image = $pan_card_image = $pass_book_image = '';
+            if(!empty($request->profile_image))
+            {
+                $path = public_path('uploads/'.$profile_details['school_code'].'/profile_images');//
+
+                if(!File::isDirectory($path)){ //check path already exists
+                    File::makeDirectory($path, 0777, true, true);
+                }
+                $filedata =  $request->file('profile_image');
+                $name = explode('.',$filedata->getClientOriginalName())[0];
+                $image = $name.''.time().'.'.$filedata->extension();
+                $filename = str_replace(["-",","," ","/"], '_', $image);
+                $filedata->move(public_path().'/uploads/'.$profile_details['school_code'].'/profile_images', $filename);
+                $profile_image_path =url('/').'/uploads/'.$profile_details['school_code'].'/profile_images/'.$filename;
+            }
+
+            if(!empty($request->aadhar))
+            {
+                $path = public_path('uploads/'.$profile_details['school_code'].'/personal_details');//
+
+                if(!File::isDirectory($path)){ //check path already exists
+                    File::makeDirectory($path, 0777, true, true);
+                }
+                $filedata =  $request->file('aadhar');
+                $name = explode('.',$filedata->getClientOriginalName())[0];
+                $image = $name.''.time().'.'.$filedata->extension();
+                $filename = str_replace(["-",","," ","/"], '_', $image);
+                $filedata->move(public_path().'/uploads/'.$profile_details['school_code'].'/personal_details', $filename);
+                $aadhar_image =url('/').'/uploads/'.$profile_details['school_code'].'/personal_details/'.$filename;
+            }
+
+            if(!empty($request->pan_card))
+            {
+                $path = public_path('uploads/'.$profile_details['school_code'].'/personal_details');//
+
+                if(!File::isDirectory($path)){ //check path already exists
+                    File::makeDirectory($path, 0777, true, true);
+                }
+                $filedata =  $request->file('pan_card');
+                $name = explode('.',$filedata->getClientOriginalName())[0];
+                $image = $name.''.time().'.'.$filedata->extension();
+                $filename = str_replace(["-",","," ","/"], '_', $image);
+                $filedata->move(public_path().'/uploads/'.$profile_details['school_code'].'/personal_details', $filename);
+                $pan_card_image =url('/').'/uploads/'.$profile_details['school_code'].'/personal_details/'.$filename;
+            }
+
+            if(!empty($request->bank_passbook))
+            {
+                $path = public_path('uploads/'.$profile_details['school_code'].'/personal_details');//
+
+                if(!File::isDirectory($path)){ //check path already exists
+                    File::makeDirectory($path, 0777, true, true);
+                }
+                $filedata =  $request->file('bank_passbook');
+                $name = explode('.',$filedata->getClientOriginalName())[0];
+                $image = $name.''.time().'.'.$filedata->extension();
+                $filename = str_replace(["-",","," ","/"], '_', $image);
+                $filedata->move(public_path().'/uploads/'.$profile_details['school_code'].'/personal_details', $filename);
+                $pass_book_image =url('/').'/uploads/'.$profile_details['school_code'].'/personal_details/'.$filename;
+            }
+            $department_name = '';
+            // if(isset($request->department) && $request->department!='')
+            //     $department_name = AcademicSubjects::where('id',$request->department)->pluck('subject_name')->first();
+            // insert student details
+            $staff_details = new UserStaffs;
+            $staff_details->first_name= $request->staff_name;
+            $staff_details->division_id= $request->division_name;
+            $staff_details->mobile_number=$request->mobile_number;    
+            $staff_details->email_id=$request->email_address;    
+            $staff_details->specialized_in=$request->specialized_in; 
+            $staff_details->user_category=$request->user_category; 
+            $staff_details->department=$request->department;    
+            $staff_details->employee_no=$request->employee_no;    
+            $staff_details->dob=date('Y-m-d',strtotime($request->dob));
+            $staff_details->doj=date('Y-m-d',strtotime($request->doj));
+            $staff_details->religion=$request->religion;    
+            $staff_details->caste_community=$request->caste_community;
+            $staff_details->native=$request->native;    
+            $staff_details->bank_branch=$request->bank_branch;
+            $staff_details->esi_no=$request->esi_no;    
+            $staff_details->oasis=$request->oasis_no;     
+            $staff_details->emis=$request->emis_no;    
+            $staff_details->aadhar_no=$request->aadhar_no;
+            $staff_details->pan_card=$request->pan_card_no;    
+            $staff_details->account_no=$request->account_no;       
+            if(!empty($profile_image_path) && !empty($request->profile_image))
+                $staff_details->profile_image=$profile_image_path;
+            if(!empty($aadhar_image) && !empty($request->aadhar))
+                $staff_details->aadhar_image=$aadhar_image;
+            if(!empty($pan_card_image) && !empty($request->pan_card))
+                $staff_details->pan_card_image=$pan_card_image;
+            if(!empty($pass_book_image) && !empty($request->bank_passbook))
+                $staff_details->bankpass_book=$pass_book_image;
+            $staff_details->user_status=1;
+            $staff_details->created_by=$userall_id;
+            $staff_details->created_time=Carbon::now()->timezone('Asia/Kolkata');
+            $staff_details->save();
+
+            $staff_id = $staff_details->id;
+            // generate and update staff id in db 
+            $userstaff_id = $profile_details['school_code'].substr($profile_details['active_academic_year'], -2).'T'.sprintf("%04s", $staff_id);
+            $staff_details->user_id = $userstaff_id;
+            $staff_details->save();
+            
+            $user_all = new UserAll;
+            $user_all->user_table_id=$staff_id;
+            $user_all->user_role=2;
+            $user_all->save();
+
+            $schoolusers = new SchoolUsers;
+            $schoolusers->school_profile_id=$user->school_profile_id;
+            $schoolusers->user_id=$userstaff_id;
+            $schoolusers->user_mobile_number=$request->mobile_number;
+            $schoolusers->user_password=bcrypt($request->mobile_number);
+            $schoolusers->user_role=Config::get('app.Staff_role');
+            $schoolusers->user_status=1;
+            $schoolusers->save();
+
+            // main group
+            UserGroupsMapping::insert(['group_id'=>2,'user_role'=>Config::get('app.Staff_role'),'group_access'=>1,'user_table_id'=>$staff_id,'user_status'=>1]);
+
+            // School Internal Communication group
+            UserGroupsMapping::insert(['group_id'=>3,'user_role'=>Config::get('app.Staff_role'),'group_access'=>1,'user_table_id'=>$staff_id,'user_status'=>1]);
+
+            if($request->user_category == 3) //Academic Staff
+                UserGroupsMapping::insert(['group_id'=>4,'user_role'=>Config::get('app.Staff_role'),'group_access'=>1,'user_table_id'=>$staff_id,'user_status'=>1]);
+            else
+                UserGroupsMapping::insert(['group_id'=>5,'user_role'=>Config::get('app.Staff_role'),'group_access'=>1,'user_table_id'=>$staff_id,'user_status'=>1]);
+
+            if($request->classteacher == 'yes')
+            {
+                $check_existing_classdetails = AcademicClassConfiguration::where('id',$request->class_section)->get()->first();
+
+                $group_id = UserGroups::where('class_config',$request->class_section)->pluck('id')->first();
+                if(!empty($check_existing_classdetails) && $check_existing_classdetails->class_teacher != '')
+                {
+
+                    //Check whether class teacher also a subject teacher for same class 
+                    $check_classsubject_teacher = AcademicSubjectsMapping::where('class_config',$request->class_section)->where('staff',$check_existing_classdetails->class_teacher)->pluck('id')->first();
+
+                    if($check_classsubject_teacher == '')
+                        UserGroupsMapping::where(['group_id'=>$group_id,'user_role'=>Config::get('app.Staff_role')])->where('user_table_id',$check_existing_classdetails->class_teacher)->delete();
+                    else
+                        UserGroupsMapping::where(['group_id'=>$group_id,'user_role'=>Config::get('app.Staff_role')])->where('user_table_id',$check_existing_classdetails->class_teacher)->update(['group_access'=>2]);
+                }
+                $check_existing_classdetails = $check_existing_classdetails->update(['class_teacher'=>$staff_id]);
+
+                UserGroupsMapping::insert(['group_id'=>$group_id,'user_role'=>Config::get('app.Staff_role'),'group_access'=>1,'user_table_id'=>$staff_id,'user_status'=>1]);
+            }
+
+            $countstaffsubjects = count($request->staffsubject);
+            $staffsubjects = $request->staffsubject;
+            $subjectteacher = $request->subjectteacher;
+
+            if($countstaffsubjects >0)
+            {
+                for ($i=0; $i < $countstaffsubjects; $i++) { 
+                    if($staffsubjects[$i] !='' && $subjectteacher[$i] != '')
+                    {
+                        for ($subject_teacher_i=0; $subject_teacher_i < count($subjectteacher[$i]) ; $subject_teacher_i++) { 
+                            $check_existing_teacherdetails = AcademicSubjectsMapping::where('class_config',$subjectteacher[$i][$subject_teacher_i])->where('subject',$staffsubjects[$i])->get()->first();
+
+                            $teachergroup_id = UserGroups::where('class_config',$subjectteacher[$i][$subject_teacher_i])->pluck('id')->first();
+
+                            if(empty($check_existing_teacherdetails))
+                            {
+                                AcademicSubjectsMapping::insert(['class_config'=>$subjectteacher[$i][$subject_teacher_i],'subject'=>$staffsubjects[$i],'staff'=>null]);
+                                $check_existing_teacherdetails = AcademicSubjectsMapping::where('class_config',$subjectteacher[$i][$subject_teacher_i])->where('subject',$staffsubjects[$i])->get()->first();
+                            }
+
+                            if(!empty($check_existing_teacherdetails) && $check_existing_teacherdetails->staff != '')
+                            {
+                                //Check whether class teacher also a subject teacher for same class 
+                                $check_subject_teacher = AcademicSubjectsMapping::where('class_config',$subjectteacher[$i][$subject_teacher_i])->where('staff',$check_existing_teacherdetails->staff)->where('subject',$staffsubjects[$i])->pluck('id')->first();
+
+                                $check_classteacher = AcademicClassConfiguration::where('id',$subjectteacher[$i][$subject_teacher_i])->where('class_teacher',$subjectteacher[$i][$subject_teacher_i])->pluck('id')->first();
+
+                                if($check_subject_teacher == '' && $check_classteacher == '')
+                                {
+                                    UserGroupsMapping::where(['group_id'=>$teachergroup_id,'user_role'=>Config::get('app.Staff_role')])->where('user_table_id',$check_existing_teacherdetails->staff)->delete();
+                                }
+                            }
+                            if(!empty($check_existing_teacherdetails)) 
+                                $check_existing_teacherdetails = $check_existing_teacherdetails->update(['staff'=>$staff_id]);
+                            else
+                            {
+                                AcademicSubjectsMapping::insert(['class_config'=>$subjectteacher[$i][$subject_teacher_i],'subject'=>$staffsubjects[$i],'staff'=>$staff_id,'created_by'=>$userall_id,'created_time'=>Carbon::now()->timezone('Asia/Kolkata')]);
+                            }
+
+                            $checkusergroup_exists = UserGroupsMapping::where('user_table_id',$staff_id)->where('group_id',$teachergroup_id)->pluck('id')->first();
+
+                            if($checkusergroup_exists == '')
+                                UserGroupsMapping::insert(['group_id'=>$teachergroup_id,'user_role'=>Config::get('app.Staff_role'),'group_access'=>2,'user_table_id'=>$staff_id,'user_status'=>1]);
+                        }
+
+                    }
+                }
+            }
+            
+            return back()->with('success','Inserted Successfully');
+        }
+        return back()->with('error','Invalid Inputs');
+    }
+
+    // get classes and subjects
+    public function subject_classes(Request $request)
+    {
+        $class_configs = AcademicClassConfiguration::select('academic_class_configuration.id',DB::raw("CONCAT(c.class_name,'-',s.section_name) as class_section"))->join('academic_classes as c', 'c.id', '=', 'academic_class_configuration.class_id')->join('academic_sections as s', 's.id', '=', 'academic_class_configuration.section_id')->where('academic_class_configuration.division_id',$request->id)->get()->toArray();
+        $subjects = AcademicSubjects::select('id','subject_name')->where('division_id',$request->id)->get()->toArray();
+        echo json_encode(['subjects'=>$subjects,'class_configs'=>$class_configs]);
+    }
+
+    // Check employee no
+    public function checkEmployeeno(Request $request)
+    {
+        $check_exists = UserStaffs::where('employee_no',$request->employee_no);
+        
+        if(isset($request->id)!='')
+            $check_exists = $check_exists->where('id','!=',$request->id);
+
+        $check_exists = $check_exists->get()->first();
+
+        if(!empty($check_exists))
+            echo 'false';
+        else
+            echo 'true';
+    }
+
+    public function checkStaffMobilenoexists(Request $request)
+    {
+        $check_exists = UserStaffs::where('mobile_number',$request->mobile_number);
+        
+        if(isset($request->id)!='')
+            $check_exists = $check_exists->where('id','!=',$request->id);
+
+        $check_exists = $check_exists->get()->first();
+
+        if(!empty($check_exists))
+            echo 'false';
+        else
+            echo 'true';
+    }
+
+    public function checkClassteacherexists(Request $request)
+    {
+
+        $check_exists = AcademicClassConfiguration::where('id',$request->class_section);
+        
+        if(isset($request->id)!='')
+            $check_exists = $check_exists->where('class_teacher','!=',$request->id);
+
+        $check_exists = $check_exists->pluck('class_teacher')->first();
+
+        if($check_exists !='')
+            echo 'false';
+        else
+            echo 'true';
+    }
+
+    public function editStaffdetails(Request $request)
+    {
+        $user_data = Session::get('user_data');
+        $staff_list = $teaching_staff= [];//empty array declaration
+
+        $data['division'] = AcademicDivisions::select('id','division_name')->get()->toArray();
+        $data['user_category'] = UserCategories::select('id','category_name')->where('user_role',Config::get('app.Staff_role'))->get()->toArray();
+        
+        $data['staff_list'] = $staffdetails = UserStaffs::where('id',$request->id)->get()->first();
+        $data['subjects'] = AcademicSubjects::where('division_id',$staffdetails->division_id)->get()->toArray();
+        $data['class_configs'] = AcademicClassConfiguration::select('academic_class_configuration.id',DB::raw("CONCAT(c.class_name,'-',s.section_name) as class_section"))->join('academic_classes as c', 'c.id', '=', 'academic_class_configuration.class_id')->join('academic_sections as s', 's.id', '=', 'academic_class_configuration.section_id')->where('academic_class_configuration.division_id',$staffdetails->division_id)->get()->toArray();
+
+        $data['classteacher'] = AcademicClassConfiguration::Where('class_teacher',$request->id)->pluck('id')->first();
+
+        $teaching_staff = array_unique(AcademicSubjectsMapping::where('staff',$request->id)->pluck('subject')->toArray());
+
+        $teachingstaff_list = [];
+        foreach($teaching_staff as $key=>$value)
+        {
+            $teachingstaff_list[] =([
+                'subject' => $value,
+                'class_config'=>AcademicSubjectsMapping::where('subject',$value)->where('staff',$request->id)->pluck('class_config')->toArray()
+            ]);
+        }
+        $data['teaching_staff'] = $teachingstaff_list;
+        // echo '<pre>';print_r($data);exit;
+        return view('UserManagement.editstaff',$data);
+    }
+
+    // Update Staff 
+    public function updateStaff(Request $request)
+    {
+        if(!empty($request->all()))
+        {
+            // echo '<pre>';print_r($request->all());exit;
+            $user = Session::get('user_data');
+            $profile_details = SchoolProfile::where(['id'=>$user->school_profile_id])->first();//Fetch school profile details 
+            // get the common id to insert
+            if($user->user_role == Config::get('app.Admin_role'))//check role and get current user id
+                $user_table_id = UserAdmin::where(['user_id'=>$user->user_id])->pluck('id')->first();
+
+            $userall_id = UserAll::where(['user_table_id'=>$user_table_id,'user_role'=>$user->user_role])->pluck('id')->first();//get common id 
+
+            $profile_image_path = $aadhar_image = $pan_card_image = $pass_book_image = '';
+            if(!empty($request->profile_image))
+            {
+                $path = public_path('uploads/'.$profile_details['school_code'].'/profile_images');//
+
+                if(!File::isDirectory($path)){ //check path already exists
+                    File::makeDirectory($path, 0777, true, true);
+                }
+                if($request->old_profile!='')
+                {
+                    $exploded_value = explode('/',$request->old_profile);
+                    $image_path = public_path('/uploads/'.$profile_details['school_code'].'/profile_images/'.$exploded_value[count($exploded_value)-1]);
+                    if(File::exists($image_path)) {
+                        echo unlink($image_path);
+                    }
+                }
+                $filedata =  $request->file('profile_image');
+                $name = explode('.',$filedata->getClientOriginalName())[0];
+                $image = $name.''.time().'.'.$filedata->extension();
+                $filename = str_replace(["-",","," ","/"], '_', $image);
+                $request->profile_image->move(public_path().'/uploads/'.$profile_details['school_code'].'/profile_images', $filename);
+                $profile_image_path =url('/').'/uploads/'.$profile_details['school_code'].'/profile_images/'.$filename;
+            }
+
+            if(!empty($request->aadhar))
+            {
+                $path = public_path('uploads/'.$profile_details['school_code'].'/personal_details');//
+
+                if(!File::isDirectory($path)){ //check path already exists
+                    File::makeDirectory($path, 0777, true, true);
+                }
+                if($request->old_aadhar!='')
+                {
+                    $exploded_value = explode('/',$request->old_aadhar);
+                    $image_path = public_path('/uploads/'.$profile_details['school_code'].'/profile_images/'.$exploded_value[count($exploded_value)-1]);
+                    if(File::exists($image_path)) {
+                        echo unlink($image_path);
+                    }
+                }
+                $filedata =  $request->file('aadhar');
+                $name = explode('.',$filedata->getClientOriginalName())[0];
+                $image = $name.''.time().'.'.$filedata->extension();
+                $filename = str_replace(["-",","," ","/"], '_', $image);
+                $filedata->move(public_path().'/uploads/'.$profile_details['school_code'].'/personal_details', $filename);
+                $aadhar_image =url('/').'/uploads/'.$profile_details['school_code'].'/personal_details/'.$filename;
+            }
+
+            if(!empty($request->pan_card))
+            {
+                $path = public_path('uploads/'.$profile_details['school_code'].'/personal_details');//
+
+                if(!File::isDirectory($path)){ //check path already exists
+                    File::makeDirectory($path, 0777, true, true);
+                }
+                if($request->old_pan_card!='')
+                {
+                    $exploded_value = explode('/',$request->old_pan_card);
+                    $image_path = public_path('/uploads/'.$profile_details['school_code'].'/profile_images/'.$exploded_value[count($exploded_value)-1]);
+                    if(File::exists($image_path)) {
+                        echo unlink($image_path);
+                    }
+                }
+                $filedata =  $request->file('pan_card');
+                $name = explode('.',$filedata->getClientOriginalName())[0];
+                $image = $name.''.time().'.'.$filedata->extension();
+                $filename = str_replace(["-",","," ","/"], '_', $image);
+                $filedata->move(public_path().'/uploads/'.$profile_details['school_code'].'/personal_details', $filename);
+                $pan_card_image =url('/').'/uploads/'.$profile_details['school_code'].'/personal_details/'.$filename;
+            }
+
+            if(!empty($request->bank_passbook))
+            {
+                $path = public_path('uploads/'.$profile_details['school_code'].'/personal_details');//
+
+                if(!File::isDirectory($path)){ //check path already exists
+                    File::makeDirectory($path, 0777, true, true);
+                }
+                if($request->old_passbook!='')
+                {
+                    $exploded_value = explode('/',$request->old_passbook);
+                    $image_path = public_path('/uploads/'.$profile_details['school_code'].'/profile_images/'.$exploded_value[count($exploded_value)-1]);
+                    if(File::exists($image_path)) {
+                        echo unlink($image_path);
+                    }
+                }
+                $filedata =  $request->file('bank_passbook');
+                $name = explode('.',$filedata->getClientOriginalName())[0];
+                $image = $name.''.time().'.'.$filedata->extension();
+                $filename = str_replace(["-",","," ","/"], '_', $image);
+                $filedata->move(public_path().'/uploads/'.$profile_details['school_code'].'/personal_details', $filename);
+                $pass_book_image =url('/').'/uploads/'.$profile_details['school_code'].'/personal_details/'.$filename;
+            }
+
+            $staff_details = UserStaffs::where(['id'=>$request->staff_id])->get()->first(); 
+
+            if($request->user_category == 3 && $staff_details->user_category != $request->user_category)
+            {              
+                UserGroupsMapping::where('user_role',Config::get('app.Staff_role'))->where('group_id',5)->where('user_table_id',$staff_details->id)->delete();
+                $check_exists_nonteaching = UserGroupsMapping::where('user_role',Config::get('app.Staff_role'))->where('group_id',4)->where('user_table_id',$staff_details->id)->first();
+                if(empty($check_exists_nonteaching))
+                    UserGroupsMapping::insert(['user_role'=>Config::get('app.Staff_role'),'group_id'=>4,'user_table_id'=>$staff_details->id,'group_access'=>2]);
+            }
+            else if($request->user_category == 4 && $staff_details->user_category != $request->user_category)
+            {
+                UserGroupsMapping::where('user_role',Config::get('app.Staff_role'))->where('group_id',4)->where('user_table_id',$staff_details->id)->delete();
+                $check_exists_nonteaching = UserGroupsMapping::where('user_role',Config::get('app.Staff_role'))->where('group_id',5)->where('user_table_id',$staff_details->id)->first();
+                if(empty($check_exists_nonteaching))
+                    UserGroupsMapping::insert(['user_role'=>Config::get('app.Staff_role'),'group_id'=>5,'user_table_id'=>$staff_details->id,'group_access'=>2]); 
+
+                AcademicSubjectsMapping::where('staff',$staff_details->id)->update(['staff'=>null]);
+
+                AcademicClassConfiguration::where('class_teacher',$staff_details->id)->update(['class_teacher'=>null]);
+                
+                $staff_group_list = UserGroups::where('group_type',2)->where('group_status',Config::get('app.Group_Active'))->pluck('id')->toArray();
+
+                UserGroupsMapping::where('user_role',Config::get('app.Staff_role'))->whereIn('group_id',$staff_group_list)->where('user_table_id',$staff_details->id)->delete();
+
+            }
+
+            if($request->classteacher == 'yes' && $request->user_category == 3)
+            {
+                // remove old class details while change division - start
+                if($staff_details->division_id != $request->division_id)
+                {
+                    // fetch all the division except newly selected one
+                    $class_config_list = AcademicClassConfiguration::where('division_id','!=',$request->division_id)->pluck('id')->toArray();
+
+                    AcademicSubjectsMapping::whereIn('class_config',$class_config_list)->where('staff',$staff_details->id)->update(['staff'=>null]);
+
+                    AcademicClassConfiguration::where('class_teacher',$staff_details->id)->where('division_id','!=',$request->division_id)->update(['class_teacher'=>null]);
+
+                    $staff_group_list = UserGroups::where('group_type',2)->where('group_status',Config::get('app.Group_Active'))->whereIn('class_config',$class_config_list)->pluck('id')->toArray();
+
+                    UserGroupsMapping::where('user_role',Config::get('app.Staff_role'))->whereIn('group_id',$staff_group_list)->where('user_table_id',$staff_details->id)->delete();
+
+                }
+                // remove old class details while change division - end
+
+                $old_class_teacher = AcademicClassConfiguration::where('class_teacher',$staff_details->id)->pluck('id')->first();
+                if($request->class_section != $old_class_teacher)
+                {                    
+                    // delete old group
+                    $old_classdetails = AcademicClassConfiguration::where('class_teacher',$staff_details->id)->get()->first();
+                    $oldgroup_id = UserGroups::where('class_config',$old_class_teacher)->pluck('id')->first();
+                    if(!empty($old_classdetails) && $old_classdetails->class_teacher != '')
+                    {
+                        //Check whether class teacher also a subject teacher for same class 
+                        $old_classsubject_teacher = AcademicSubjectsMapping::where('class_config',$old_class_teacher)->where('staff',$staff_details->id)->pluck('id')->first();
+
+                        if($old_classsubject_teacher == '')
+                            UserGroupsMapping::where(['group_id'=>$oldgroup_id,'user_role'=>Config::get('app.Staff_role')])->where('user_table_id',$staff_details->id)->delete();
+                        else
+                            UserGroupsMapping::where(['group_id'=>$oldgroup_id,'user_role'=>Config::get('app.Staff_role')])->where('user_table_id',$staff_details->id)->update(['group_access'=>2]);
+                    }
+                    // delete old group
+                    $check_existing_classdetails = AcademicClassConfiguration::where('id',$request->class_section)->get()->first();
+
+                    $group_id = UserGroups::where('class_config',$request->class_section)->pluck('id')->first();
+                    if(!empty($check_existing_classdetails) && $check_existing_classdetails->class_teacher != '')
+                    {
+
+                        //Check whether class teacher also a subject teacher for same class 
+                        $check_classsubject_teacher = AcademicSubjectsMapping::where('class_config',$request->class_section)->where('staff',$check_existing_classdetails->class_teacher)->pluck('id')->first();
+
+                        if($check_classsubject_teacher == '')
+                            UserGroupsMapping::where(['group_id'=>$group_id,'user_role'=>Config::get('app.Staff_role')])->where('user_table_id',$check_existing_classdetails->class_teacher)->delete();
+                        else
+                            UserGroupsMapping::where(['group_id'=>$group_id,'user_role'=>Config::get('app.Staff_role')])->where('user_table_id',$check_existing_classdetails->class_teacher)->update(['group_access'=>2]);
+                    }
+                    $check_existing_classdetails = $check_existing_classdetails->update(['class_teacher'=>$staff_details->id]);
+
+                    UserGroupsMapping::insert(['group_id'=>$group_id,'user_role'=>Config::get('app.Staff_role'),'group_access'=>1,'user_table_id'=>$staff_details->id,'user_status'=>1]);
+                }
+            }
+            else //check already assigned as classteacher
+            {   
+                AcademicClassConfiguration::where('class_teacher',$staff_details->id)->where('division_id','!=',$request->division_id)->update(['class_teacher'=>null]);
+            }
+
+            $countstaffsubjects = count($request->staffsubject);
+            $staffsubjects = $request->staffsubject;
+            $subjectteacher = $request->subjectteacher;
+            
+            if($countstaffsubjects >0 && $request->user_category == 3)
+            {
+                for ($i=0; $i < $countstaffsubjects; $i++) { 
+                    if($staffsubjects[$i] !='' && $subjectteacher[$i] != '')
+                    {
+                        for ($subject_teacher_i=0; $subject_teacher_i < count($subjectteacher[$i]) ; $subject_teacher_i++) {
+                            AcademicSubjectsMapping::where('class_config',$subjectteacher[$i][$subject_teacher_i])->where('subject',$staffsubjects[$i])->update(['staff'=>null]);
+                            $old_teachergroup_id = UserGroups::where('class_config',$subjectteacher[$i][$subject_teacher_i])->pluck('id')->first();
+                            UserGroupsMapping::where(['group_id'=>$old_teachergroup_id,'user_role'=>Config::get('app.Staff_role')])->where('user_table_id',$staff_details->id)->delete();
+                            // remove old records
+
+                            $check_existing_teacherdetails = AcademicSubjectsMapping::where('class_config',$subjectteacher[$i][$subject_teacher_i])->where('subject',$staffsubjects[$i])->get()->first();
+
+                            if(empty($check_existing_teacherdetails))
+                            {
+                                AcademicSubjectsMapping::insert(['class_config'=>$subjectteacher[$i][$subject_teacher_i],'subject'=>$staffsubjects[$i],'staff'=>null]);
+                                $check_existing_teacherdetails = AcademicSubjectsMapping::where('class_config',$subjectteacher[$i][$subject_teacher_i])->where('subject',$staffsubjects[$i])->get()->first();
+                            }
+
+                            $teachergroup_id = UserGroups::where('class_config',$subjectteacher[$i][$subject_teacher_i])->pluck('id')->first();
+                            if(!empty($check_existing_teacherdetails) && $check_existing_teacherdetails->staff != '')
+                            {
+                                //Check whether class teacher also a subject teacher for same class 
+                                $check_subject_teacher = AcademicSubjectsMapping::where('class_config',$subjectteacher[$i])->where('staff',$check_existing_teacherdetails->staff)->where('subject',$staffsubjects[$i])->pluck('id')->first();
+
+                                $check_classteacher = AcademicClassConfiguration::where('id',$subjectteacher[$i])->where('class_teacher',$subjectteacher[$i])->pluck('id')->first();
+
+                                if($check_subject_teacher == '' && $check_classteacher == '')
+                                {
+                                    UserGroupsMapping::where(['group_id'=>$teachergroup_id,'user_role'=>Config::get('app.Staff_role')])->where('user_table_id',$check_existing_teacherdetails->staff)->delete();
+                                }
+                            }
+
+                            if(!empty($check_existing_teacherdetails)) 
+                                $check_existing_teacherdetails = $check_existing_teacherdetails->update(['staff'=>$staff_details->id]);
+
+                            $checkusergroup_exists = UserGroupsMapping::where('user_table_id',$staff_details->id)->where('group_id',$teachergroup_id)->pluck('id')->first();
+
+                            if($checkusergroup_exists == '')
+                                UserGroupsMapping::insert(['group_id'=>$teachergroup_id,'user_role'=>Config::get('app.Staff_role'),'group_access'=>2,'user_table_id'=>$staff_details->id,'user_status'=>1]);
+                        }
+                    }
+                }
+            }
+            $department_name = '';
+            // if(isset($request->department) && $request->department!='')
+                // $department_name = AcademicSubjects::where('id',$request->department)->pluck('subject_name')->first();
+            
+            $staff_details->first_name= $request->staff_name;
+            if($request->user_category==3)
+                $staff_details->division_id= $request->division_name;
+            else
+                $staff_details->division_id = null;
+
+            $staff_details->mobile_number=$request->mobile_number;    
+            $staff_details->email_id=$request->email_address;    
+            $staff_details->specialized_in=$request->specialized_in; 
+            $staff_details->user_category=$request->user_category; 
+            $staff_details->department=$request->department;    
+            $staff_details->employee_no=$request->employee_no;    
+            $staff_details->dob=date('Y-m-d',strtotime($request->dob));
+            $staff_details->doj=date('Y-m-d',strtotime($request->doj));
+            $staff_details->religion=$request->religion;    
+            $staff_details->caste_community=$request->caste_community;
+            $staff_details->native=$request->native;    
+            $staff_details->bank_branch=$request->bank_branch;
+            $staff_details->esi_no=$request->esi_no;    
+            $staff_details->oasis=$request->oasis_no;     
+            $staff_details->emis=$request->emis_no;    
+            $staff_details->aadhar_no=$request->aadhar_no;
+            $staff_details->pan_card=$request->pan_card_no;    
+            $staff_details->account_no=$request->account_no;       
+            if(!empty($profile_image_path) && !empty($request->profile_image))
+                $staff_details->profile_image=$profile_image_path;
+            if(!empty($aadhar_image) && !empty($request->aadhar))
+                $staff_details->aadhar_image=$aadhar_image;
+            if(!empty($pan_card_image) && !empty($request->pan_card))
+                $staff_details->pan_card_image=$pan_card_image;
+            if(!empty($pass_book_image) && !empty($request->bank_passbook))
+                $staff_details->bankpass_book=$pass_book_image;
+            $staff_details->user_status=1;
+            $staff_details->updated_by=$userall_id;
+            $staff_details->updated_time=Carbon::now()->timezone('Asia/Kolkata');
+            $staff_details->save();
+            
+            if(isset($request->mobile_number))
+                SchoolUsers::where('user_id',$staff_details->user_id)->update(['user_mobile_number'=>$request->mobile_number]);
+            
+           return back()->with('success','Updated Successfully');
+        }
+        return back()->with('error','Invalid Inputs');
+    }
+
+    //Check account details unqiue
+    public function checkuseraccountdetails(Request $request)
+    {
+        $checkuseraccountdetails = UserStaffs::where('user_status',1);
+        if(isset($request->id)!='')
+            $checkuseraccountdetails = $checkuseraccountdetails->where('id','!=',$request->id);
+        if(isset($request->esi_no))
+            $checkuseraccountdetails = $checkuseraccountdetails->where('esi_no',$request->esi_no);
+        else if(isset($request->oasis_no))
+            $checkuseraccountdetails = $checkuseraccountdetails->where('oasis',$request->oasis_no);
+        else if(isset($request->emis_no))
+            $checkuseraccountdetails = $checkuseraccountdetails->where('emis',$request->emis_no);
+        else if(isset($request->aadhar_no))
+            $checkuseraccountdetails = $checkuseraccountdetails->where('aadhar_no',$request->aadhar_no);
+        else if(isset($request->pan_card_no))
+            $checkuseraccountdetails = $checkuseraccountdetails->where('pan_card',$request->pan_card_no);
+        else if(isset($request->account_no))
+            $checkuseraccountdetails = $checkuseraccountdetails->where('account_no',$request->account_no);
+
+        $checkuseraccountdetails = $checkuseraccountdetails->pluck('id')->first();
+
+        if($checkuseraccountdetails !='')
+            echo 'false';
+        else
+            echo 'true';
+    }
+
+    //Check account details unqiue
+    public function checksubjectaccess(Request $request)
+    {
+        if($request->staffsubject != '' && $request->class_section!='')
+        {
+            $checksubjectaccess = AcademicSubjectsMapping::where('subject',$request->staffsubject)->where('class_config',$request->class_section);
+            if(isset($request->id)!='')
+                $checksubjectaccess = $checksubjectaccess->where('staff','!=',$request->id);
+            $checksubjectaccess = $checksubjectaccess->pluck('class_config')->first();
+
+            if($checksubjectaccess!='')
+                echo $checksubjectaccess;
+            else
+                echo 'true';
+        }
+    }
+    /*Staff Ends*/
+
 }

@@ -2403,12 +2403,15 @@ class APIConfigurationsController extends Controller
         $schoolusers = SchoolUsers::where('user_id',$management_user_id)->get()->first(); //update email address in common login table
         if($request->id=='')
         {
-            $all_group_ids = UserGroups::pluck('id')->toArray();
+        	if($request->module == 'singleuser')
+        	{ 
+	            $all_group_ids = UserGroups::pluck('id')->toArray();
 
-	        foreach($all_group_ids as $group_key => $group_id)
-	        {
-	        	UserGroupsMapping::insert(['group_id'=>$group_id,'user_table_id'=>$id,'user_role'=>Config::get('app.Management_role'),'group_access'=>Config::get('app.Group_Active'),'user_status'=>Config::get('app.Group_Active')]);
-	        }
+		        foreach($all_group_ids as $group_key => $group_id)
+		        {
+		        	UserGroupsMapping::insert(['group_id'=>$group_id,'user_table_id'=>$id,'user_role'=>Config::get('app.Management_role'),'group_access'=>Config::get('app.Group_Active'),'user_status'=>Config::get('app.Group_Active')]);
+		        }
+		    }
 
             $schoolusers = new SchoolUsers;
             $schoolusers->school_profile_id=$user->school_profile_id;

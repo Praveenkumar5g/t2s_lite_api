@@ -193,7 +193,7 @@ class APIHomeworkController extends Controller
                             'subject_shortname'=>$subject_details->short_name,
                             'staff_name'=>(!empty($teachingstaff_list) && array_key_exists($sub_value->staff,$teachingstaff_list))?$teachingstaff_list[$sub_value->staff]:'',
                             'staff_id'=>$sub_value->staff,
-                            'classteacher_name'=>$classteacherdetails['first_name'],
+                            'classteacher_name'=>(!empty($classteacherdetails))?$classteacherdetails['first_name'],
                             'profile_image'=>(!empty($teachingstaff_profile_list) && array_key_exists($sub_value->staff,$teachingstaff_profile_list))?$teachingstaff_profile_list[$sub_value->staff]:'',
                             'classteacher_id'=>$classteacher_data->class_teacher,
                             'class_config'=>$sub_value->class_config,

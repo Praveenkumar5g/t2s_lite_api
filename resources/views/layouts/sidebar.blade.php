@@ -49,15 +49,23 @@
 					<ul class="nav nav-treeview">
 						<li class="nav-item">
 							<a href="{{ url('usermanagement/students') }}" class="{{ Request::segment(count(request()->segments())) == 'students' ? 'nav-link active' : 'nav-link'}}">
-								<i class="fas fa-user nav-icon"></i>
+								<i class="fas fa-child nav-icon"></i>
 								<p>Students</p>
 							</a>
 						</li>
 					</ul>
 					<ul class="nav nav-treeview">
 						<li class="nav-item">
-							<a href="{{ url('usermanagement/unmappedstudents') }}" class="{{ Request::segment(count(request()->segments())) == 'unmappedstudents' ? 'nav-link active' : 'nav-link'}}">
+							<a href="{{ url('usermanagement/staffs') }}" class="{{ Request::segment(count(request()->segments())) == 'staffs' ? 'nav-link active' : 'nav-link'}}">
 								<i class="fas fa-user nav-icon"></i>
+								<p>Staffs</p>
+							</a>
+						</li>
+					</ul>
+					<ul class="nav nav-treeview">
+						<li class="nav-item">
+							<a href="{{ url('usermanagement/unmappedstudents') }}" class="{{ Request::segment(count(request()->segments())) == 'unmappedstudents' ? 'nav-link active' : 'nav-link'}}">
+								<i class="fas fa-paper-plane nav-icon"></i>
 								<p>Unmapped Students</p>
 							</a>
 						</li>
@@ -73,7 +81,7 @@
 					<ul class="nav nav-treeview">
 						<li class="nav-item">
 							<a href="{{ url('usermanagement/welcome_message') }}" class="{{ Request::segment(count(request()->segments())) == 'welcome_message' ? 'nav-link active' : 'nav-link'}}">
-								<i class="fas fa-user nav-icon"></i>
+								<i class="fas fa-paper-plane nav-icon"></i>
 								<p>Send Welcome Message</p>
 							</a>
 						</li>

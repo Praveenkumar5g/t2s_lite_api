@@ -2017,16 +2017,16 @@ class APICommunicationController extends Controller
         // Get authorizated user details
         $user = auth()->user();
         if($user->user_role == Config::get('app.Management_role'))
-            $user_details = UserManagements::where('user_id',$user->user_id)->get()->first();
+            $user_details = UserManagements::where('user_id',$user->user_id)->first();
         else if($user->user_role == Config::get('app.Admin_role'))//check role and get current user id
-            $user_details = UserAdmin::where('user_id',$user->user_id)->get()->first();
+            $user_details = UserAdmin::where('user_id',$user->user_id)->first();
         else if($user->user_role == Config::get('app.Staff_role'))
-            $user_details = UserStaffs::where('user_id',$user->user_id)->get()->first();
+            $user_details = UserStaffs::where('user_id',$user->user_id)->first();
         else if($user->user_role == Config::get('app.Parent_role'))
-            $user_details = UserParents::where('user_id',$user->user_id)->get()->first();
+            $user_details = UserParents::where('user_id',$user->user_id)->first();
 
-        $unread_count = CommunicationRecipients::select(DB::raw('count(*) as count'))->where(['message_status'=>Config::get('app.Delivered')])->where(['user_table_id'=>$user_details->id,'user_role'=>$user->user_role])->get()->first(); //get read count based on notification id.
+        $unread_count = CommunicationRecipients::where(['message_status'=>Config::get('app.Delivered')])->where(['user_table_id'=>$user_details->id,'user_role'=>$user->user_role])->get()->count(); //get read count based on notification id.
 
-        return (['status'=>true,'unread_count'=>$unread_count->count]);
+        return (['status'=>true,'unread_count'=>$unread_count]);
     }
 }

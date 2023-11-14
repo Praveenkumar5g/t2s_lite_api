@@ -618,7 +618,7 @@ class APICommunicationController extends Controller
 
                 $newsevents_id_list =$newsevents_id_list->pluck('id')->toArray();
             }
-            $notification_ids = CommunicationRecipients::where(['user_table_id'=>$userdetails->id,'user_role'=>$user->user_role])->orderBy('actioned_time')->get()->toArray();
+            $notification_ids = CommunicationRecipients::where(['user_table_id'=>$userdetails->id,'user_role'=>$user->user_role])->orderBy('actioned_time','DESC')->get()->toArray();
             // Chat message ids
             // $chat_ids = CommunicationRecipients::where(['user_table_id'=>$userdetails->id,'user_role'=>$user->user_role]);
 

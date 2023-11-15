@@ -179,6 +179,7 @@ Route::group(['middleware' => 'auth.connect','prefix' => 'user'], function ($rou
     Route::post('/group_participants',[APICommunicationController::class,'group_participants']);
     Route::post('/image_list',[APICommunicationController::class,'image_list']);
     Route::get('/get_class_list',[APICommunicationController::class,'get_class_list']);
+    Route::get('/unread_count',[APICommunicationController::class,'unread_count']);
 
     /*Birthday Alert*/
     Route::post('/birthday_student_list',[APICommunicationController::class,'birthday_student_list']);

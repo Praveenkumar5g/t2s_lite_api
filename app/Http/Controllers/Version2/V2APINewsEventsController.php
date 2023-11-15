@@ -184,7 +184,7 @@ class V2APINewsEventsController extends Controller
                 'like'=>in_array($value['id'],$liked_news),
                 'total_like'=>isset($total_like[$value['id']])?$total_like[$value['id']]:0,
             ]);
-            if($key == 0)
+            if($index == 0)
                 $latest = $news; //latest news
             else
                 $olddata['data'][] = $news; //old news

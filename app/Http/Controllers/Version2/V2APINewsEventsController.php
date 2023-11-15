@@ -246,11 +246,11 @@ class V2APINewsEventsController extends Controller
         $images['prev_page_url'] = $tempdata['prev_page_url'];
         $images['from'] = $tempdata['from'];
         $images['to'] = $tempdata['to'];
+            echo '<pre>';print_r($newsevents);
+            exit;
 
         foreach ($tempdata['data'] as $key => $value) { //loop to format all the data in display formaat
             $image_ids = explode(',', $value['images']);//fetch main images
-            echo '<pre>';print_r($image_ids);
-            print_r($value);exit;
             $images_list = NewsEventsAttachments::where(['news_events_id'=>$value['id']])->whereIn('id',$image_ids)->get()->toArray();//fetch path and images name details from table.
 
             $userall_id = UserAll::select('user_table_id','user_role')->where('id',$value['created_by'])->get()->first();//get common id 

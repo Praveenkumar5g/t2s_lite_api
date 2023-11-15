@@ -107,7 +107,7 @@ class V2APINewsEventsController extends Controller
 
         $index =0;
         foreach ($tempdata['data'] as $key => $value) { //loop to format all the data in display formaat
-            $news = $images = $addon_images = []; //empty declartion
+            $news = $images = $addon_images = $latest= []; //empty declartion
             $image_ids = explode(',', $value['images']);//fetch main images
             $images_list = NewsEventsAttachments::where(['news_events_id'=>$value['id']])->whereIn('id',$image_ids)->get()->toArray();//fetch path and images name details from table.
             if(!empty($images_list))//check if empty
@@ -184,7 +184,7 @@ class V2APINewsEventsController extends Controller
                 'like'=>in_array($value['id'],$liked_news),
                 'total_like'=>isset($total_like[$value['id']])?$total_like[$value['id']]:0,
             ]);
-            if($index == 0)
+            if($key == 0 && $request->page == 1)
                 $latest = $news; //latest news
             else
                 $olddata['data'][] = $news; //old news

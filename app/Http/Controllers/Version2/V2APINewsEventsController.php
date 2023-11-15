@@ -246,8 +246,6 @@ class V2APINewsEventsController extends Controller
         $images['prev_page_url'] = $tempdata['prev_page_url'];
         $images['from'] = $tempdata['from'];
         $images['to'] = $tempdata['to'];
-            echo '<pre>';print_r($tempdata);print_r($itemCollection);print_r($newsevents);
-            exit;
 
         foreach ($tempdata['data'] as $key => $value) { //loop to format all the data in display formaat
             $image_ids = explode(',', $value['images']);//fetch main images

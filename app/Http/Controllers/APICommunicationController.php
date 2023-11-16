@@ -1315,8 +1315,8 @@ class APICommunicationController extends Controller
                 'mobile_no'=>$data->mobile_number,
                 'profile'=>$data->profile_image,
                 "last_login"=>($userdata->last_login!=null)?$userdata->last_login:null,
-                "dob" => date('d-m-Y',strtotime($data->dob)),
-                "doj"=> date('d-m-Y',strtotime($data->doj)),
+                "dob" => ($data->dob!=null && $data->dob!='')?date('d-m-Y',strtotime($data->dob)):'',
+                "doj"=> ($data->doj!=null && $data->doj!='')?date('d-m-Y',strtotime($data->doj)):'',
                 "employee_no" => $data->employee_no,
                 "email_address"=>$data->email_id
             ]);

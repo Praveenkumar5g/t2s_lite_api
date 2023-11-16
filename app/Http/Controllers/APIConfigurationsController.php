@@ -80,7 +80,7 @@ class APIConfigurationsController extends Controller
 	public function import_configuration(Request $request) //(on-boarding)
 	{
 		$user_data = auth()->user();
-		$school_profile = SchoolProfile::where(['id'=>$user_data->school_profile_id])->get()->first();
+		$school_profile = SchoolProfile::where(['id'=>$user_data->school_profile_id])->first();
 
 		// $path = public_path('uploads/'.$school_profile->school_code);
 
@@ -746,7 +746,7 @@ class APIConfigurationsController extends Controller
         		{
         			$status = 'edit';
 
-        			$subject_data = AcademicSubjects::where(['id'=>$value['subject_id'],'division_id'=>$division_id])->get()->first(); //To check given subject name is already exists in DB.
+        			$subject_data = AcademicSubjects::where(['id'=>$value['subject_id'],'division_id'=>$division_id])->first(); //To check given subject name is already exists in DB.
         			// Prepare subjects array
 	                $subject_data->subject_name = $value['subject_name'];
 	                $subject_data->short_name = isset($value['short_name'])?$value['short_name']:'';
@@ -1584,7 +1584,7 @@ class APIConfigurationsController extends Controller
         	$userid = UserManagements::where(['user_id'=>$user_data->user_id])->pluck('id')->first();
         else if($user_data->user_role == Config::get('app.Staff_role'))
         {
-        	$data = UserStaffs::select('id','user_category')->where(['user_id'=>$user_data->user_id])->get()->first();
+        	$data = UserStaffs::select('id','user_category')->where(['user_id'=>$user_data->user_id])->first();
         	$userid = $data['id'];
         	$user_category = ($data['user_category']!=null && $data['user_category']!='' && $data['user_category'] == Config::get('app.Teaching_staff'))?'teaching staff':'nonteaching staff';
         }
@@ -1816,7 +1816,7 @@ class APIConfigurationsController extends Controller
         	if($check_access == '')
         		$check_access = UserGroupsMapping::where('user_table_id',$value['id'])->where('user_role',Config::get('app.Staff_role'))->where('user_status',1)->pluck('id')->first();
 
-    	 	$classessections = AcademicClassConfiguration::select('id','class_id','section_id','division_id','class_teacher')->where('class_teacher',$value['id'])->get()->first();
+    	 	$classessections = AcademicClassConfiguration::select('id','class_id','section_id','division_id','class_teacher')->where('class_teacher',$value['id'])->first();
 
     	 	$member_staff_list['data'][]=([ 
     	 		'id' => $value['id'],
@@ -1881,14 +1881,14 @@ class APIConfigurationsController extends Controller
         	
         foreach ($list as $key => $value) {
         	// $student_id = UserStudentsMapping::where('parent',$value['id'])->pluck('student')->toArray();
-            // $student_details = UserStudents::whereIn('id',$student_id)->get()->first();
+            // $student_details = UserStudents::whereIn('id',$student_id)->first();
             // echo '<pre>';print_r($student_details);
             $parent_list_data[$index] = $value;
         	$user_category = (strtolower($value['user_category']) == 1)?'F/O':'M/O';
         	$parent_list_data[$index]['student_name'] = ($user_category.' '.((isset($value['student_name']))?$value['student_name']:''));
         	$classessections =[];
         	if(isset($value['class_config']))
-        		$classessections = AcademicClassConfiguration::select('id','class_id','section_id','division_id','class_teacher')->where('id',$value['class_config'])->get()->first();
+        		$classessections = AcademicClassConfiguration::select('id','class_id','section_id','division_id','class_teacher')->where('id',$value['class_config'])->first();
         	$parent_list_data[$index]['class'] = (!empty($classessections))?$classessections->classsectionName():'';
         	$parent_list_data[$index]['class_teacher'] = (!empty($classessections))?UserStaffs::where('id',$classessections->class_teacher)->pluck('first_name')->first():'';
         	$index++;
@@ -2004,9 +2004,9 @@ class APIConfigurationsController extends Controller
     	// Check authenticate user
         $userdata = auth()->user();
 
-        $check_class_teacher = AcademicClassConfiguration::where('class_teacher',$request->id)->get()->first(); //check the user is a classteacher.
+        $check_class_teacher = AcademicClassConfiguration::where('class_teacher',$request->id)->first(); //check the user is a classteacher.
 		
-        $staff_list = UserStaffs::select('id','user_id','first_name','mobile_number','profile_image','specialized_in','user_category','email_id')->where('user_status',1)->where('id',$request->id)->get()->first(); //fetch all the staff for listing
+        $staff_list = UserStaffs::select('id','user_id','first_name','mobile_number','profile_image','specialized_in','user_category','email_id')->where('user_status',1)->where('id',$request->id)->first(); //fetch all the staff for listing
         $staff_list->class_teacher = 'no'; //set default values
         $staff_list->class_config = 0; 
         $staff_list->specialized_in = (int)$staff_list->specialized_in;
@@ -2043,7 +2043,7 @@ class APIConfigurationsController extends Controller
         $profile_details = SchoolProfile::where(['id'=>$user->school_profile_id])->first();//Fetch school profile details 
         $staffs_details = [];
         if($request->id!='')// fetch selected staff details 
-        	$staffs_details = UserStaffs::where('id',$request->id)->get()->first();
+        	$staffs_details = UserStaffs::where('id',$request->id)->first();
 
         if(!empty($staffs_details))
         {
@@ -2070,7 +2070,7 @@ class APIConfigurationsController extends Controller
 	        $staffs_details->save();
 
 
-	        $schoolusers = SchoolUsers::where('user_id',$staffs_details->user_id)->get()->first(); //update email address in common login table
+	        $schoolusers = SchoolUsers::where('user_id',$staffs_details->user_id)->first(); //update email address in common login table
 
             $schoolusers->user_email_id=$request->email_address;
             $schoolusers->save();
@@ -2179,7 +2179,7 @@ class APIConfigurationsController extends Controller
     	// Check authenticate user
         $userdata = auth()->user();
 
-        $management_list = UserManagements::select('id','user_id','first_name','mobile_number','profile_image','user_category','email_id')->where('user_status',1)->where('id',$request->id)->get()->first(); //fetch all the management for listing
+        $management_list = UserManagements::select('id','user_id','first_name','mobile_number','profile_image','user_category','email_id')->where('user_status',1)->where('id',$request->id)->first(); //fetch all the management for listing
         return response()->json($management_list);
         
     }
@@ -2342,7 +2342,7 @@ class APIConfigurationsController extends Controller
         $management_details = [];
         if($request->id!='')// fetch selected management user details 
         {
-        	$management_details = UserManagements::where('id',$request->id)->get()->first();
+        	$management_details = UserManagements::where('id',$request->id)->first();
         	$management_details->updated_by=$userall_id;
     		$management_details->updated_time=Carbon::now()->timezone('Asia/Kolkata');
     		$management_id =$management_details->id;
@@ -2363,7 +2363,7 @@ class APIConfigurationsController extends Controller
         		 return response()->json(['status'=>false,'message'=>'Given Employee no already exists!...']);
         }
 
-        $schoolcode = $school_profile = SchoolProfile::where(['id'=>$user['school_profile_id']])->get()->first();//get school code from school profile
+        $schoolcode = $school_profile = SchoolProfile::where(['id'=>$user['school_profile_id']])->first();//get school code from school profile
     	$image ='';
     	if(count($_FILES)>0)
         {
@@ -2400,7 +2400,7 @@ class APIConfigurationsController extends Controller
             $user_all->user_role=Config::get('app.Management_role');
             $user_all->save();
         }
-        $schoolusers = SchoolUsers::where('user_id',$management_user_id)->get()->first(); //update email address in common login table
+        $schoolusers = SchoolUsers::where('user_id',$management_user_id)->first(); //update email address in common login table
         if($request->id=='')
         {
         	if($request->module == 'singleuser')
@@ -2448,7 +2448,7 @@ class APIConfigurationsController extends Controller
         $admin_details = [];
         if($request->id!='')// fetch selected management user details 
         {
-        	$admin_details = UserAdmin::where('id',$request->id)->get()->first();
+        	$admin_details = UserAdmin::where('id',$request->id)->first();
         	$admin_details->updated_by=$userall_id;
     		$admin_details->updated_time=Carbon::now()->timezone('Asia/Kolkata');
     		$admin_id =$admin_details->id;
@@ -2476,7 +2476,7 @@ class APIConfigurationsController extends Controller
         		 return response()->json(['status'=>false,'message'=>'Given Mobile no already exists!...']);
         }
 
-        $schoolcode = $school_profile = SchoolProfile::where(['id'=>$user['school_profile_id']])->get()->first();//get school code from school profile
+        $schoolcode = $school_profile = SchoolProfile::where(['id'=>$user['school_profile_id']])->first();//get school code from school profile
     	$image ='';
     	if(count($_FILES)>0)
         {
@@ -2515,7 +2515,7 @@ class APIConfigurationsController extends Controller
             $user_all->save();
         }
 
-        $schoolusers = SchoolUsers::where('user_id',$admin_user_id)->get()->first(); //update email address in common login table
+        $schoolusers = SchoolUsers::where('user_id',$admin_user_id)->first(); //update email address in common login table
         if($request->id=='')
         {
             $all_group_ids = UserGroups::where('id','!=',1)->pluck('id')->toArray();
@@ -2558,7 +2558,7 @@ class APIConfigurationsController extends Controller
         $staff_details = [];
         if($request->id!='')// fetch selected management user details 
         {
-        	$staff_details = UserStaffs::where('id',$request->id)->get()->first();
+        	$staff_details = UserStaffs::where('id',$request->id)->first();
         	$staff_details->updated_by=$userall_id;
     		$staff_details->updated_time=Carbon::now()->timezone('Asia/Kolkata');
     		$staff_id =$staff_details->id;
@@ -2586,7 +2586,7 @@ class APIConfigurationsController extends Controller
         		 return response()->json(['status'=>false,'message'=>'Given Mobile no already exists!...']);
         }
 
-        $schoolcode = $school_profile = SchoolProfile::where(['id'=>$user['school_profile_id']])->get()->first();//get school code from school profile
+        $schoolcode = $school_profile = SchoolProfile::where(['id'=>$user['school_profile_id']])->first();//get school code from school profile
     	$image ='';
     	if(count($_FILES)>0)
         {
@@ -2626,7 +2626,7 @@ class APIConfigurationsController extends Controller
             $user_all->save();
         }
 
-        $schoolusers = SchoolUsers::where('user_id',$staff_user_id)->get()->first(); //update email address in common login table
+        $schoolusers = SchoolUsers::where('user_id',$staff_user_id)->first(); //update email address in common login table
         if($request->id=='')
         {
             $all_group_ids = ([2,3]);
@@ -2732,7 +2732,7 @@ class APIConfigurationsController extends Controller
 		if(!empty($student_list))
 		{
 			$parent_list = UserStudentsMapping::select('parent')->where('student',$student_list->student)->get()->toArray(); //fetch all parent details from student id
-			$students = UserStudents::where('id',$student_list->student)->get()->first(); //get student related info
+			$students = UserStudents::where('id',$student_list->student)->first(); //get student related info
 			$parents = array_column($parent_list,'parent'); //pick parent id alone
 			foreach ($parents as $parent_key => $parent_value) { //form array with parent details
 				$parent_data = UserParents::where('id',$parent_value)->get()->first();
@@ -2741,7 +2741,7 @@ class APIConfigurationsController extends Controller
 		}
 		else if($request->id!='')
 		{
-			$parent_data = UserParents::where('id',$request->id)->get()->first();
+			$parent_data = UserParents::where('id',$request->id)->first();
 			$parentsdata[$parent_data->user_category] = $parent_data; 
 		}
 
@@ -2838,7 +2838,7 @@ class APIConfigurationsController extends Controller
         	if(isset($request->student_id) && $request->student_id>0)//arrange student details in array
         	{
 
-        		$student_details = UserStudents::where(['id'=>$request->student_id])->get()->first();
+        		$student_details = UserStudents::where(['id'=>$request->student_id])->first();
         		if($student_details->class_config != $request->class_config)
         		{
         			$old_group_id = UserGroups::where('class_config',$student_details->class_config)->pluck('id')->first();
@@ -2895,7 +2895,7 @@ class APIConfigurationsController extends Controller
             // insert parents details
             if(isset($request->father_id))
             {
-	        	$father_details = UserParents::where('id',$request->father_id)->get()->first();
+	        	$father_details = UserParents::where('id',$request->father_id)->first();
 		        if(!empty($father_details) || $request->father_mobile_number!='')
 		        {
 		        	$data['photo'] = $request->father_photo;
@@ -2910,7 +2910,7 @@ class APIConfigurationsController extends Controller
 	        // update or insert parents details
 	        if(isset($request->mother_id))
             {
-		        $mother_details = UserParents::where('id',$request->mother_id)->get()->first();
+		        $mother_details = UserParents::where('id',$request->mother_id)->first();
 		        if(!empty($mother_details) || $request->mother_mobile_number!='' )
 		        {
 		        	$data = [];
@@ -2927,7 +2927,7 @@ class APIConfigurationsController extends Controller
 		    if(isset($request->guardian_id))
             {
 	        // update or insert parents details
-		        $guardian_details = UserParents::where('id',$request->guardian_id)->get()->first();
+		        $guardian_details = UserParents::where('id',$request->guardian_id)->first();
 		        if(!empty($guardian_details) || $request->guardian_mobile_number!='' )
 		        {
 		        	$data = [];
@@ -3154,7 +3154,7 @@ class APIConfigurationsController extends Controller
 
         if($data['email_address']!='')
         {
-        	$schoolusers = SchoolUsers::where(['user_id'=>$userparent_id,'school_profile_id'=>$user->school_profile_id])->get()->first();
+        	$schoolusers = SchoolUsers::where(['user_id'=>$userparent_id,'school_profile_id'=>$user->school_profile_id])->first();
 
         	if(empty($schoolusers))
             	$schoolusers = new SchoolUsers;
@@ -3293,7 +3293,7 @@ class APIConfigurationsController extends Controller
         		$gender = 3;
 
         	if(isset($row['student_id']) && $row['student_id']!='')//arrange student details in array 
-        		$student_details = UserStudents::where(['id'=>$row['student_id']])->get()->first();
+        		$student_details = UserStudents::where(['id'=>$row['student_id']])->first();
         	else
                 $student_details = new UserStudents;
 
@@ -3347,7 +3347,7 @@ class APIConfigurationsController extends Controller
             	{
                     $parent=[];
                     if(isset($row['father_id']) && $row['father_id']!='')
-                    	$parent_details = $parent = UserParents::where(['id'=>$row['father_id']])->get()->first();
+                    	$parent_details = $parent = UserParents::where(['id'=>$row['father_id']])->first();
                 	if(empty($parent))
                 	{
                     	$parent_details = new UserParents;
@@ -3397,7 +3397,7 @@ class APIConfigurationsController extends Controller
 		                    $student_map->save();
 		                }
 	                }
-	                $schoolusers = SchoolUsers::where(['user_id'=>$userparent_id,'school_profile_id'=>$user_data->school_profile_id])->get()->first();
+	                $schoolusers = SchoolUsers::where(['user_id'=>$userparent_id,'school_profile_id'=>$user_data->school_profile_id])->first();
 
                 	if(empty($schoolusers))
                     	$schoolusers = new SchoolUsers;
@@ -3429,7 +3429,7 @@ class APIConfigurationsController extends Controller
 			if((isset($row['father_mobile_number']) || isset($row['father_email_address'])) && ($row['father_mobile_number']!='' || $row['father_email_address']!=''))
 	        {
 	        	$userparent_id=UserParents::where('mobile_number',$row['father_mobile_number'])->pluck('user_id')->first();
-				$schoolusers = SchoolUsers::where(['user_id'=>$userparent_id,'school_profile_id'=>$user_data->school_profile_id])->get()->first();
+				$schoolusers = SchoolUsers::where(['user_id'=>$userparent_id,'school_profile_id'=>$user_data->school_profile_id])->first();
 
 		    	if(empty($schoolusers))
 		        	$schoolusers = new SchoolUsers;
@@ -3446,7 +3446,7 @@ class APIConfigurationsController extends Controller
 		    if((isset($row['mother_mobile_number']) || isset($row['mother_email_address'])) && ($row['mother_mobile_number']!='' || $row['mother_email_address']!=''))
 	        {
 	        	$userparent_id=UserParents::where('mobile_number',$row['mother_mobile_number'])->pluck('user_id')->first();
-	        	$schoolusers = SchoolUsers::where(['user_id'=>$userparent_id,'school_profile_id'=>$user_data->school_profile_id])->get()->first();
+	        	$schoolusers = SchoolUsers::where(['user_id'=>$userparent_id,'school_profile_id'=>$user_data->school_profile_id])->first();
 
 	        	if(empty($schoolusers))
 	            	$schoolusers = new SchoolUsers;
@@ -3511,7 +3511,7 @@ class APIConfigurationsController extends Controller
 	      			{
 	      				$parent_id = UserParents::where('user_id',$value['user_id'])->pluck('id')->first();
                         $mapped_student = UserStudentsMapping::where('parent',$parent_id)->pluck('student')->first();
-	      				$student_details = UserStudents::where('id',$mapped_student)->get()->first();
+	      				$student_details = UserStudents::where('id',$mapped_student)->first();
 	      			}
 
 	      			if($default_password_type == 'mobile_number')
@@ -3648,7 +3648,7 @@ class APIConfigurationsController extends Controller
     	// Get authorizated user details
         $user = auth()->user();
 
-        $staff_details = UserStaffs::select('child_same_school','parent_id')->where('user_id',$user->user_id)->get()->first();
+        $staff_details = UserStaffs::select('child_same_school','parent_id')->where('user_id',$user->user_id)->first();
 
         if(!empty($staff_details))
         {
@@ -3680,7 +3680,7 @@ class APIConfigurationsController extends Controller
         // fetch all the users under role staff,parent and management
 		$userslist = SchoolUsers::select(DB::raw('count(*) as count'),'user_role')->whereIn('user_role',[2,3,5])->where('school_profile_id',$user->school_profile_id)->where('user_status',1)->groupBy('user_role')->get()->toArray();
 
-		$deactiveusercount = SchoolUsers::select(DB::raw('count(*) as count'))->where('school_profile_id',$user->school_profile_id)->where('user_status',2)->get()->first();
+		$deactiveusercount = SchoolUsers::select(DB::raw('count(*) as count'))->where('school_profile_id',$user->school_profile_id)->where('user_status',2)->first();
 		$school_name = SchoolProfile::where('id',$user->school_profile_id)->pluck('school_name')->first();
 
 		// check if values or exists or not
@@ -3861,7 +3861,7 @@ class APIConfigurationsController extends Controller
         	
         	$classessections =[];
         	if(isset($value['class_config']))
-        		$classessections = AcademicClassConfiguration::select('id','class_id','section_id','division_id','class_teacher')->where('id',$value['class_config'])->get()->first();
+        		$classessections = AcademicClassConfiguration::select('id','class_id','section_id','division_id','class_teacher')->where('id',$value['class_config'])->first();
         	
         	$member_student_list['data'][$index]=([
         		'id'=>$value['id'],
@@ -3895,7 +3895,7 @@ class APIConfigurationsController extends Controller
         	foreach($parent_id as $parentid)
         	{
 
-            	$parent_details = UserParents::whereIn('id',$parent_id)->get()->first();
+            	$parent_details = UserParents::whereIn('id',$parent_id)->first();
             	if(!empty($parent_details))
             	{
 		        	if($parent_details->user_category == 1)
@@ -4231,7 +4231,7 @@ class APIConfigurationsController extends Controller
         // $change_table_details->user_id = $updated_user_id;
         // $change_table_details->save();
 
-        $user_all = UserAll::where('id',$original_userall_id)->get()->first();
+        $user_all = UserAll::where('id',$original_userall_id)->first();
 
         if(!empty($user_all))
         {
@@ -4241,7 +4241,7 @@ class APIConfigurationsController extends Controller
         }
 
 
-        $schoolusers = SchoolUsers::where('user_id',$original_details->user_id)->get()->first();
+        $schoolusers = SchoolUsers::where('user_id',$original_details->user_id)->first();
         // $schoolusers->user_id=$updated_user_id;
         $schoolusers->user_role=$changing_role;
         $schoolusers->role_change = 1;
@@ -4285,7 +4285,7 @@ class APIConfigurationsController extends Controller
 		{
 			foreach ($group_ids as $key => $value) {
 				// add group access
-				$check_exists = UserGroupsMapping::where(['user_table_id'=>$user_table_id,'user_role'=>$user_role])->where('group_id',$value)->get()->first();
+				$check_exists = UserGroupsMapping::where(['user_table_id'=>$user_table_id,'user_role'=>$user_role])->where('group_id',$value)->first();
 				if(empty($check_exists))
 				{
 					UserGroupsMapping::insert(['group_id'=>$value,'user_table_id'=>$user_table_id,'group_access'=>$group_access,'user_role'=>$user_role]);
@@ -4300,7 +4300,7 @@ class APIConfigurationsController extends Controller
 		{
 			foreach ($group_ids as $key => $value) {
 				// add group access
-				$check_exists = UserGroupsMapping::where(['user_table_id'=>$original_id,'user_role'=>$original_role])->where('group_id',$value)->get()->first();
+				$check_exists = UserGroupsMapping::where(['user_table_id'=>$original_id,'user_role'=>$original_role])->where('group_id',$value)->first();
 				$check_original_user_exists = UserGroupsMapping::insert(['user_table_id'=>$user_table_id,'user_role'=>$user_role,'group_access'=>1,'group_id'=>$value]);
 				if(!empty($check_exists) && empty($check_original_user_exists))
 				{
@@ -4344,7 +4344,7 @@ class APIConfigurationsController extends Controller
 	{
 		// Check authentication
 		$user = auth()->user();
-		$userdetails = SchoolUsers::where('user_id',$user->user_id)->get()->first();
+		$userdetails = SchoolUsers::where('user_id',$user->user_id)->first();
 		$role_change = $userdetails->role_change;
 		$token= Auth::login($userdetails);
 		if($userdetails->role_change == 1)

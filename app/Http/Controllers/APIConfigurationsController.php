@@ -2672,9 +2672,9 @@ class APIConfigurationsController extends Controller
         }
 		
 		if($request->id=='')
-            return response()->json(['status'=>true,'message'=>'Admin user added Successfully!...']);
+            return response()->json(['status'=>true,'message'=>'Staff user added Successfully!...']);
        	else
-            return response()->json(['status'=>true,'message'=>'Admin details updated Successfully!...']);
+            return response()->json(['status'=>true,'message'=>'Staff details updated Successfully!...']);
     }
 
     // Check employee no

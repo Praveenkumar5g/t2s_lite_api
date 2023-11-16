@@ -64,7 +64,6 @@ class WelcomeController extends Controller
         }
         foreach($files as $file) //loop to insert images
         {   
-
             $attachment = new NewsEventsAttachments;
             $attachment->news_events_id = $newsevents_id;
             $name = explode('.',$file->getClientOriginalName());

@@ -1288,9 +1288,9 @@ class APICommunicationController extends Controller
             else if($request->user_role == Config::get('app.Parent_role'))
                 $data = UserParents::where(['id'=>$request->id])->get()->first();
             else if($user->user_role == Config::get('app.Management_role'))
-                $data = UserManagements::where(['id'=>$request->user_id])->get()->first();
+                $data = UserManagements::where(['id'=>$request->id])->get()->first();
             else if($user->user_role == Config::get('app.Admin_role'))//check role and get current user id
-                $data = UserAdmin::where(['id'=>$request->user_id])->get()->first();
+                $data = UserAdmin::where(['id'=>$request->id])->get()->first();
              $role= $request->user_role;
 
             $userdata = SchoolUsers::where(['user_id'=>$data->user_id,'user_role'=>$request->user_role])->get()->first();

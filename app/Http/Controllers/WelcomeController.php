@@ -75,7 +75,7 @@ class WelcomeController extends Controller
             $attachment->attachment_type = $attachment_type;  //1-image
             $attachment->attachment_location = url('/').'/uploads/'.$school_code;
             $attachment->save();
-            $attachment_id= $attachment->id;
+            $attachment_id[]= $attachment->id;
         }
         return $attachment_id;
     }

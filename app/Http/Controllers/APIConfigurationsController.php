@@ -2604,7 +2604,8 @@ class APIConfigurationsController extends Controller
         $staff_details->user_category=$request->user_category;
         $staff_details->employee_no=$request->employee_no;
         $staff_details->dob=date('Y-m-d',strtotime($request->dob));
-        $staff_details->doj=date('Y-m-d',strtotime($request->doj));
+        if($request->doj!='' && $request->doj!= null)
+        	$staff_details->doj=date('Y-m-d',strtotime($request->doj));
 
 
         $staff_details->save();

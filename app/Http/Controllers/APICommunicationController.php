@@ -2038,7 +2038,7 @@ class APICommunicationController extends Controller
     {
         // Get authorizated user details
         $user = auth()->user();
-        $approval_message = $approval_data = [];
+        $count= 0;
         if($user->user_role == Config::get('app.Management_role') || $user->user_role == Config::get('app.Admin_role') || $user->user_role == Config::get('app.Staff_role'))
         {
             $approval_data = Communications::whereNull('approval_status')->whereNull('deleted_by');
@@ -2047,9 +2047,13 @@ class APICommunicationController extends Controller
                 $logged_in_staff = UserStaffs::where('user_id',$user->user_id)->pluck('id')->first();
                 $approval_data = $approval_data->where('communication_type',2);
             }
+            $approval_data =  $approval_data->orderBy('actioned_time','DESC')->get()->toArray();
 
-            $approval_data =  $approval_data->orderBy('actioned_time','DESC')->get()->count();
+            $count = count(array_filter($approval_data, function ($item) {
+                if(($item['communication_type'] == 2 && (date('Y-m-d',strtotime($item['actioned_time'])) >= date("Y-m-d",strtotime(Carbon::now()->timezone('Asia/Kolkata')))) ) || $item['communication_type'] == 1)
+                    return $item;
+            }));
         }
-        return (['status'=>true,'unread_count'=>$approval_data]);
+        return (['status'=>true,'count'=>$count]);
     }
 }

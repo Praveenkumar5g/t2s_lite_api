@@ -2051,7 +2051,14 @@ class APICommunicationController extends Controller
 
             $count = count(array_filter($approval_data, function ($item) {
                 if(($item['communication_type'] == 2 && (date('Y-m-d',strtotime($item['actioned_time'])) >= date("Y-m-d",strtotime(Carbon::now()->timezone('Asia/Kolkata')))) ) || $item['communication_type'] == 1)
-                    return $item;
+                {
+                    if($item['communication_type'] == 2)
+                        $fetch_sender_id = UserAll::where('id',$item['created_by'])->first(); 
+                    else
+                        $fetch_sender_id = CommunicationRecipients::select('user_table_id','user_role')->where(['view_type'=>1,'communication_id'=>$item['id']])->get()->first();
+                    if(!empty($fetch_sender_id))
+                        return $item;
+                }
             }));
         }
         return (['status'=>true,'count'=>$count]);

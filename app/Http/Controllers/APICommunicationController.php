@@ -2048,7 +2048,7 @@ class APICommunicationController extends Controller
                 $approval_data = $approval_data->where('communication_type',2);
             }
 
-            $approval_data =  $approval_data->orderBy('actioned_time','DESC')->get()->count()
+            $approval_data =  $approval_data->orderBy('actioned_time','DESC')->get()->count();
         }
         return (['status'=>true,'unread_count'=>$approval_data]);
     }

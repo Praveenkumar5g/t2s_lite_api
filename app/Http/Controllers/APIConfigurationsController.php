@@ -2641,7 +2641,7 @@ class APIConfigurationsController extends Controller
             $schoolusers->school_profile_id=$user->school_profile_id;
             $schoolusers->user_id=$staff_user_id;
             $schoolusers->user_password=bcrypt($request->mobile_number);
-        	$schoolusers->user_role=Config::get('app.Admin_role');
+        	$schoolusers->user_role=Config::get('app.Staff_role');
         	$schoolusers->user_status=Config::get('app.Group_Active');
         }
 
@@ -2683,13 +2683,14 @@ class APIConfigurationsController extends Controller
     {
     	if($user_role == Config::get('app.Admin_role'))
         	$check_exists = UserAdmin::where('employee_no',$employee_no);
+        else if($user_role == Config::get('app.Staff_role'))
+        	$check_exists = UserStaffs::where('employee_no',$employee_no);
         else
         	$check_exists = UserManagements::where('employee_no',$employee_no);
-        
         if(isset($id)!='')
             $check_exists = $check_exists->where('id','!=',$id);
 
-        $check_exists = $check_exists->get()->first();
+        $check_exists = $check_exists->first();
 
         if(!empty($check_exists))
             return true;
@@ -2701,13 +2702,15 @@ class APIConfigurationsController extends Controller
     {
     	if($user_role == Config::get('app.Admin_role'))
         	$check_exists = UserAdmin::where('mobile_number',$employee_no);
+        else if($user_role == Config::get('app.Staff_role'))
+        	$check_exists = UserStaffs::where('mobile_number',$employee_no);
         else
         	$check_exists = UserManagements::where('mobile_number',$employee_no);
         
         if(isset($id)!='')
             $check_exists = $check_exists->where('id','!=',$id);
 
-        $check_exists = $check_exists->get()->first();
+        $check_exists = $check_exists->first();
 
         if(!empty($check_exists))
             return true;

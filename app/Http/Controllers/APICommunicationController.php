@@ -1310,7 +1310,7 @@ class APICommunicationController extends Controller
             else if($user->user_role == Config::get('app.Parent_role'))
                 $data = UserParents::where(['user_id'=>$user->user_id])->first();
         }
-        echo '<pre>';print_r($userdata);exit;
+
         if(!empty($data))
         {
             $user_details=([

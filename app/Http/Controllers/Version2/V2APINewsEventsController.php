@@ -227,7 +227,7 @@ class V2APINewsEventsController extends Controller
         // $currentPage = LengthAwarePaginator::resolveCurrentPage(); // Get current page form url e.x. &page=1
         $currentPage = $request->page;
         $itemCollection = new Collection($newsevents); // Create a new Laravel collection from the array data
-        $perPage = 6;
+        $perPage = 20;
         // Slice the collection to get the items to display in current page
         // $sortedCollection = $itemCollection->sortByDesc('admission_no');
         $currentPageItems = $itemCollection->values()->slice(($currentPage * $perPage) - $perPage, $perPage)->all();

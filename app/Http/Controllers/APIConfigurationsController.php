@@ -4374,13 +4374,38 @@ class APIConfigurationsController extends Controller
     	$details = UserParents::where('id',$request->id)->get()->first();
         if(!empty($details) || $request->mobile_number!='')
         {
-        	$data['photo'] = $request->photo;
-        	$data['first_name'] = $request->name;
-        	$data['mobile_number'] = $request->mobile_number;
-        	$data['email_address'] = $request->email_address;
-        	$data['user_category'] = $request->user_category;
+        	if(count($_FILES)>0)
+	        {
+	            if($request->hasfile('photo')) {
+	                $image = app('App\Http\Controllers\WelcomeController')->profile_file_upload($school_profile['school_code'],$request->file('photo'),$request->attachment_type);
+	            }           
+	        }
 
-        	$this->edit_parent_details($data,$details,$student_id,$userall_id);
+
+        	//save parent details
+	        if($data['first_name']!='')
+	            $details->first_name=  $request->name;
+	        if($data['mobile_number']!='')
+	            $details->mobile_number=$request->mobile_number;
+	        if($image!='')
+	            $details->profile_image = ($image!='')?$image:'';
+	        if($data['email_address']!='')
+	            $details->email_id=$request->email_address;
+	        if($data['user_category']!='')
+	            $details->user_category = $request->user_category;
+	        $details->updated_by=$userall_id;
+	        $details->updated_time=Carbon::now()->timezone('Asia/Kolkata');
+	        $details->save();
+	        $parent_id = $details->id;
+	        $userparent_id = $details->user_id;
+
+	        $schoolusers = SchoolUsers::where(['user_id'=>$userparent_id,'school_profile_id'=>$user->school_profile_id])->get()->first();
+
+	        $schoolusers->school_profile_id=$user->school_profile_id;
+            $schoolusers->user_id=$userparent_id;
+            $schoolusers->user_mobile_number=$request->mobile_number;
+            $schoolusers->user_email_id=$request->email_address;
+            $schoolusers->user_role=Config::get('app.Parent_role');
         }
         return response()->json(['status'=>true,'message'=>'Parent details updated Successfully!...']);
 	}

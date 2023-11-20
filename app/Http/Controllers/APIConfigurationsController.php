@@ -4368,6 +4368,7 @@ class APIConfigurationsController extends Controller
 		// Check authentication
 		$user = auth()->user();
 		$student_id = $request->student_id;
+		$image ='';
 		$user_table_id = app('App\Http\Controllers\APILoginController')->get_user_table_id($user);
 		$userall_id = UserAll::where(['user_table_id'=>$user_table_id->id,'user_role'=>$user->user_role])->pluck('id')->first(); //fetch id from user all table to store setting triggered user
 		// insert parents details

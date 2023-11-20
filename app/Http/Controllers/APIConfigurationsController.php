@@ -4373,6 +4373,8 @@ class APIConfigurationsController extends Controller
 		$userall_id = UserAll::where(['user_table_id'=>$user_table_id->id,'user_role'=>$user->user_role])->pluck('id')->first(); //fetch id from user all table to store setting triggered user
 		// insert parents details
     	$details = UserParents::where('id',$request->id)->get()->first();
+
+    	$school_profile = SchoolProfile::where(['id'=>$user['school_profile_id']])->get()->first();//get school code from school profile
         if(!empty($details) || $request->mobile_number!='')
         {
         	if(count($_FILES)>0)

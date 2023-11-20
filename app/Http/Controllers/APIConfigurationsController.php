@@ -4389,9 +4389,9 @@ class APIConfigurationsController extends Controller
 	            $details->mobile_number=$request->mobile_number;
 	        if($image!='')
 	            $details->profile_image = ($image!='')?$image:'';
-	        if($data['email_address']!='')
+	        if($request->email_address!='')
 	            $details->email_id=$request->email_address;
-	        if($data['user_category']!='')
+	        if($request->user_category!='')
 	            $details->user_category = $request->user_category;
 	        $details->updated_by=$userall_id;
 	        $details->updated_time=Carbon::now()->timezone('Asia/Kolkata');

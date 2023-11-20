@@ -2739,7 +2739,7 @@ class APIConfigurationsController extends Controller
 			$students = UserStudents::where('id',$student_list->student)->first(); //get student related info
 			$parents = array_column($parent_list,'parent'); //pick parent id alone
 			foreach ($parents as $parent_key => $parent_value) { //form array with parent details
-				$parent_data = UserParents::where('id',$parent_value)->get()->first();
+				$parent_data = UserParents::where('id',$parent_value)->first();
 				$parentsdata[$parent_data->user_category] = $parent_data; 
 			}
 		}
@@ -4360,5 +4360,56 @@ class APIConfigurationsController extends Controller
 		$school_name = SchoolProfile::where('id',$userdetails->school_profile_id)->pluck('school_name')->first();//get all schools list
 
 		return (['role_change'=>$role_change,'user_id'=>$userdetails->user_id,'user_role'=>$userdetails->user_role,'token'=>$token,'school_name'=>$school_name]);
+	}
+
+	// update parent details
+	public function update_parent_details(Request $request)
+	{
+		// Check authentication
+		$user = auth()->user();
+		$student_id = $request->student_id;
+		$user_table_id = app('App\Http\Controllers\APILoginController')->get_user_table_id($user);
+		$userall_id = UserAll::where(['user_table_id'=>$user_table_id->id,'user_role'=>$user->user_role])->pluck('id')->first(); //fetch id from user all table to store setting triggered user
+		// insert parents details
+    	$father_details = UserParents::where('id',$request->father_id)->first();
+        if(!empty($father_details) || $request->father_mobile_number!='')
+        {
+        	$data['photo'] = $request->father_photo;
+        	$data['first_name'] = $request->father_name;
+        	$data['mobile_number'] = $request->father_mobile_number;
+        	$data['email_address'] = $request->father_email_address;
+        	$data['user_category'] = 1;
+
+        	$this->edit_parent_details($data,$father_details,$student_id,$userall_id);
+        }
+        // update or insert parents details
+        $mother_details = UserParents::where('id',$request->mother_id)->first();
+        if(!empty($mother_details) || $request->mother_mobile_number!='' )
+        {
+        	$data = [];
+        	$data['photo'] = $request->mother_photo;
+        	$data['first_name'] = $request->mother_name;
+        	$data['mobile_number'] = $request->mother_mobile_number;
+        	$data['email_address'] = $request->mother_email_address;
+        	$data['user_category'] = 2;
+
+        	$this->edit_parent_details($data,$mother_details,$student_id,$userall_id);
+        }
+
+        // update or insert parents details
+        $guardian_details = UserParents::where('id',$request->guardian_id)->first();
+        if(!empty($guardian_details) || $request->guardian_mobile_number!='' )
+        {
+        	$data = [];
+        	$data['photo'] = $request->guardian_photo;
+        	$data['first_name'] = $request->guardian_name;
+        	$data['mobile_number'] = $request->guardian_mobile_number;
+        	$data['email_address'] = $request->guardian_email_address;
+        	$data['user_category'] = 9;
+
+        	$this->edit_parent_details($data,$guardian_details,$student_id,$userall_id);
+        }
+
+        return response()->json(['status'=>true,'message'=>'Parent details updated Successfully!...']);
 	}
 }

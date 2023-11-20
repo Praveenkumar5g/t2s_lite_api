@@ -4377,10 +4377,11 @@ class APIConfigurationsController extends Controller
     	$school_profile = SchoolProfile::where(['id'=>$user['school_profile_id']])->get()->first();//get school code from school profile
         if(!empty($details) || $request->mobile_number!='')
         {
+        	$target_file = '/parent/';
         	if(count($_FILES)>0)
 	        {
 	            if($request->hasfile('photo')) {
-	                $image = app('App\Http\Controllers\WelcomeController')->profile_file_upload($school_profile['school_code'],$request->file('photo'),1);
+	                $image = app('App\Http\Controllers\WelcomeController')->profile_file_upload($school_profile['school_code'],$request->file('photo'),1,$target_file);
 	            }           
 	        }
 

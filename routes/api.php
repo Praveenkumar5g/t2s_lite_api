@@ -180,7 +180,8 @@ Route::group(['middleware' => 'auth.connect','prefix' => 'user'], function ($rou
     Route::post('create_update_admin',[APIConfigurationsController::class,'create_update_admin']);//create and update admin details
     Route::post('create_update_staff',[APIConfigurationsController::class,'create_update_staff']);//create and update staff details
     Route::post('update_parent_details',[APIConfigurationsController::class,'update_parent_details']);//update parent details
-
+    Route::get('get_parent_category',[APIConfigurationsController::class,'get_parent_category']);//user category
+    
     Route::post('/approval_process', [APICommunicationController::class, 'approval_process']); 
     Route::post('/store_message', [APICommunicationController::class, 'store_message']); 
     Route::post('/message_visible_count', [APICommunicationController::class, 'message_visible_count']);

@@ -4384,4 +4384,11 @@ class APIConfigurationsController extends Controller
         }
         return response()->json(['status'=>true,'message'=>'Parent details updated Successfully!...']);
 	}
+
+	//Parent Category
+	public function get_parent_category()
+	{
+		$categories = UserCategories::select('id','category_name')->where('user_role',3)->get()->toArray();
+		return response()->json(compact('categories'));
+	}
 }

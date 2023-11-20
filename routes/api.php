@@ -13,6 +13,7 @@ use App\Http\Controllers\APIHomeworkController;
 use App\Http\Controllers\APILoginController;
 use App\Http\Controllers\WelcomeController;
 use App\Http\Controllers\PayfeesController;
+use App\Models\ClientConfiguration;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -90,6 +91,21 @@ Route::group(['middleware' => 'auth.check','prefix' => 'user'], function ($route
 });
 
 Route::group(['middleware' => 'auth.connect','prefix' => 'user'], function ($router) {
+
+    Route::get('/forceUpdate', function() {
+        $user = auth()->user();
+        $model=ClientConfiguration::where('id',1)->first(); 
+        if($user->user_role == Config::get('app.Staff_role'))
+            $force_update = $model->admin_force_update;
+        else if($user->user_role == Config::get('app.Managment_role'))
+            $force_update = $model->mgnt_force_update;
+        else if($user->user_role == Config::get('app.Admin_role'))
+            $force_update = $model->staff_force_update;
+        else 
+            $force_update = $model->parent_force_update;
+        return response()->json(["min_version"=>$model->app_version,'force_update'=>$force_update]);
+    });
+
     Route::post('/onesignal_store_device_details',[APIConfigurationsController::class,'onesignal_store_device_details']);//fetch onesignal details
     Route::post('/change_mobile_number',[APIConfigurationsController::class,'change_mobile_number']);//change mobile number for parent
     Route::post('/send_welcome_message',[APIConfigurationsController::class,'send_welcome_message']);//send welcome message to all users.

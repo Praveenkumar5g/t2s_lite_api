@@ -4380,7 +4380,7 @@ class APIConfigurationsController extends Controller
         	if(count($_FILES)>0)
 	        {
 	            if($request->hasfile('photo')) {
-	                $image = app('App\Http\Controllers\WelcomeController')->profile_file_upload($school_profile['school_code'],$request->file('photo'),$request->attachment_type);
+	                $image = app('App\Http\Controllers\WelcomeController')->profile_file_upload($school_profile['school_code'],$request->file('photo'),1);
 	            }           
 	        }
 

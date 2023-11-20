@@ -4383,9 +4383,9 @@ class APIConfigurationsController extends Controller
 
 
         	//save parent details
-	        if($data['first_name']!='')
+	        if($request->name!='')
 	            $details->first_name=  $request->name;
-	        if($data['mobile_number']!='')
+	        if($request->mobile_number!='')
 	            $details->mobile_number=$request->mobile_number;
 	        if($image!='')
 	            $details->profile_image = ($image!='')?$image:'';

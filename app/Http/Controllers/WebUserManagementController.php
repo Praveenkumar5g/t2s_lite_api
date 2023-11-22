@@ -655,7 +655,7 @@ class WebUserManagementController extends Controller
     // Edit parent details dependency function - onboarding
     public function edit_parent_details($data,$details,$id,$userall_id,$old_group_id,$new_group_id,$password,$old_parent_id)
     {
-        echo '<prE>';print_r($details);exit;
+        echo '<prE>';
         $image =$page='';
         $user = Session::get('user_data');
         $profile_image_path ='';
@@ -747,7 +747,7 @@ class WebUserManagementController extends Controller
             $details->user_category = $data['user_category'];
         $details->updated_by=$userall_id;
         $details->updated_time=Carbon::now()->timezone('Asia/Kolkata');
-        $details->save();
+        // $details->save();
         $parent_id = $details->id;
         if($page!='')
         {
@@ -764,8 +764,11 @@ class WebUserManagementController extends Controller
         }
         else
             $userparent_id = $details->user_id;
+
         if($data['email_address']!='' || $data['mobile_number']!='')
-        {
+        {   
+            print_r($details);
+            echo $userparent_id;
             $schoolusers = SchoolUsers::where(['user_id'=>$userparent_id,'school_profile_id'=>$user->school_profile_id])->get()->first();
 
             if(empty($schoolusers))
@@ -774,6 +777,8 @@ class WebUserManagementController extends Controller
             $schoolusers->school_profile_id=$user->school_profile_id;
             $schoolusers->user_id=$userparent_id;
             $schoolusers->user_mobile_number=$data['mobile_number'];
+
+            echo $password;exit;
             if($password!='')
                 $schoolusers->user_password=$password;
             $schoolusers->user_email_id=$data['email_address'];

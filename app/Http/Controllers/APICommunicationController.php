@@ -1318,6 +1318,7 @@ class APICommunicationController extends Controller
                 'name'=>$data->first_name,
                 'mobile_no'=>$data->mobile_number,
                 'profile'=>$data->profile_image,
+                'student_profile'=>null,
                 "last_login"=>($userdata->last_login!=null)?$userdata->last_login:null,
                 "dob" => ($data->dob!=null && $data->dob!='')?date('d-m-Y',strtotime($data->dob)):null,
                 "doj"=> ($data->doj!=null && $data->doj!='')?date('d-m-Y',strtotime($data->doj)):null,
@@ -1345,7 +1346,7 @@ class APICommunicationController extends Controller
                     $student_id = $request->student_id;
                 else
                     $student_id =UserStudentsMapping::where(['parent'=>$data->id])->pluck('student')->first();
-                $student_details = UserStudents::select('first_name','class_config')->where(['id'=>$student_id])->first();
+                $student_details = UserStudents::select('first_name','class_config','profile_image')->where(['id'=>$student_id])->first();
                 $user_details['name'] = $data->first_name." ".$category." ".$student_details['first_name'];
                 $user_details['dob'] = $student_details['dob'];
                 $user_details['admission_number'] = $student_details['admission_number'];
@@ -1363,6 +1364,8 @@ class APICommunicationController extends Controller
                     $user_details['designation'] = $class_name." ".$section_name;
                 else
                     $user_details['designation'] = null;
+
+                $user_details['student_profile']=$student_details->profile_image;
             }
         }
         else
@@ -1371,6 +1374,7 @@ class APICommunicationController extends Controller
                 'name'=>null,
                 'mobile_no'=>null,
                 'profile'=>null,
+                'student_profile'=>null,
                 "designation"=> null,
                 "email_address"=>null,
                 "last_login"=>null,

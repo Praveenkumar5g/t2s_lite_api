@@ -4391,7 +4391,7 @@ class APIConfigurationsController extends Controller
 
 	        $userparent_id = $details->user_id;
 	        $parent_id = $details->id;
-	        
+
         	//save parent details
 	        if($request->name!='')
 	            $details->first_name=  $request->name;
@@ -4408,7 +4408,6 @@ class APIConfigurationsController extends Controller
 	        $details->save();
 	        $parent_id = $details->id;
 	        
-
 	        $schoolusers = SchoolUsers::where(['user_id'=>$userparent_id,'school_profile_id'=>$user->school_profile_id])->first();
 	        if(!empty($schoolusers))
 	        {
@@ -4430,4 +4429,26 @@ class APIConfigurationsController extends Controller
 		$categories = UserCategories::select('id','category_name')->where('user_role',3)->get()->toArray();
 		return response()->json(compact('categories'));
 	}
+
+	// check mobile number exists
+	public function checkMobileno(Request $request)
+    {
+        $check_exists = UserParents::where('mobile_number',$request->mobile_no);
+        if($request->status == 'father')
+            $check_exists = $check_exists->whereIn('user_category',([Config::get('app.Mother'),Config::get('app.Guardian')]));
+        if($request->status == 'mother')
+            $check_exists = $check_exists->whereIn('user_category',([Config::get('app.Father'),Config::get('app.Guardian')]));
+        if($request->status == 'guardian')
+            $check_exists = $check_exists->whereIn('user_category',([Config::get('app.Mother'),Config::get('app.Father')]));
+
+        if(isset($request->id)!='')
+            $check_exists = $check_exists->where('id','!=',$request->id);
+
+        $check_exists = $check_exists->get()->first();
+
+        if(!empty($check_exists))
+            return response()->json(['status'=>false]);
+        else
+            return response()->json(['status'=>true]);
+    }
 }

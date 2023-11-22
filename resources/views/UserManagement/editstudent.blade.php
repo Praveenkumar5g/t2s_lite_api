@@ -106,7 +106,7 @@
 											<div class="form-group col-4">
 												<label>Father Email Address </label>
 												<div class="input-group">
-													<input type="text" class="form-control form-control-1 input-sm" name="father_email" id="father_email" placeholder="Father Email Address" value="{{isset($student_list['father_email'])?$student_list['father_email']:''}}"> 
+													<input type="text" class="form-control form-control-1 input-sm" name="father_email" id="father_email" placeholder="Father Email Address" value="{{isset($student_list['father_email_address'])?$student_list['father_email_address']:''}}"> 
 												</div>
 											</div>
 											<div class="form-group col-4">
@@ -124,7 +124,7 @@
 											<div class="form-group col-4">
 												<label>Mother Email Address </label>
 												<div class="input-group">
-													<input type="text" class="form-control form-control-1 input-sm" name="mother_email" id="mother_email" placeholder="Mother Email Address" value="{{isset($student_list['mother_email'])?$student_list['mother_email']:''}}">
+													<input type="text" class="form-control form-control-1 input-sm" name="mother_email" id="mother_email" placeholder="Mother Email Address" value="{{isset($student_list['mother_email_address'])?$student_list['mother_email_address']:''}}">
 												</div>
 											</div>
 											<div class="form-group col-4">
@@ -142,7 +142,7 @@
 											<div class="form-group col-4">
 												<label>Guardian Email Address </label>
 												<div class="input-group">
-													<input type="text" class="form-control form-control-1 input-sm" name="guardian_email" id="guardian_email" placeholder="Guardian Email Address" value="{{isset($student_list['guardian_email'])?$student_list['guardian_email']:''}}">
+													<input type="text" class="form-control form-control-1 input-sm" name="guardian_email" id="guardian_email" placeholder="Guardian Email Address" value="{{isset($student_list['guardian_email_address'])?$student_list['guardian_email_address']:''}}">
 												</div>
 											</div>
 											<div class="form-group col-4">

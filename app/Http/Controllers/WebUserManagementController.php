@@ -606,7 +606,7 @@ class WebUserManagementController extends Controller
                 else if($profile_details['default_password_type'] == 'dob')
                     $password = bcrypt(date('dmY',strtotime($request->dob)));
             }
-            
+
             if(isset($request->guardian_id))
             { 
             // update or insert parents details
@@ -655,6 +655,7 @@ class WebUserManagementController extends Controller
     // Edit parent details dependency function - onboarding
     public function edit_parent_details($data,$details,$id,$userall_id,$old_group_id,$new_group_id,$password,$old_parent_id)
     {
+        echo $password;exit();
         $image =$page='';
         $user = Session::get('user_data');
         $profile_image_path ='';

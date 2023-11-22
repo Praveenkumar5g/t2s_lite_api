@@ -2376,11 +2376,14 @@ class APIConfigurationsController extends Controller
         $management_details->mobile_number=$request->mobile_number;
         if($image!='')
         	$management_details->profile_image = ($image!='')?$image:'';
-        $management_details->email_id=$request->email_address;
+        if($request->email_address=='')
+        	$management_details->email_id=$request->email_address;
         $management_details->user_category=$request->user_category;
-        $management_details->employee_no=$request->employee_no;
+        if($request->employee_no=='')
+        	$management_details->employee_no=$request->employee_no;
         $management_details->dob=date('Y-m-d',strtotime($request->dob));
-        $management_details->doj=date('Y-m-d',strtotime($request->doj));
+        if($request->doj!='' && $request->doj!= null)
+        	$management_details->doj=date('Y-m-d',strtotime($request->doj));
         
         $management_details->save();
 
@@ -2493,7 +2496,8 @@ class APIConfigurationsController extends Controller
         $admin_details->email_id=$request->email_address;
        	$admin_details->employee_no=$request->employee_no;
         $admin_details->dob=date('Y-m-d',strtotime($request->dob));
-        $admin_details->doj=date('Y-m-d',strtotime($request->doj));
+        if($request->doj!='' && $request->doj!= null)
+        	$admin_details->doj=date('Y-m-d',strtotime($request->doj));
 
 
         $admin_details->save();
@@ -4385,7 +4389,9 @@ class APIConfigurationsController extends Controller
 	            }           
 	        }
 
-
+	        $userparent_id = $details->user_id;
+	        $parent_id = $details->id;
+	        
         	//save parent details
 	        if($request->name!='')
 	            $details->first_name=  $request->name;
@@ -4401,17 +4407,16 @@ class APIConfigurationsController extends Controller
 	        $details->updated_time=Carbon::now()->timezone('Asia/Kolkata');
 	        $details->save();
 	        $parent_id = $details->id;
-	        $userparent_id = $details->user_id;
+	        
 
-	        $schoolusers = SchoolUsers::where(['user_id'=>$userparent_id,'school_profile_id'=>$user->school_profile_id])->get()->first();
+	        $schoolusers = SchoolUsers::where(['user_id'=>$userparent_id,'school_profile_id'=>$user->school_profile_id])->first();
 
-	        $schoolusers->school_profile_id=$user->school_profile_id;
-            $schoolusers->user_id=$userparent_id;
             $schoolusers->user_mobile_number=$request->mobile_number;
             $schoolusers->user_email_id=$request->email_address;
             $schoolusers->user_role=Config::get('app.Parent_role');
+        	return response()->json(['status'=>true,'message'=>'Parent details updated Successfully!...']);
         }
-        return response()->json(['status'=>true,'message'=>'Parent details updated Successfully!...']);
+        return response()->json(['status'=>false,'message'=>'Failed to updated parent details!...']);
 	}
 
 	//Parent Category

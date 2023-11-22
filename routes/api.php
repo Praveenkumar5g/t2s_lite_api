@@ -180,7 +180,7 @@ Route::group(['middleware' => 'auth.connect','prefix' => 'user'], function ($rou
     Route::post('create_update_admin',[APIConfigurationsController::class,'create_update_admin']);//create and update admin details
     Route::post('create_update_staff',[APIConfigurationsController::class,'create_update_staff']);//create and update staff details
     Route::post('update_parent_details',[APIConfigurationsController::class,'update_parent_details']);//update parent details
-    Route::post('checkMobileno',[APIConfigurationsController::class,'checkMobileno']);//check mobile no already exists or not
+    Route::post('checkMobileno',[APIConfigurationsController::class,'parentcheckMobileno']);//check mobile no already exists or not
     Route::get('get_parent_category',[APIConfigurationsController::class,'get_parent_category']);//user category
     
     Route::post('/approval_process', [APICommunicationController::class, 'approval_process']); 

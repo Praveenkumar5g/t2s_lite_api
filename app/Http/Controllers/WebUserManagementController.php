@@ -492,11 +492,7 @@ class WebUserManagementController extends Controller
             $new_user = '';
             if(($request->father_id == 0 && $request->father_mobile_number!=''))
                 $new_user = 'yes';
-            if(($request->mother_id == 0 && $request->mother_mobile_number!=''))
-                $new_user = 'yes';
-            if(($request->guardian_id == 0 && $request->guardian_mobile_number!=''))
-                $new_user = 'yes';
-
+            
             $password ='';
             if((isset($request->password_update) && $request->password_update!='') ||$new_user!='')
             {
@@ -544,6 +540,19 @@ class WebUserManagementController extends Controller
                     $this->edit_parent_details($data,$father_details,$student_id,$userall_id,$old_group_id,$new_group_id,$password,$request->father_id);
                 }
             }
+
+            $new_user ='';
+            if(($request->mother_id == 0 && $request->mother_mobile_number!=''))
+                $new_user = 'yes';
+            $password ='';
+            if((isset($request->password_update) && $request->password_update!='') ||$new_user!='')
+            {
+                if($profile_details['default_password_type'] == 'admission_number')
+                    $password = bcrypt($request->admission_no);
+                else if($profile_details['default_password_type'] == 'dob')
+                    $password = bcrypt(date('dmY',strtotime($request->dob)));
+            }
+
             // update or insert parents details
             if(isset($request->mother_id))
             {
@@ -586,6 +595,18 @@ class WebUserManagementController extends Controller
                 }
             }
 
+            $new_user ='';
+            if(($request->guardian_id == 0 && $request->guardian_mobile_number!=''))
+                $new_user = 'yes';
+            $password ='';
+            if((isset($request->password_update) && $request->password_update!='') ||$new_user!='')
+            {
+                if($profile_details['default_password_type'] == 'admission_number')
+                    $password = bcrypt($request->admission_no);
+                else if($profile_details['default_password_type'] == 'dob')
+                    $password = bcrypt(date('dmY',strtotime($request->dob)));
+            }
+            
             if(isset($request->guardian_id))
             { 
             // update or insert parents details

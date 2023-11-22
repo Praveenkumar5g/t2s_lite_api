@@ -676,7 +676,6 @@ class WebUserManagementController extends Controller
         }
         if(empty($details))
         {
-            echo 'tets';
             $parent_mobile_details = UserParents::where('mobile_number',$data['mobile_number'])->get()->first();
             if(!empty($parent_mobile_details && $details))
                 $details = $parent_mobile_details;
@@ -766,12 +765,10 @@ class WebUserManagementController extends Controller
         }
         else 
             $userparent_id = $details->user_id;
-        
+
         if($data['email_address']!='' || $data['mobile_number']!='')
         {   
-            print_r($details);
-            echo $userparent_id;
-            $schoolusers = SchoolUsers::where(['userd_id'=>$userparent_id,'school_profile_id'=>$user->school_profile_id])->get()->first();
+            $schoolusers = SchoolUsers::where(['user_id'=>$userparent_id,'school_profile_id'=>$user->school_profile_id])->get()->first();
 
             if(empty($schoolusers))
             {
@@ -782,7 +779,6 @@ class WebUserManagementController extends Controller
             
             $schoolusers->user_mobile_number=$data['mobile_number'];
 
-            echo $password;exit;
             if($password!='')
                 $schoolusers->user_password=$password;
             $schoolusers->user_email_id=$data['email_address'];

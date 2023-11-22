@@ -676,6 +676,7 @@ class WebUserManagementController extends Controller
         }
         if(empty($details))
         {
+            echo 'tets';
             $parent_mobile_details = UserParents::where('mobile_number',$data['mobile_number'])->get()->first();
             if(!empty($parent_mobile_details && $details))
                 $details = $parent_mobile_details;
@@ -749,6 +750,7 @@ class WebUserManagementController extends Controller
         $details->updated_time=Carbon::now()->timezone('Asia/Kolkata');
         // $details->save();
         $parent_id = $details->id;
+        echo $page;exit;
         if($page!='')
         {
             // generate and update staff id in db 

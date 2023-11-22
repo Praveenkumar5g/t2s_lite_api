@@ -750,7 +750,7 @@ class WebUserManagementController extends Controller
         $details->updated_time=Carbon::now()->timezone('Asia/Kolkata');
         // $details->save();
         $parent_id = $details->id;
-        echo $page;exit;
+        echo $page;
         if($page!='')
         {
             // generate and update staff id in db 

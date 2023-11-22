@@ -4376,11 +4376,12 @@ class APIConfigurationsController extends Controller
 		$user_table_id = app('App\Http\Controllers\APILoginController')->get_user_table_id($user);
 		$userall_id = UserAll::where(['user_table_id'=>$user_table_id->id,'user_role'=>$user->user_role])->pluck('id')->first(); //fetch id from user all table to store setting triggered user
 		// insert parents details
-    	$details = UserParents::where('id',$request->id)->get()->first();
+    	$details = UserParents::where('id',$request->id)->get()->first(); //fetch parent details
 
     	$school_profile = SchoolProfile::where(['id'=>$user['school_profile_id']])->get()->first();//get school code from school profile
         if(!empty($details) || $request->mobile_number!='')
         {
+        	// upload profile image
         	$target_file = '/parent/';
         	if(count($_FILES)>0)
 	        {
@@ -4389,10 +4390,57 @@ class APIConfigurationsController extends Controller
 	            }           
 	        }
 
-	        $userparent_id = $details->user_id;
-	        $parent_id = $details->id;
+	        // check mobile no already exist in table.
+	        $check_exists = UserParents::where('mobile_number',$request->mobile_number);
+	        if($request->user_category == Config::get('app.Father'))
+	            $check_exists = $check_exists->whereIn('user_category',([Config::get('app.Mother'),Config::get('app.Guardian')]));
+	        if($request->user_category == Config::get('app.Mother'))
+	            $check_exists = $check_exists->whereIn('user_category',([Config::get('app.Father'),Config::get('app.Guardian')]));
+	        if($request->user_category == Config::get('app.Guardian'))
+	            $check_exists = $check_exists->whereIn('user_category',([Config::get('app.Mother'),Config::get('app.Father')]));
 
-        	//save parent details
+	        if(isset($request->id)!='')
+	            $check_exists = $check_exists->where('id','!=',$request->id);
+
+	        $check_exists = $check_exists->first();
+
+	        if(!empty($check_exists)) //if exists
+	        {
+	        	$old_parent_id = $request->id;
+	        	$new_parent_id = $check_exists->id;
+	        	
+	        	$student_list = UserStudentsMapping::where('parent',$old_parent_id)->pluck('student')->toArray(); // fetch all the student ids related to old parent.
+
+	        	foreach($student_list as $student_key => $student_value)
+	        	{	     	        		
+	        		// update parent ids to new parent id in table
+		        	UserStudentsMapping::where('parent',$old_parent_id)->update(['parent'=>$new_parent_id]);
+
+		        	$class_config = UserStudents::where('id',$student_value)->pluck('class_config')->first(); //fetch class config for the student
+
+		        	$group_id = UserGroups::where('class_config',$class_config)->pluck('id')->first(); //get group id to reassign parent id
+
+		        	$check_group_exists = UserGroupsMapping::where('user_table_id',$new_parent_id)->where('group_id',$group_id)->where('user_role',Config::get('app.Parent_role'))->first();
+
+		        	if(!empty($check_group_exists)) //delete old parent group id, if new already have the same group
+		        	{
+		        		UserGroupsMapping::where('user_table_id',$old_parent_id)->where('group_id',$group_id)->where('user_role',Config::get('app.Parent_role'))->delete();
+		        	}
+		        	else
+		        	{
+		        		UserGroupsMapping::where('user_table_id',$old_parent_id)->where('group_id',$group_id)->where('user_role',Config::get('app.Parent_role'))->update(['user_table_id'=>$new_parent_id]);
+		        	}
+
+		        	SchoolUsers::where('user_id',$details->user_id)->where('school_profile_id',$user->school_profile_id)->delete();
+		        	UserParents::where('id',$old_parent_id)->delete();		           		      
+	        	}
+	        	$details = UserParents::where('id',$new_parent_id)->first();
+	        }
+
+	        $userparent_id = $details->user_id;
+	        $parent_id = $details->id; 	
+
+	        //save parent details
 	        if($request->name!='')
 	            $details->first_name=  $request->name;
 	        if($request->mobile_number!='')
@@ -4407,7 +4455,7 @@ class APIConfigurationsController extends Controller
 	        $details->updated_time=Carbon::now()->timezone('Asia/Kolkata');
 	        $details->save();
 	        $parent_id = $details->id;
-	        
+        	
 	        $schoolusers = SchoolUsers::where(['user_id'=>$userparent_id,'school_profile_id'=>$user->school_profile_id])->first();
 	        if(!empty($schoolusers))
 	        {
@@ -4431,20 +4479,14 @@ class APIConfigurationsController extends Controller
 	}
 
 	// check mobile number exists
-	public function checkMobileno(Request $request)
+	public function parentcheckMobileno(Request $request)
     {
-        $check_exists = UserParents::where('mobile_number',$request->mobile_no);
-        if($request->status == 'father')
-            $check_exists = $check_exists->whereIn('user_category',([Config::get('app.Mother'),Config::get('app.Guardian')]));
-        if($request->status == 'mother')
-            $check_exists = $check_exists->whereIn('user_category',([Config::get('app.Father'),Config::get('app.Guardian')]));
-        if($request->status == 'guardian')
-            $check_exists = $check_exists->whereIn('user_category',([Config::get('app.Mother'),Config::get('app.Father')]));
-
+        $check_exists = UserParents::where('mobile_number',$request->mobile_number);
+        
         if(isset($request->id)!='')
             $check_exists = $check_exists->where('id','!=',$request->id);
 
-        $check_exists = $check_exists->get()->first();
+        $check_exists = $check_exists->first();
 
         if(!empty($check_exists))
             return response()->json(['status'=>false]);

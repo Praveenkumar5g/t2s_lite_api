@@ -751,7 +751,7 @@ class WebUserManagementController extends Controller
             $details->user_category = $data['user_category'];
         $details->updated_by=$userall_id;
         $details->updated_time=Carbon::now()->timezone('Asia/Kolkata');
-        // $details->save();
+        $details->save();
         $parent_id = $details->id;
 
         if($page!='')

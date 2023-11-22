@@ -655,7 +655,7 @@ class WebUserManagementController extends Controller
     // Edit parent details dependency function - onboarding
     public function edit_parent_details($data,$details,$id,$userall_id,$old_group_id,$new_group_id,$password,$old_parent_id)
     {
-        echo $password;exit();
+        echo '<prE>';print_r($details);exit;
         $image =$page='';
         $user = Session::get('user_data');
         $profile_image_path ='';

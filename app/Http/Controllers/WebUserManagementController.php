@@ -689,6 +689,7 @@ class WebUserManagementController extends Controller
 
         if(!empty($details) && $details->mobile_number != $data['mobile_number'])
         {
+            $userparent_id = $details->user_id;
             $check_old_groups = UserStudentsMapping::where('student',$id)->where('parent',$old_parent_id)->get()->first();
             if(!empty($check_old_groups))
                 UserStudentsMapping::where('student',$id)->where('parent',$old_parent_id)->delete();  
@@ -750,7 +751,7 @@ class WebUserManagementController extends Controller
         $details->updated_time=Carbon::now()->timezone('Asia/Kolkata');
         // $details->save();
         $parent_id = $details->id;
-        echo $page;
+        echo $page;exit;
         if($page!='')
         {
             // generate and update staff id in db 
@@ -764,20 +765,20 @@ class WebUserManagementController extends Controller
             $user_all->save(); 
 
         }
-        else
-            $userparent_id = $details->user_id;
-
+        
         if($data['email_address']!='' || $data['mobile_number']!='')
         {   
             print_r($details);
             echo $userparent_id;
-            $schoolusers = SchoolUsers::where(['user_id'=>$userparent_id,'school_profile_id'=>$user->school_profile_id])->get()->first();
+            $schoolusers = SchoolUsers::where(['userd_id'=>$userparent_id,'school_profile_id'=>$user->school_profile_id])->get()->first();
 
             if(empty($schoolusers))
+            {
                 $schoolusers = new SchoolUsers;
-
-            $schoolusers->school_profile_id=$user->school_profile_id;
-            $schoolusers->user_id=$userparent_id;
+                $schoolusers->school_profile_id=$user->school_profile_id;
+                $schoolusers->user_id=$userparent_id;
+            }
+            
             $schoolusers->user_mobile_number=$data['mobile_number'];
 
             echo $password;exit;

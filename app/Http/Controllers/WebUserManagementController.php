@@ -688,8 +688,7 @@ class WebUserManagementController extends Controller
         }
 
         if(!empty($details) && $details->mobile_number != $data['mobile_number'])
-        {
-            $userparent_id = $details->user_id;
+        {            
             $check_old_groups = UserStudentsMapping::where('student',$id)->where('parent',$old_parent_id)->get()->first();
             if(!empty($check_old_groups))
                 UserStudentsMapping::where('student',$id)->where('parent',$old_parent_id)->delete();  
@@ -765,6 +764,8 @@ class WebUserManagementController extends Controller
             $user_all->save(); 
 
         }
+        else 
+            $userparent_id = $details->user_id;
         
         if($data['email_address']!='' || $data['mobile_number']!='')
         {   

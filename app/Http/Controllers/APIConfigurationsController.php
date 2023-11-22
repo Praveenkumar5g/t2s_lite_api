@@ -4409,7 +4409,7 @@ class APIConfigurationsController extends Controller
 	        $parent_id = $details->id;
 	        
 
-	        $schoolusers = SchoolUsers::where(['user_id'=>$userparent_id,'school_profile_id'=>$user->school_profile_id])->first();
+	        $schoolusers = SchoolUsers::where(['udser_id'=>$userparent_id,'school_profile_id'=>$user->school_profile_id])->first();
 
             $schoolusers->user_mobile_number=$request->mobile_number;
             $schoolusers->user_email_id=$request->email_address;

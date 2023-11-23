@@ -2599,6 +2599,8 @@ class APIConfigurationsController extends Controller
             }           
         }
 
+        $user_category = $staff_details->user_category;
+
     	//save staff details
         $staff_details->first_name= $request->staff_name;
         $staff_details->mobile_number=$request->mobile_number;
@@ -2606,7 +2608,8 @@ class APIConfigurationsController extends Controller
         	$staff_details->profile_image = ($image!='')?$image:'';
         $staff_details->email_id=$request->email_address;
         $staff_details->user_category=$request->user_category;
-        $staff_details->employee_no=$request->employee_no;
+        if($request->employee_no!='' && $request->employee_no!= null)
+        	$staff_details->employee_no=$request->employee_no;
         $staff_details->dob=date('Y-m-d',strtotime($request->dob));
         if($request->doj!='' && $request->doj!= null)
         	$staff_details->doj=date('Y-m-d',strtotime($request->doj));
@@ -2655,14 +2658,14 @@ class APIConfigurationsController extends Controller
 
         
 
-        if($request->user_category == 3 && $staff_details->user_category != $request->user_category)
+        if($request->user_category == 3 && $user_category != $request->user_category)
         {              
             UserGroupsMapping::where('user_role',Config::get('app.Staff_role'))->where('group_id',5)->where('user_table_id',$staff_details->id)->delete();
             $check_exists_nonteaching = UserGroupsMapping::where('user_role',Config::get('app.Staff_role'))->where('group_id',4)->where('user_table_id',$staff_details->id)->first();
             if(empty($check_exists_nonteaching))
                 UserGroupsMapping::insert(['user_role'=>Config::get('app.Staff_role'),'group_id'=>4,'user_table_id'=>$staff_details->id,'group_access'=>2]);
         }
-        else if($request->user_category == 4 && $staff_details->user_category != $request->user_category)
+        else if($request->user_category == 4 && $user_category != $request->user_category)
         {
             UserGroupsMapping::where('user_role',Config::get('app.Staff_role'))->where('group_id',4)->where('user_table_id',$staff_details->id)->delete();
             $check_exists_nonteaching = UserGroupsMapping::where('user_role',Config::get('app.Staff_role'))->where('group_id',5)->where('user_table_id',$staff_details->id)->first();

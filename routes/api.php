@@ -95,11 +95,11 @@ Route::group(['middleware' => 'auth.connect','prefix' => 'user'], function ($rou
     Route::get('/forceUpdate', function() {
         $user = auth()->user();
         $model=ClientConfiguration::where('id',1)->first(); 
-        if($user->user_role == Config::get('app.Staff_role'))
+        if($user->user_role == Config::get('app.Admin_role'))
             $force_update = $model->admin_force_update;
         else if($user->user_role == Config::get('app.Managment_role'))
             $force_update = $model->mgnt_force_update;
-        else if($user->user_role == Config::get('app.Admin_role'))
+        else if($user->user_role == Config::get('app.Staff_role'))
             $force_update = $model->staff_force_update;
         else 
             $force_update = $model->parent_force_update;

@@ -207,7 +207,7 @@ class WebUserManagementController extends Controller
                 $data['photo'] = '';
                 $data['first_name'] = $request->father_name;
                 $data['mobile_number'] = $request->father_mobile_number;
-                $data['email_address'] = $request->father_email_address;
+                $data['email_address'] = $request->father_email;
                 $data['user_category'] = 1;
 
                 if($profile_details['default_password_type'] != 'admission_number' && $profile_details['default_password_type'] != 'dob')
@@ -225,7 +225,7 @@ class WebUserManagementController extends Controller
                 $data['photo'] = '';
                 $data['first_name'] = $request->mother_name;
                 $data['mobile_number'] = $request->mother_mobile_number;
-                $data['email_address'] = $request->mother_email_address;
+                $data['email_address'] = $request->mother_email;
                 $data['user_category'] = 2;
 
                 if($profile_details['default_password_type'] != 'admission_number' && $profile_details['default_password_type'] != 'dob')
@@ -244,7 +244,7 @@ class WebUserManagementController extends Controller
                 $data['photo'] = '';
                 $data['first_name'] = $request->guardian_name;
                 $data['mobile_number'] = $request->guardian_mobile_number;
-                $data['email_address'] = $request->guardian_email_address;
+                $data['email_address'] = $request->guardian_email;
                 $data['user_category'] = 9;
 
                 if($profile_details['default_password_type'] != 'admission_number' && $profile_details['default_password_type'] != 'dob')
@@ -266,19 +266,19 @@ class WebUserManagementController extends Controller
         $user_data = Session::get('user_data');
         $profile_details = SchoolProfile::where(['id'=>$user_data->school_profile_id])->first();//Fetch school profile details 
         $profile_image_path ='';
-        if(!empty($data['photo']))//check upload photo exist or not
-        {
-            $path = public_path('uploads/'.$profile_details['school_code'].'/profile_images');//
+        // if(!empty($data['photo']))//check upload photo exist or not
+        // {
+        //     $path = public_path('uploads/'.$profile_details['school_code'].'/profile_images');//
 
-            if(!File::isDirectory($path)){ //check path already exists
-                File::makeDirectory($path, 0777, true, true);
-            }
-            $name = explode('.',$data['photo']->getClientOriginalName())[0];
-            $image = $name.''.time().'.'.$data['photo']->extension();
-            $filename = str_replace(["-",","," ","/"], '_', $image);
-            $data['photo']->move(public_path().'/uploads/'.$profile_details['school_code'].'/profile_images', $filename);
-            $profile_image_path =url('/').'/uploads/'.$profile_details['school_code'].'/profile_images/'.$filename;
-        }
+        //     if(!File::isDirectory($path)){ //check path already exists
+        //         File::makeDirectory($path, 0777, true, true);
+        //     }
+        //     $name = explode('.',$data['photo']->getClientOriginalName())[0];
+        //     $image = $name.''.time().'.'.$data['photo']->extension();
+        //     $filename = str_replace(["-",","," ","/"], '_', $image);
+        //     $data['photo']->move(public_path().'/uploads/'.$profile_details['school_code'].'/profile_images', $filename);
+        //     $profile_image_path =url('/').'/uploads/'.$profile_details['school_code'].'/profile_images/'.$filename;
+        // }
 
         // insert parent details in db
         $parent=[];
@@ -511,7 +511,7 @@ class WebUserManagementController extends Controller
                     $data['photo'] = $profile_image_path;
                     $data['first_name'] = $request->father_name;
                     $data['mobile_number'] = $request->father_mobile_number;
-                    $data['email_address'] = $request->father_email_address;
+                    $data['email_address'] = $request->father_email;
                     $data['user_category'] = 1;
                     if($new_user == '' && $password =='')
                     {
@@ -563,7 +563,7 @@ class WebUserManagementController extends Controller
                     $data['photo'] = $profile_image_path;
                     $data['first_name'] = $request->mother_name;
                     $data['mobile_number'] = $request->mother_mobile_number;
-                    $data['email_address'] = $request->mother_email_address;
+                    $data['email_address'] = $request->mother_email;
                     $data['user_category'] = 2;
                     
                     if($new_user == '' && $password =='')
@@ -617,7 +617,7 @@ class WebUserManagementController extends Controller
                     $data['photo'] = $profile_image_path;
                     $data['first_name'] = $request->guardian_name;
                     $data['mobile_number'] = $request->guardian_mobile_number;
-                    $data['email_address'] = $request->guardian_email_address;
+                    $data['email_address'] = $request->guardian_email;
                     $data['user_category'] = 9;
                     if($new_user == '' && $password =='')
                     {
@@ -655,25 +655,24 @@ class WebUserManagementController extends Controller
     // Edit parent details dependency function - onboarding
     public function edit_parent_details($data,$details,$id,$userall_id,$old_group_id,$new_group_id,$password,$old_parent_id)
     {
-        echo '<prE>';
         $image =$page='';
         $user = Session::get('user_data');
         $profile_image_path ='';
         $profile_details = SchoolProfile::where(['id'=>$user->school_profile_id])->first();//Fetch school profile details 
-        if(!empty($data['photo']))//check upload photo exist or not
-        {
-            $profile_image_path = $data['photo'];
-        //     $path = public_path('uploads/'.$profile_details['school_code'].'/students');//
+        // if(!empty($data['photo']))//check upload photo exist or not
+        // {
+        //     $profile_image_path = $data['photo'];
+        // //     $path = public_path('uploads/'.$profile_details['school_code'].'/students');//
 
-        //     if(!File::isDirectory($path)){ //check path already exists
-        //         File::makeDirectory($path, 0777, true, true);
-        //     }
-        //     $name = explode('.',$data['photo']->getClientOriginalName())[0];
-        //     $image = $name.''.time().'.'.$data['photo']->extension();
-        //     $filename = str_replace(["-",","," ","/"], '_', $image);
-        //     $data['photo']->move(public_path().'/uploads/'.$profile_details['school_code'].'/students', $filename);
-        //     $profile_image_path =url('/').'/uploads/'.$profile_details['school_code'].'/students/'.$filename;
-        }
+        // //     if(!File::isDirectory($path)){ //check path already exists
+        // //         File::makeDirectory($path, 0777, true, true);
+        // //     }
+        // //     $name = explode('.',$data['photo']->getClientOriginalName())[0];
+        // //     $image = $name.''.time().'.'.$data['photo']->extension();
+        // //     $filename = str_replace(["-",","," ","/"], '_', $image);
+        // //     $data['photo']->move(public_path().'/uploads/'.$profile_details['school_code'].'/students', $filename);
+        // //     $profile_image_path =url('/').'/uploads/'.$profile_details['school_code'].'/students/'.$filename;
+        // }
         if(empty($details))
         {
             $parent_mobile_details = UserParents::where('mobile_number',$data['mobile_number'])->get()->first();

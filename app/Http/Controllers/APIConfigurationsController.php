@@ -2376,10 +2376,10 @@ class APIConfigurationsController extends Controller
         $management_details->mobile_number=$request->mobile_number;
         if($image!='')
         	$management_details->profile_image = ($image!='')?$image:'';
-        if($request->email_address=='')
+        if($request->email_address!='')
         	$management_details->email_id=$request->email_address;
         $management_details->user_category=$request->user_category;
-        if($request->employee_no=='')
+        if($request->employee_no!='')
         	$management_details->employee_no=$request->employee_no;
         $management_details->dob=date('Y-m-d',strtotime($request->dob));
         if($request->doj!='' && $request->doj!= null)

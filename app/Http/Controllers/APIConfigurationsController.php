@@ -4484,7 +4484,7 @@ class APIConfigurationsController extends Controller
 	// check mobile number exists
 	public function parentcheckMobileno(Request $request)
     {
-        $check_exists = UserParents::where('mobile_number',$request->mobile_number);
+        $check_exists = UserParents::where('mobile_number',$request->mobile_number)->where('user_category',$request->user_category);
         
         if(isset($request->id) && $request->id!='')
             $check_exists = $check_exists->where('id','!=',$request->id);
@@ -4492,8 +4492,25 @@ class APIConfigurationsController extends Controller
         $check_exists = $check_exists->first();
 
         if(!empty($check_exists))
-            return response()->json(['status'=>false]);
+            return response()->json(['status'=>false,'tag'=>'map']);
         else
-            return response()->json(['status'=>true]);
+        {
+        	$dulpicate_check_exists = UserParents::where('mobile_number',$request->mobile_number);
+	        if($request->status == Config::get('app.Father'))
+	            $dulpicate_check_exists = $dulpicate_check_exists->whereIn('user_category',([Config::get('app.Mother'),Config::get('app.Guardian')]));
+	        if($request->status == Config::get('app.Mother'))
+	            $dulpicate_check_exists = $dulpicate_check_exists->whereIn('user_category',([Config::get('app.Father'),Config::get('app.Guardian')]));
+	        if($request->status == Config::get('app.Guardian'))
+	            $dulpicate_check_exists = $dulpicate_check_exists->whereIn('user_category',([Config::get('app.Mother'),Config::get('app.Father')]));
+
+	        if(isset($request->id)!='')
+	            $dulpicate_check_exists = $dulpicate_check_exists->where('id','!=',$request->id);
+
+	        $dulpicate_check_exists = $dulpicate_check_exists->first();
+	        if(!empty($dulpicate_check_exists))
+	        	return response()->json(['status'=>false,'tag'=>'duplicate']);
+	        else
+            	return response()->json(['status'=>true,'tag'=>'']);
+        }
     }
 }

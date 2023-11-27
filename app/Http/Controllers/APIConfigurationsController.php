@@ -4496,11 +4496,11 @@ class APIConfigurationsController extends Controller
         else
         {
         	$dulpicate_check_exists = UserParents::where('mobile_number',$request->mobile_number);
-	        if($request->status == Config::get('app.Father'))
+	        if($request->user_category == Config::get('app.Father'))
 	            $dulpicate_check_exists = $dulpicate_check_exists->whereIn('user_category',([Config::get('app.Mother'),Config::get('app.Guardian')]));
-	        if($request->status == Config::get('app.Mother'))
+	        if($request->user_category == Config::get('app.Mother'))
 	            $dulpicate_check_exists = $dulpicate_check_exists->whereIn('user_category',([Config::get('app.Father'),Config::get('app.Guardian')]));
-	        if($request->status == Config::get('app.Guardian'))
+	        if($request->user_category == Config::get('app.Guardian'))
 	            $dulpicate_check_exists = $dulpicate_check_exists->whereIn('user_category',([Config::get('app.Mother'),Config::get('app.Father')]));
 
 	        if(isset($request->id)!='')

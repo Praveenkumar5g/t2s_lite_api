@@ -4489,17 +4489,11 @@ class APIConfigurationsController extends Controller
         if(isset($request->id) && $request->id!='')
             $check_exists = $check_exists->where('id','!=',$request->id);
 
-        $check_exists = $check_exists->get()->first();
-        echo '<pre>';print_r($check_exists);
+        $check_exists = $check_exists->first();
+
         if(!empty($check_exists))
-        {
-        	echo 'tes';exit;
             return response()->json(['status'=>false]);
-        }
         else
-        {
-        	echo 'sam';exit;
             return response()->json(['status'=>true]);
-        }
     }
 }

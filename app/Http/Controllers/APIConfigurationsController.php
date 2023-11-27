@@ -4484,9 +4484,9 @@ class APIConfigurationsController extends Controller
 	// check mobile number exists
 	public function parentcheckMobileno(Request $request)
     {
-        $check_exists = UserParents::where('mobile_number',$request->mobile_number);
+        $check_exists = UserParents::where('mobiled_number',$request->mobile_number);
         
-        if(isset($request->id)!='')
+        if(isset($request->id) && $request->id!='')
             $check_exists = $check_exists->where('id','!=',$request->id);
 
         $check_exists = $check_exists->first();

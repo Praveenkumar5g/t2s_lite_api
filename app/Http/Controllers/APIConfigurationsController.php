@@ -3900,7 +3900,7 @@ class APIConfigurationsController extends Controller
         		'class' => (!empty($classessections))?$classessections->classsectionName():'',
         		'class_teacher' => (!empty($classessections))?UserStaffs::where('id',$classessections->class_teacher)->pluck('first_name')->first():'',
         		'profile_image' => $value['profile_image'],
-        		'student_profile_image' => (isset($value['profile_image']))?public_path(env('SAMPLE_CONFIG_URL').'students/'.$value['profile_image']):'',
+        		'student_profile_image' => (isset($value['profile_image']))?$value['profile_image']:'',
         	]);
         	$parent_id = UserStudentsMapping::where('student',$value['id'])->pluck('parent')->toArray();
         	foreach($parent_id as $parentid)

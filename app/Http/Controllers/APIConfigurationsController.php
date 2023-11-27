@@ -4490,7 +4490,7 @@ class APIConfigurationsController extends Controller
             $check_exists = $check_exists->where('id','!=',$request->id);
 
         $check_exists = $check_exists->first();
-
+        echo '<pre>';print_r($check_exists);
         if(!empty($check_exists))
         {
         	echo 'tes';exit;

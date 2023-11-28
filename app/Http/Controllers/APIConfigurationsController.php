@@ -2303,7 +2303,7 @@ class APIConfigurationsController extends Controller
 	            }           
 	        }
 
-	        $individual_user_details->first_name= $request->admin_name;
+	        $individual_user_details->first_name= $request->name;
 	        $individual_user_details->mobile_number=$request->mobile_number;
 	        $individual_user_details->profile_image = ($image!='')?$image:'';
 	        $individual_user_details->email_id=$request->email_address;

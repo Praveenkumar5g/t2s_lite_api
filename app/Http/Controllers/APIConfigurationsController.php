@@ -2395,7 +2395,7 @@ class APIConfigurationsController extends Controller
 	        $schoolusers->user_email_id=$request->email_address;
 	        $schoolusers->save();
 			
-			$role = (Config::get('app.Admin_role') == $user->user_role)?'Admin':((Config::get('app.Management_role') == $user->user_role)?'Management':'Staff')
+			$role = (Config::get('app.Admin_role') == $user->user_role)?'Admin':((Config::get('app.Management_role') == $user->user_role)?'Management':'Staff');
 			if($request->id=='')
 	            return response()->json(['status'=>true,'message'=>$role.' user added Successfully!...']);
 	       	else

@@ -2363,6 +2363,7 @@ class APIConfigurationsController extends Controller
 
 		        if($role == Config::get('app.Staff_role'))
 		        {
+		        	$user_category = ($request->id!='')?$individual_user_details->user_category:'';
 			        if($request->user_category == 3 && $user_category != $request->user_category)
 			        {              
 			            UserGroupsMapping::where('user_role',Config::get('app.Staff_role'))->where('group_id',5)->where('user_table_id',$individual_user_details->id)->delete();

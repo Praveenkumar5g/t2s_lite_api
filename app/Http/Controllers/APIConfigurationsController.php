@@ -2231,7 +2231,7 @@ class APIConfigurationsController extends Controller
 
         $user_table_id = $user_details->id; //fetch particular id
 
-        $userall_id = $id = $user_id = $image = ''; //declaration
+        $userall_id = $loginid = $user_id = $image = ''; //declaration
 
         $userall_id = UserAll::where(['user_table_id'=>$user_table_id,'user_role'=>$user->user_role])->pluck('id')->first(); //fetch common id
 
@@ -2272,19 +2272,19 @@ class APIConfigurationsController extends Controller
 
         	if($request->id!='')// fetch selected management user details 
         	{
-	    		$id = $individual_user_details->id;
+	    		$loginid = $individual_user_details->id;
 				$user_id = $individual_user_details->user_id;
 			}
 
 			if(isset($request->employee_no) && $request->employee_no!='') //check employee no already exists or not
 	        {
-	        	$check_exists = $this->checkEmployeeno($id,$role,$request->employee_no);
+	        	$check_exists = $this->checkEmployeeno($loginid,$role,$request->employee_no);
 	        	if($check_exists)
 	        		 return response()->json(['status'=>false,'message'=>'Given Employee no already exists!...']);
 	        }
 	        if(isset($request->mobile_number) && $request->mobile_number!='') //check mobile no already exists or not
 	        {
-	        	$check_exists = $this->checkmobileno($id,$role,$request->mobile_number);
+	        	$check_exists = $this->checkmobileno($loginid,$role,$request->mobile_number);
 	        	if($check_exists)
 	        		 return response()->json(['status'=>false,'message'=>'Given Mobile no already exists!...']);
 	        }
@@ -2318,19 +2318,19 @@ class APIConfigurationsController extends Controller
 
 	        $individual_user_details->save();
 
-	        $id = $individual_user_details->id;
+	        $loginid = $individual_user_details->id;
 
 	        if($request->id=='') //if new user, update user id and insert record in user common table
         	{
         		$role_code = ($role == Config::get('app.Admin_role'))?'A':(($role == Config::get('app.Management_role'))?'M':'T');
 	        	// generate and update staff id in db 
-	            $user_id = $school_profile->school_code.substr($school_profile->active_academic_year, -2).$role_code.sprintf("%04s", $id);
+	            $user_id = $school_profile->school_code.substr($school_profile->active_academic_year, -2).$role_code.sprintf("%04s", $loginid);
 
 	            $individual_user_details->user_id = $user_id;
 	            $individual_user_details->save();
 
 	            $user_all = new UserAll;
-	            $user_all->user_table_id=$id;
+	            $user_all->user_table_id=$loginid;
 	            $user_all->user_role=$role;
 	            $user_all->save();
         	}
@@ -2359,7 +2359,7 @@ class APIConfigurationsController extends Controller
 
 		        foreach($all_group_ids as $group_key => $group_id)
 		        {
-		        	UserGroupsMapping::insert(['group_id'=>$group_id,'user_table_id'=>$id,'user_role'=>$role,'group_access'=>$group_access,'user_status'=>Config::get('app.Group_Active')]);
+		        	UserGroupsMapping::insert(['group_id'=>$group_id,'user_table_id'=>$loginid,'user_role'=>$role,'group_access'=>$group_access,'user_status'=>Config::get('app.Group_Active')]);
 		        }
 
 		        if($role == Config::get('app.Staff_role'))

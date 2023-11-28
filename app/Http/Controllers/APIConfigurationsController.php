@@ -2240,7 +2240,7 @@ class APIConfigurationsController extends Controller
         if($userall_id!='') //check common id is exists
         {
         	//select and Store user details based on user role
-        	if($user->user_role == Config::get('app.Admin_role')) 
+        	if($role == Config::get('app.Admin_role')) 
         	{
         		if($request->id!='')
         			$individual_user_details = UserAdmin::where('id',$request->id)->first();
@@ -2249,7 +2249,7 @@ class APIConfigurationsController extends Controller
 
         		$target_file = '/admin/';
         	}
-        	else if($user->user_role == Config::get('app.Management_role')) 
+        	else if($role == Config::get('app.Management_role')) 
         	{
         		if($request->id!='')
         			$individual_user_details = UserManagements::where('id',$request->id)->first();
@@ -2258,7 +2258,7 @@ class APIConfigurationsController extends Controller
 
         		$target_file = '/management/';
         	}
-        	else if($user->user_role == Config::get('app.Staff_role')) 
+        	else if($role == Config::get('app.Staff_role')) 
         	{
         		if($request->id!='')
         			$individual_user_details = UserStaffs::where('id',$request->id)->first();
@@ -2340,17 +2340,17 @@ class APIConfigurationsController extends Controller
 	        if($request->id=='')
 	        {
 	        	$all_group_ids = [];
-	        	if($user->user_role == Config::get('app.Admin_role')) 
+	        	if($role == Config::get('app.Admin_role')) 
 	        	{
 	            	$all_group_ids = UserGroups::where('id','!=',1)->pluck('id')->toArray();
 	            	$group_access = Config::get('app.Group_Active');
 	        	}
-	        	else if($user->user_role == Config::get('app.Management_role'))
+	        	else if($role == Config::get('app.Management_role'))
 	        	{
 	        		$all_group_ids = UserGroups::pluck('id')->toArray();
 	        		$group_access = Config::get('app.Group_Active');
 	        	}
-	        	else if($user->user_role == Config::get('app.Staff_role'))
+	        	else if($role == Config::get('app.Staff_role'))
 	        	{
 	        		$all_group_ids = ([2,3]);
 	        		$group_access = Config::get('app.Group_Active');

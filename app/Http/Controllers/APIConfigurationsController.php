@@ -2235,6 +2235,8 @@ class APIConfigurationsController extends Controller
 
         $userall_id = UserAll::where(['user_table_id'=>$user_table_id,'user_role'=>$user->user_role])->pluck('id')->first(); //fetch common id
 
+        $role = $request->user_role;
+
         if($userall_id!='') //check common id is exists
         {
         	//select and Store user details based on user role
@@ -2276,13 +2278,13 @@ class APIConfigurationsController extends Controller
 
 			if(isset($request->employee_no) && $request->employee_no!='')
 	        {
-	        	$check_exists = $this->checkEmployeeno($id,$user->user_role,$request->employee_no);
+	        	$check_exists = $this->checkEmployeeno($id,$role,$request->employee_no);
 	        	if($check_exists)
 	        		 return response()->json(['status'=>false,'message'=>'Given Employee no already exists!...']);
 	        }
 	        if(isset($request->mobile_number) && $request->mobile_number!='')
 	        {
-	        	$check_exists = $this->checkmobileno($id,$user->user_role,$request->mobile_number);
+	        	$check_exists = $this->checkmobileno($id,$role,$request->mobile_number);
 	        	if($check_exists)
 	        		 return response()->json(['status'=>false,'message'=>'Given Mobile no already exists!...']);
 	        }
@@ -2320,16 +2322,16 @@ class APIConfigurationsController extends Controller
 
 	        if($request->id=='')
         	{
-        		$role_code = ($user->user_role == Config::get('app.Admin_role'))?'A':(($user->user_role == Config::get('app.Management_role'))?'M':'T');
+        		$role_code = ($role == Config::get('app.Admin_role'))?'A':(($role == Config::get('app.Management_role'))?'M':'T');
 	        	// generate and update staff id in db 
-	            $user_id = $school_profile->school_code.substr($school_profile->active_academic_year, -2).$role_code.sprintf("%04s", $admin_id);
+	            $user_id = $school_profile->school_code.substr($school_profile->active_academic_year, -2).$role_code.sprintf("%04s", $id);
 
 	            $individual_user_details->user_id = $user_id;
 	            $individual_user_details->save();
 
 	            $user_all = new UserAll;
 	            $user_all->user_table_id=$id;
-	            $user_all->user_role=$user->user_role;
+	            $user_all->user_role=$role;
 	            $user_all->save();
         	}
 
@@ -2356,10 +2358,10 @@ class APIConfigurationsController extends Controller
 
 		        foreach($all_group_ids as $group_key => $group_id)
 		        {
-		        	UserGroupsMapping::insert(['group_id'=>$group_id,'user_table_id'=>$id,'user_role'=>$user->user_role,'group_access'=>$group_access,'user_status'=>Config::get('app.Group_Active')]);
+		        	UserGroupsMapping::insert(['group_id'=>$group_id,'user_table_id'=>$id,'user_role'=>$role,'group_access'=>$group_access,'user_status'=>Config::get('app.Group_Active')]);
 		        }
 
-		        if($user->user_role == Config::get('app.Staff_role'))
+		        if($role == Config::get('app.Staff_role'))
 		        {
 			        if($request->user_category == 3 && $user_category != $request->user_category)
 			        {              
@@ -2387,7 +2389,7 @@ class APIConfigurationsController extends Controller
 	            $schoolusers->school_profile_id=$user->school_profile_id;
 	            $schoolusers->user_id=$user_id;
 	            $schoolusers->user_password=bcrypt($request->mobile_number);
-	        	$schoolusers->user_role=$user->user_role;
+	        	$schoolusers->user_role=$role;
 	        	$schoolusers->user_status=Config::get('app.Group_Active');
 	        }
 
@@ -2395,11 +2397,11 @@ class APIConfigurationsController extends Controller
 	        $schoolusers->user_email_id=$request->email_address;
 	        $schoolusers->save();
 			
-			$role = (Config::get('app.Admin_role') == $user->user_role)?'Admin':((Config::get('app.Management_role') == $user->user_role)?'Management':'Staff');
+			$rolename = (Config::get('app.Admin_role') == $role)?'Admin':((Config::get('app.Management_role') == $role)?'Management':'Staff');
 			if($request->id=='')
-	            return response()->json(['status'=>true,'message'=>$role.' user added Successfully!...']);
+	            return response()->json(['status'=>true,'message'=>$rolename.' user added Successfully!...']);
 	       	else
-	            return response()->json(['status'=>true,'message'=>$role.' details updated Successfully!...']);
+	            return response()->json(['status'=>true,'message'=>$rolename.' details updated Successfully!...']);
         }
         else
         	return response()->json(['status'=>false,'message'=>'Invalid Credentails!...']);

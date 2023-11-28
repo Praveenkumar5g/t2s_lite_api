@@ -2231,7 +2231,7 @@ class APIConfigurationsController extends Controller
 
         $user_table_id = $user_details->id; //fetch particular id
 
-        $userall_id =v$id = $user_id = $image = ''; //declaration
+        $userall_id = $id = $user_id = $image = ''; //declaration
 
         $userall_id = UserAll::where(['user_table_id'=>$user_table_id,'user_role'=>$user->user_role])->pluck('id')->first(); //fetch common id
 

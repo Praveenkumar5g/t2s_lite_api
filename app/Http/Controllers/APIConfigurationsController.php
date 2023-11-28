@@ -2220,469 +2220,189 @@ class APIConfigurationsController extends Controller
         return response()->json('Deleted Successfully!...');
     }
 
-    // // edit managment details
-    // public function onboarding_edit_management(Request $request)
-    // {
-    // 	// Check authenticate user
-    //     $user = auth()->user();
-
-    //     if($user->user_role == Config::get('app.Admin_role'))//check role and get current user id
-    //         $user_table_id = UserAdmin::where(['user_id'=>$user->user_id])->pluck('id')->first();
-
-    //     $userall_id = UserAll::where(['user_table_id'=>$user_table_id,'user_role'=>$user->user_role])->pluck('id')->first();
-    //     $profile_details = SchoolProfile::where(['id'=>$user->school_profile_id])->first();//Fetch school profile details 
-    //     $management_details = [];
-    //     if($request->id!='')// fetch selected management user details 
-    //     	$management_details = UserManagements::where('id',$request->id)->get()->first();
-    //     $value = $request->all();
-    //     if(!empty($management_details))
-    //     {
-    //     	$image ='';
-    //     	if(!empty($request->photo))//check upload photo exist or not
-    //     	{
-    //     		$name = explode('.',$request->photo->getClientOriginalName())[0];
-	//         	$image = $name.''.time().'.'.$request->photo->extension();
-	//         	$request->photo->move(public_path(env('SAMPLE_CONFIG_URL').'managements'), $image);
-    //     	}
-	//         //save staff details
-	//         $management_details->first_name= $request->management_person_name;
-	//         $management_details->mobile_number=$request->mobile_number;
-	//         if($image!='')
-	//         	$management_details->profile_image = ($image!='')?public_path(env('SAMPLE_CONFIG_URL').'managements/'.$image):'';
-	//         $management_details->email_id=$request->email_address;
-	//         $management_details->user_category=$request->user_category;
-	//         $management_details->employee_no=$request->employee_no;
-	//         $management_details->dob=$request->dob;
-	//         $management_details->doj=$request->doj;
-	//         $management_details->updated_by=$userall_id;
-	//     	$management_details->updated_time=Carbon::now()->timezone('Asia/Kolkata');
-	//         $management_details->save();
-
-
-	//         $schoolusers = SchoolUsers::where('user_id',$management_details->user_id)->get()->first(); //update email address in common login table
-
-    //         $schoolusers->user_email_id=$request->email_address;
-    //         $schoolusers->save();
-    //    		Configurations::where('school_profile_id',$user->school_profile_id)->update(['management'=>1]);
-
-    //         return response()->json(['status'=>true,'message'=>'Management details updated Successfully!...']);
-    //     }
-    //     else
-    //    	{
-    //    		//save management details
-
-    //    		$image ='';
-    //     	if(!empty($request->photo))//check upload photo exist or not
-    //     	{
-    //     		$name = explode('.',$request->photo->getClientOriginalName())[0];
-	//         	$image = $name.''.time().'.'.$request->photo->extension();
-	//         	$request->photo->move(public_path(env('SAMPLE_CONFIG_URL').'managements'), $image);
-    //     	}
-
-    //         $UserManagements = new UserManagements;
-    //         $UserManagements->first_name= $value['management_person_name'];
-    //         $UserManagements->mobile_number=$value['mobile_number'];
-    //         $UserManagements->profile_image = ($image!='')?public_path(env('SAMPLE_CONFIG_URL').'managements/'.$image):'';
-    //         $UserManagements->email_id=$request->email_address;
-	//         $UserManagements->user_category=$request->user_category;
-	//         $UserManagements->employee_no=$request->employee_no;
-	//         $UserManagements->dob=$request->dob;
-	//         $UserManagements->doj=$request->doj;
-    //         $UserManagements->created_by=$userall_id;
-    //     	$UserManagements->created_time=Carbon::now()->timezone('Asia/Kolkata');
-    //         $UserManagements->save();
-
-    //         $management_id =$UserManagements->id; // staff id
-
-    //         // generate and update staff id in db 
-    //         $usermanagement_id = $profile_details['school_code'].substr($profile_details['active_academic_year'], -2).'M'.sprintf("%04s", $management_id);
-    //         $UserManagements->user_id = $usermanagement_id;
-    //         $UserManagements->save();
-
-    //         $user_all = new UserAll;
-    //         $user_all->user_table_id=$management_id;
-    //         $user_all->user_role=5;
-    //         $user_all->save();
-
-    //         $schoolusers = new SchoolUsers;
-    //         $schoolusers->school_profile_id=$user->school_profile_id;
-    //         $schoolusers->user_id=$usermanagement_id;
-    //         $schoolusers->user_mobile_number=$value['mobile_number'];
-    //         $schoolusers->user_password=bcrypt($value['mobile_number']);
-    //         $schoolusers->user_role=5;
-    //         $schoolusers->user_status=1;
-    //         $schoolusers->save();
-    //         $group_id = $request->group_id;
-    //         if($group_id!='')
-	//         {
-	//         	$select_all_groups = UserGroups::where('group_status',Config::get('app.Group_Active'))->get()->toArray();
-	//         	foreach($select_all_groups as $allgroup_key => $allgroup_value)
-	//         	{
-	//         		UserGroupsMapping::insert(['group_id'=>$allgroup_value['id'],'user_table_id'=>$management_id,'user_role'=>Config::get('app.Management_role'),'user_status'=>1,'group_access'=>1]);
-	//         	}
-	//         }
-	//         else
-    //    			Configurations::where('school_profile_id',$user->school_profile_id)->update(['managements'=>1]);
-    //         return response()->json(['status'=>true,'mesage'=>'Management user added Successfully!...']);
-    //    	}
-    // }
-
-        // edit managment details
-    public function onboarding_edit_management(Request $request)
+    // Create and update users
+    public function create_update_users(Request $request)
     {
     	// Check authenticate user
         $user = auth()->user();
 
-        if($user->user_role == Config::get('app.Admin_role'))//check role and get current user id
-            $user_table_id = UserAdmin::where(['user_id'=>$user->user_id])->pluck('id')->first();
-        else if($user->user_role == Config::get('app.Management_role'))//check role and get current user id
-            $user_table_id = UserManagements::where(['user_id'=>$user->user_id])->pluck('id')->first();
+        // get user details from table
+        $user_details =  app('App\Http\Controllers\APILoginController')->get_user_table_id($user);
 
-        $userall_id = UserAll::where(['user_table_id'=>$user_table_id,'user_role'=>$user->user_role])->pluck('id')->first();
-        $management_details = [];
-        if($request->id!='')// fetch selected management user details 
-        {
-        	$management_details = UserManagements::where('id',$request->id)->first();
-        	$management_details->updated_by=$userall_id;
-    		$management_details->updated_time=Carbon::now()->timezone('Asia/Kolkata');
-    		$management_id =$management_details->id;
-    		$management_user_id= $management_details->user_id;
-        }
-        else
-        {
-        	$management_id ='';
-        	$management_details = new UserManagements();
-        	$management_details->created_by=$userall_id;
-        	$management_details->created_time=Carbon::now()->timezone('Asia/Kolkata');
-        }
-        $target_file = "/management/";
-        if(isset($request->employee_no) && $request->employee_no!='')
-        {
-        	$check_exists = $this->checkEmployeeno($management_id,Config::get('app.Management_role'),$request->employee_no);
-        	if($check_exists)
-        		 return response()->json(['status'=>false,'message'=>'Given Employee no already exists!...']);
-        }
+        $user_table_id = $user_details->id; //fetch particular id
 
-        $schoolcode = $school_profile = SchoolProfile::where(['id'=>$user['school_profile_id']])->first();//get school code from school profile
-    	$image ='';
-    	if(count($_FILES)>0)
+        $userall_id =v$id = $user_id = $image = ''; //declaration
+
+        $userall_id = UserAll::where(['user_table_id'=>$user_table_id,'user_role'=>$user->user_role])->pluck('id')->first(); //fetch common id
+
+        if($userall_id!='') //check common id is exists
         {
-            if($request->hasfile('photo')) {
-                $image = app('App\Http\Controllers\WelcomeController')->profile_file_upload($school_profile['school_code'],$request->file('photo'),$request->attachment_type,$target_file);
-            }           
-        }
-       	//save staff details
-        $management_details->first_name= $request->management_name;
-        $management_details->mobile_number=$request->mobile_number;
-        if($image!='')
-        	$management_details->profile_image = ($image!='')?$image:'';
-        if($request->email_address!='')
-        	$management_details->email_id=$request->email_address;
-        $management_details->user_category=$request->user_category;
-        if($request->employee_no!='')
-        	$management_details->employee_no=$request->employee_no;
-        $management_details->dob=date('Y-m-d',strtotime($request->dob));
-        if($request->doj!='' && $request->doj!= null)
-        	$management_details->doj=date('Y-m-d',strtotime($request->doj));
-        
-        $management_details->save();
+        	//select and Store user details based on user role
+        	if($user->user_role == Config::get('app.Admin_role')) 
+        	{
+        		if($request->id!='')
+        			$individual_user_details = UserAdmin::where('id',$request->id)->first();
+        		else
+        			$individual_user_details = new UserAdmin();
 
-        $id = $management_details->id;
+        		$target_file = '/admin/';
+        	}
+        	else if($user->user_role == Config::get('app.Management_role')) 
+        	{
+        		if($request->id!='')
+        			$individual_user_details = UserManagements::where('id',$request->id)->first();
+        		else
+        			$individual_user_details = new UserManagements();
 
-        if($request->id=='')
-        {
-        	$management_id =$management_details->id; // staff id
+        		$target_file = '/management/';
+        	}
+        	else if($user->user_role == Config::get('app.Staff_role')) 
+        	{
+        		if($request->id!='')
+        			$individual_user_details = UserStaffs::where('id',$request->id)->first();
+        		else
+        			$individual_user_details = new UserStaffs();
 
-        	// generate and update staff id in db 
-            $management_user_id = $school_profile->school_code.substr($school_profile->active_academic_year, -2).'M'.sprintf("%04s", $management_id);
-            $management_details->user_id = $management_user_id;
-            $management_details->save();
+        		$target_file = '/staff/';
+        	}
+        	else
+        		return response()->json(['status'=>false,'message'=>"You don't have a permission to create user!..."]);
 
-            $user_all = new UserAll;
-            $user_all->user_table_id=$management_id;
-            $user_all->user_role=Config::get('app.Management_role');
-            $user_all->save();
-        }
-        $schoolusers = SchoolUsers::where('user_id',$management_user_id)->first(); //update email address in common login table
-        if($request->id=='')
-        {
-        	if($request->module == 'singleuser')
-        	{ 
-	            $all_group_ids = UserGroups::pluck('id')->toArray();
+        	if($request->id!='')// fetch selected management user details 
+        	{
+	    		$id = $individual_user_details->id;
+				$user_id = $individual_user_details->user_id;
+			}
+
+			if(isset($request->employee_no) && $request->employee_no!='')
+	        {
+	        	$check_exists = $this->checkEmployeeno($id,$user->user_role,$request->employee_no);
+	        	if($check_exists)
+	        		 return response()->json(['status'=>false,'message'=>'Given Employee no already exists!...']);
+	        }
+	        if(isset($request->mobile_number) && $request->mobile_number!='')
+	        {
+	        	$check_exists = $this->checkmobileno($id,$user->user_role,$request->mobile_number);
+	        	if($check_exists)
+	        		 return response()->json(['status'=>false,'message'=>'Given Mobile no already exists!...']);
+	        }
+
+			$individual_user_details->updated_by=$userall_id;
+    		$individual_user_details->updated_time=Carbon::now()->timezone('Asia/Kolkata');
+    		$individual_user_details->created_by=$userall_id;
+        	$individual_user_details->created_time=Carbon::now()->timezone('Asia/Kolkata');
+
+        	$schoolcode = $school_profile = SchoolProfile::where(['id'=>$user['school_profile_id']])->first();//get school code from school profile
+
+	    	if(count($_FILES)>0)
+	        {
+	            if($request->hasfile('photo')) {
+	                $image = app('App\Http\Controllers\WelcomeController')->profile_file_upload($school_profile['school_code'],$request->file('photo'),$request->attachment_type,$target_file);
+	            }           
+	        }
+
+	        $individual_user_details->first_name= $request->admin_name;
+	        $individual_user_details->mobile_number=$request->mobile_number;
+	        $individual_user_details->profile_image = ($image!='')?$image:'';
+	        $individual_user_details->email_id=$request->email_address;
+	        if($request->employee_no!='' && $request->employee_no!= null)
+	       		$individual_user_details->employee_no=$request->employee_no;
+	       	if($request->employee_no!='' && $request->employee_no!= null)
+	       		$individual_user_details->user_category=$request->user_category;
+	        $individual_user_details->dob=date('Y-m-d',strtotime($request->dob));
+	        if($request->doj!='' && $request->doj!= null)
+	        	$individual_user_details->doj=date('Y-m-d',strtotime($request->doj));
+
+
+	        $individual_user_details->save();
+
+	        $id = $individual_user_details->id;
+
+	        if($request->id=='')
+        	{
+        		$role_code = ($user->user_role == Config::get('app.Admin_role'))?'A':(($user->user_role == Config::get('app.Management_role'))?'M':'T');
+	        	// generate and update staff id in db 
+	            $user_id = $school_profile->school_code.substr($school_profile->active_academic_year, -2).$role_code.sprintf("%04s", $admin_id);
+
+	            $individual_user_details->user_id = $user_id;
+	            $individual_user_details->save();
+
+	            $user_all = new UserAll;
+	            $user_all->user_table_id=$id;
+	            $user_all->user_role=$user->user_role;
+	            $user_all->save();
+        	}
+
+        	$schoolusers = SchoolUsers::where('user_id',$user_id)->first(); //update email address in common login table
+
+	        if($request->id=='')
+	        {
+	        	$all_group_ids = [];
+	        	if($user->user_role == Config::get('app.Admin_role')) 
+	        	{
+	            	$all_group_ids = UserGroups::where('id','!=',1)->pluck('id')->toArray();
+	            	$group_access = Config::get('app.Group_Active');
+	        	}
+	        	else if($user->user_role == Config::get('app.Management_role'))
+	        	{
+	        		$all_group_ids = UserGroups::pluck('id')->toArray();
+	        		$group_access = Config::get('app.Group_Active');
+	        	}
+	        	else if($user->user_role == Config::get('app.Staff_role'))
+	        	{
+	        		$all_group_ids = ([2,3]);
+	        		$group_access = Config::get('app.Group_Active');
+	        	}
 
 		        foreach($all_group_ids as $group_key => $group_id)
 		        {
-		        	UserGroupsMapping::insert(['group_id'=>$group_id,'user_table_id'=>$id,'user_role'=>Config::get('app.Management_role'),'group_access'=>Config::get('app.Group_Active'),'user_status'=>Config::get('app.Group_Active')]);
+		        	UserGroupsMapping::insert(['group_id'=>$group_id,'user_table_id'=>$id,'user_role'=>$user->user_role,'group_access'=>$group_access,'user_status'=>Config::get('app.Group_Active')]);
 		        }
-		    }
 
-            $schoolusers = new SchoolUsers;
-            $schoolusers->school_profile_id=$user->school_profile_id;
-            $schoolusers->user_id=$management_user_id;
-            $schoolusers->user_password=bcrypt($request->mobile_number);
-	        $schoolusers->user_role=Config::get('app.Management_role');
-	        $schoolusers->user_status=Config::get('app.Group_Active');
-        }
+		        if($user->user_role == Config::get('app.Staff_role'))
+		        {
+			        if($request->user_category == 3 && $user_category != $request->user_category)
+			        {              
+			            UserGroupsMapping::where('user_role',Config::get('app.Staff_role'))->where('group_id',5)->where('user_table_id',$individual_user_details->id)->delete();
+			            $check_exists_nonteaching = UserGroupsMapping::where('user_role',Config::get('app.Staff_role'))->where('group_id',4)->where('user_table_id',$individual_user_details->id)->first();
+			            if(empty($check_exists_nonteaching))
+			                UserGroupsMapping::insert(['user_role'=>Config::get('app.Staff_role'),'group_id'=>4,'user_table_id'=>$individual_user_details->id,'group_access'=>2]);
+			        }
+			        else if($request->user_category == 4 && $user_category != $request->user_category)
+			        {
+			            UserGroupsMapping::where('user_role',Config::get('app.Staff_role'))->where('group_id',4)->where('user_table_id',$individual_user_details->id)->delete();
+			            $check_exists_nonteaching = UserGroupsMapping::where('user_role',Config::get('app.Staff_role'))->where('group_id',5)->where('user_table_id',$individual_user_details->id)->first();
+			            if(empty($check_exists_nonteaching))
+			                UserGroupsMapping::insert(['user_role'=>Config::get('app.Staff_role'),'group_id'=>5,'user_table_id'=>$individual_user_details->id,'group_access'=>2]);
 
-        $schoolusers->user_mobile_number=$request->mobile_number;
-        $schoolusers->user_email_id=$request->email_address;
-        $schoolusers->save();
-		
-		Configurations::where('school_profile_id',$user->school_profile_id)->update(['management'=>1]);
+			            AcademicSubjectsMapping::where('staff',$individual_user_details->id)->update(['staff'=>null]);
+			            AcademicClassConfiguration::where('class_teacher',$individual_user_details->id)->update(['class_teacher'=>null]);
+			            $staff_group_list = UserGroups::where('group_type',2)->where('group_status',Config::get('app.Group_Active'))->pluck('id')->toArray();
 
-		if($request->id=='')
-            return response()->json(['status'=>true,'message'=>'Management user added Successfully!...']);
-       	else
-            return response()->json(['status'=>true,'message'=>'Management details updated Successfully!...']);
-    }
+			            UserGroupsMapping::where('user_role',Config::get('app.Staff_role'))->whereIn('group_id',$staff_group_list)->where('user_table_id',$individual_user_details->id)->delete();
+			        }
+		        }
 
-    // edit admin details
-    public function create_update_admin(Request $request)
-    {
-    	// Check authenticate user
-        $user = auth()->user();
-
-        if($user->user_role == Config::get('app.Admin_role'))//check role and get current user id
-            $user_table_id = UserAdmin::where(['user_id'=>$user->user_id])->pluck('id')->first();
-        else if($user->user_role == Config::get('app.Management_role'))//check role and get current user id
-            $user_table_id = UserManagements::where(['user_id'=>$user->user_id])->pluck('id')->first();
-
-        $userall_id = UserAll::where(['user_table_id'=>$user_table_id,'user_role'=>$user->user_role])->pluck('id')->first();
-        $admin_details = [];
-        if($request->id!='')// fetch selected management user details 
-        {
-        	$admin_details = UserAdmin::where('id',$request->id)->first();
-        	$admin_details->updated_by=$userall_id;
-    		$admin_details->updated_time=Carbon::now()->timezone('Asia/Kolkata');
-    		$admin_id =$admin_details->id;
-    		$admin_user_id= $admin_details->user_id;
-        }
-        else
-        {
-        	$admin_id = '';
-        	$admin_details = new UserAdmin();
-        	$admin_details->created_by=$userall_id;
-        	$admin_details->created_time=Carbon::now()->timezone('Asia/Kolkata');
-        }
-
-        $target_file = '/admin/';
-        if(isset($request->employee_no) && $request->employee_no!='')
-        {
-        	$check_exists = $this->checkEmployeeno($admin_id,Config::get('app.Admin_role'),$request->employee_no);
-        	if($check_exists)
-        		 return response()->json(['status'=>false,'message'=>'Given Employee no already exists!...']);
-        }
-        if(isset($request->mobile_number) && $request->mobile_number!='')
-        {
-        	$check_exists = $this->checkmobileno($admin_id,Config::get('app.Admin_role'),$request->mobile_number);
-        	if($check_exists)
-        		 return response()->json(['status'=>false,'message'=>'Given Mobile no already exists!...']);
-        }
-
-        $schoolcode = $school_profile = SchoolProfile::where(['id'=>$user['school_profile_id']])->first();//get school code from school profile
-    	$image ='';
-    	if(count($_FILES)>0)
-        {
-            if($request->hasfile('photo')) {
-                $image = app('App\Http\Controllers\WelcomeController')->profile_file_upload($school_profile['school_code'],$request->file('photo'),$request->attachment_type,$target_file);
-            }           
-        }
-
-    	//save staff details
-        $admin_details->first_name= $request->admin_name;
-        $admin_details->mobile_number=$request->mobile_number;
-        if($image!='')
-        	$admin_details->profile_image = ($image!='')?$image:'';
-        $admin_details->email_id=$request->email_address;
-       	$admin_details->employee_no=$request->employee_no;
-        $admin_details->dob=date('Y-m-d',strtotime($request->dob));
-        if($request->doj!='' && $request->doj!= null)
-        	$admin_details->doj=date('Y-m-d',strtotime($request->doj));
-
-
-        $admin_details->save();
-
-        $id = $admin_details->id;
-
-        if($request->id=='')
-        {
-        	$admin_id =$admin_details->id; // staff id
-
-        	// generate and update staff id in db 
-            $admin_user_id = $school_profile->school_code.substr($school_profile->active_academic_year, -2).'A'.sprintf("%04s", $admin_id);
-            $admin_details->user_id = $admin_user_id;
-            $admin_details->save();
-
-            $user_all = new UserAll;
-            $user_all->user_table_id=$admin_id;
-            $user_all->user_role=Config::get('app.Admin_role');
-            $user_all->save();
-        }
-
-        $schoolusers = SchoolUsers::where('user_id',$admin_user_id)->first(); //update email address in common login table
-        if($request->id=='')
-        {
-            $all_group_ids = UserGroups::where('id','!=',1)->pluck('id')->toArray();
-
-	        foreach($all_group_ids as $group_key => $group_id)
-	        {
-	        	UserGroupsMapping::insert(['group_id'=>$group_id,'user_table_id'=>$id,'user_role'=>Config::get('app.Admin_role'),'group_access'=>Config::get('app.Group_Active'),'user_status'=>Config::get('app.Group_Active')]);
+	            $schoolusers = new SchoolUsers;
+	            $schoolusers->school_profile_id=$user->school_profile_id;
+	            $schoolusers->user_id=$user_id;
+	            $schoolusers->user_password=bcrypt($request->mobile_number);
+	        	$schoolusers->user_role=$user->user_role;
+	        	$schoolusers->user_status=Config::get('app.Group_Active');
 	        }
 
-            $schoolusers = new SchoolUsers;
-            $schoolusers->school_profile_id=$user->school_profile_id;
-            $schoolusers->user_id=$admin_user_id;
-            $schoolusers->user_password=bcrypt($request->mobile_number);
-        	$schoolusers->user_role=Config::get('app.Admin_role');
-        	$schoolusers->user_status=Config::get('app.Group_Active');
-        }
-
-        $schoolusers->user_mobile_number=$request->mobile_number;
-        $schoolusers->user_email_id=$request->email_address;
-        $schoolusers->save();
-		
-		if($request->id=='')
-            return response()->json(['status'=>true,'message'=>'Admin user added Successfully!...']);
-       	else
-            return response()->json(['status'=>true,'message'=>'Admin details updated Successfully!...']);
-    }
-
-    // edit Staff details
-    public function create_update_staff(Request $request)
-    {
-    	// Check authenticate user
-        $user = auth()->user();
-
-        if($user->user_role == Config::get('app.Admin_role'))//check role and get current user id
-            $user_table_id = UserAdmin::where(['user_id'=>$user->user_id])->pluck('id')->first();
-        else if($user->user_role == Config::get('app.Management_role'))//check role and get current user id
-            $user_table_id = UserManagements::where(['user_id'=>$user->user_id])->pluck('id')->first();
-
-        $userall_id = UserAll::where(['user_table_id'=>$user_table_id,'user_role'=>$user->user_role])->pluck('id')->first();
-        $staff_details = [];
-        if($request->id!='')// fetch selected management user details 
-        {
-        	$staff_details = UserStaffs::where('id',$request->id)->first();
-        	$staff_details->updated_by=$userall_id;
-    		$staff_details->updated_time=Carbon::now()->timezone('Asia/Kolkata');
-    		$staff_id =$staff_details->id;
-    		$staff_user_id= $staff_details->user_id;
+	        $schoolusers->user_mobile_number=$request->mobile_number;
+	        $schoolusers->user_email_id=$request->email_address;
+	        $schoolusers->save();
+			
+			$role = (Config::get('app.Admin_role') == $user->user_role)?'Admin':((Config::get('app.Management_role') == $user->user_role)?'Management':'Staff')
+			if($request->id=='')
+	            return response()->json(['status'=>true,'message'=>$role.' user added Successfully!...']);
+	       	else
+	            return response()->json(['status'=>true,'message'=>$role.' details updated Successfully!...']);
         }
         else
-        {
-        	$staff_id = '';
-        	$staff_details = new UserStaffs();
-        	$staff_details->created_by=$userall_id;
-        	$staff_details->created_time=Carbon::now()->timezone('Asia/Kolkata');
-        }
-
-        $target_file = '/staff/';
-        if(isset($request->employee_no) && $request->employee_no!='')
-        {
-        	$check_exists = $this->checkEmployeeno($staff_id,Config::get('app.Staff_role'),$request->employee_no);
-        	if($check_exists)
-        		 return response()->json(['status'=>false,'message'=>'Given Employee no already exists!...']);
-        }
-        if(isset($request->mobile_number) && $request->mobile_number!='')
-        {
-        	$check_exists = $this->checkmobileno($staff_id,Config::get('app.Staff_role'),$request->mobile_number);
-        	if($check_exists)
-        		 return response()->json(['status'=>false,'message'=>'Given Mobile no already exists!...']);
-        }
-
-        $schoolcode = $school_profile = SchoolProfile::where(['id'=>$user['school_profile_id']])->first();//get school code from school profile
-    	$image ='';
-    	if(count($_FILES)>0)
-        {
-            if($request->hasfile('photo')) {
-                $image = app('App\Http\Controllers\WelcomeController')->profile_file_upload($school_profile['school_code'],$request->file('photo'),$request->attachment_type,$target_file);
-            }           
-        }
-
-        $user_category = $staff_details->user_category;
-
-    	//save staff details
-        $staff_details->first_name= $request->staff_name;
-        $staff_details->mobile_number=$request->mobile_number;
-        if($image!='')
-        	$staff_details->profile_image = ($image!='')?$image:'';
-        $staff_details->email_id=$request->email_address;
-        $staff_details->user_category=$request->user_category;
-        if($request->employee_no!='' && $request->employee_no!= null)
-        	$staff_details->employee_no=$request->employee_no;
-        $staff_details->dob=date('Y-m-d',strtotime($request->dob));
-        if($request->doj!='' && $request->doj!= null)
-        	$staff_details->doj=date('Y-m-d',strtotime($request->doj));
-
-
-        $staff_details->save();
-
-        $id = $staff_details->id;
-
-        if($request->id=='')
-        {
-        	$staff_id =$staff_details->id; // staff id
-
-        	// generate and update staff id in db 
-            $staff_user_id = $school_profile->school_code.substr($school_profile->active_academic_year, -2).'T'.sprintf("%04s", $staff_id);
-            $staff_details->user_id = $staff_user_id;
-            $staff_details->save();
-
-            $user_all = new UserAll;
-            $user_all->user_table_id=$staff_id;
-            $user_all->user_role=Config::get('app.Staff_role');
-            $user_all->save();
-        }
-
-        $schoolusers = SchoolUsers::where('user_id',$staff_user_id)->first(); //update email address in common login table
-        if($request->id=='')
-        {
-            $all_group_ids = ([2,3]);
-
-	        foreach($all_group_ids as $group_key => $group_id)
-	        {
-	        	UserGroupsMapping::insert(['group_id'=>$group_id,'user_table_id'=>$id,'user_role'=>Config::get('app.Staff_role'),'group_access'=>Config::get('app.Group_Deactive'),'user_status'=>Config::get('app.Group_Active')]);
-	        }
-
-            $schoolusers = new SchoolUsers;
-            $schoolusers->school_profile_id=$user->school_profile_id;
-            $schoolusers->user_id=$staff_user_id;
-            $schoolusers->user_password=bcrypt($request->mobile_number);
-        	$schoolusers->user_role=Config::get('app.Staff_role');
-        	$schoolusers->user_status=Config::get('app.Group_Active');
-        }
-
-        $schoolusers->user_mobile_number=$request->mobile_number;
-        $schoolusers->user_email_id=$request->email_address;
-        $schoolusers->save();
-
-        
-
-        if($request->user_category == 3 && $user_category != $request->user_category)
-        {              
-            UserGroupsMapping::where('user_role',Config::get('app.Staff_role'))->where('group_id',5)->where('user_table_id',$staff_details->id)->delete();
-            $check_exists_nonteaching = UserGroupsMapping::where('user_role',Config::get('app.Staff_role'))->where('group_id',4)->where('user_table_id',$staff_details->id)->first();
-            if(empty($check_exists_nonteaching))
-                UserGroupsMapping::insert(['user_role'=>Config::get('app.Staff_role'),'group_id'=>4,'user_table_id'=>$staff_details->id,'group_access'=>2]);
-        }
-        else if($request->user_category == 4 && $user_category != $request->user_category)
-        {
-            UserGroupsMapping::where('user_role',Config::get('app.Staff_role'))->where('group_id',4)->where('user_table_id',$staff_details->id)->delete();
-            $check_exists_nonteaching = UserGroupsMapping::where('user_role',Config::get('app.Staff_role'))->where('group_id',5)->where('user_table_id',$staff_details->id)->first();
-            if(empty($check_exists_nonteaching))
-                UserGroupsMapping::insert(['user_role'=>Config::get('app.Staff_role'),'group_id'=>5,'user_table_id'=>$staff_details->id,'group_access'=>2]);
-
-            AcademicSubjectsMapping::where('staff',$staff_details->id)->update(['staff'=>null]);
-            AcademicClassConfiguration::where('class_teacher',$staff_details->id)->update(['class_teacher'=>null]);
-            $staff_group_list = UserGroups::where('group_type',2)->where('group_status',Config::get('app.Group_Active'))->pluck('id')->toArray();
-
-            UserGroupsMapping::where('user_role',Config::get('app.Staff_role'))->whereIn('group_id',$staff_group_list)->where('user_table_id',$staff_details->id)->delete();
-        }
-		
-		if($request->id=='')
-            return response()->json(['status'=>true,'message'=>'Staff user added Successfully!...']);
-       	else
-            return response()->json(['status'=>true,'message'=>'Staff details updated Successfully!...']);
+        	return response()->json(['status'=>false,'message'=>'Invalid Credentails!...']);
     }
 
     // Check employee no
@@ -4482,10 +4202,12 @@ class APIConfigurationsController extends Controller
     	$dulpicate_check_exists = UserParents::where('mobile_number',$request->mobile_number);
         if($request->user_category == Config::get('app.Father'))
             $dulpicate_check_exists = $dulpicate_check_exists->whereIn('user_category',([Config::get('app.Mother'),Config::get('app.Guardian')]));
-        if($request->user_category == Config::get('app.Mother'))
+        else if($request->user_category == Config::get('app.Mother'))
             $dulpicate_check_exists = $dulpicate_check_exists->whereIn('user_category',([Config::get('app.Father'),Config::get('app.Guardian')]));
-        if($request->user_category == Config::get('app.Guardian'))
+        else if($request->user_category == Config::get('app.Guardian'))
             $dulpicate_check_exists = $dulpicate_check_exists->whereIn('user_category',([Config::get('app.Mother'),Config::get('app.Father')]));
+        else
+        	return response()->json(['status'=>false,'message'=>'Permission Denied!..']);
 
         if(isset($request->id)!='')
             $dulpicate_check_exists = $dulpicate_check_exists->where('id','!=',$request->id);

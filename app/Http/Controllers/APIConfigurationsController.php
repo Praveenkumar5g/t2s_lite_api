@@ -4395,19 +4395,13 @@ class APIConfigurationsController extends Controller
 
 	        // check mobile no already exist in table.
 	        $check_exists = UserParents::where('mobile_number',$request->mobile_number);
-	        if($request->user_category == Config::get('app.Father'))
-	            $check_exists = $check_exists->whereIn('user_category',([Config::get('app.Mother'),Config::get('app.Guardian')]));
-	        if($request->user_category == Config::get('app.Mother'))
-	            $check_exists = $check_exists->whereIn('user_category',([Config::get('app.Father'),Config::get('app.Guardian')]));
-	        if($request->user_category == Config::get('app.Guardian'))
-	            $check_exists = $check_exists->whereIn('user_category',([Config::get('app.Mother'),Config::get('app.Father')]));
-
+	        
 	        if(isset($request->id)!='')
 	            $check_exists = $check_exists->where('id','!=',$request->id);
 
 	        $check_exists = $check_exists->first();
 
-	        if(!empty($check_exists)) //if exists
+	        if(!empty($check_exists) && $request->mobile_number != $details->mobile_number) //if exists
 	        {
 	        	$old_parent_id = $request->id;
 	        	$new_parent_id = $check_exists->id;

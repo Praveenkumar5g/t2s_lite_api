@@ -2236,6 +2236,8 @@ class APIConfigurationsController extends Controller
         $userall_id = UserAll::where(['user_table_id'=>$user_table_id,'user_role'=>$user->user_role])->pluck('id')->first(); //fetch common id
 
         $role = $request->user_role;
+        echo $role;
+        echo Config::get('app.Staff_role');exit;
 
         if($userall_id!='') //check common id is exists
         {

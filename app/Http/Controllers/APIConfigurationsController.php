@@ -2309,7 +2309,7 @@ class APIConfigurationsController extends Controller
 	        $individual_user_details->email_id=$request->email_address;
 	        if($request->employee_no!='' && $request->employee_no!= null)
 	       		$individual_user_details->employee_no=$request->employee_no;
-	       	if($request->employee_no!='' && $request->employee_no!= null)
+	       	if($request->user_category!='' && $request->user_category!= null)
 	       		$individual_user_details->user_category=$request->user_category;
 	        $individual_user_details->dob=date('Y-m-d',strtotime($request->dob));
 	        if($request->doj!='' && $request->doj!= null)

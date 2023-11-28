@@ -2276,13 +2276,13 @@ class APIConfigurationsController extends Controller
 				$user_id = $individual_user_details->user_id;
 			}
 
-			if(isset($request->employee_no) && $request->employee_no!='')
+			if(isset($request->employee_no) && $request->employee_no!='') //check employee no already exists or not
 	        {
 	        	$check_exists = $this->checkEmployeeno($id,$role,$request->employee_no);
 	        	if($check_exists)
 	        		 return response()->json(['status'=>false,'message'=>'Given Employee no already exists!...']);
 	        }
-	        if(isset($request->mobile_number) && $request->mobile_number!='')
+	        if(isset($request->mobile_number) && $request->mobile_number!='') //check mobile no already exists or not
 	        {
 	        	$check_exists = $this->checkmobileno($id,$role,$request->mobile_number);
 	        	if($check_exists)
@@ -2296,7 +2296,7 @@ class APIConfigurationsController extends Controller
 
         	$schoolcode = $school_profile = SchoolProfile::where(['id'=>$user['school_profile_id']])->first();//get school code from school profile
 
-	    	if(count($_FILES)>0)
+	    	if(count($_FILES)>0) //upload image
 	        {
 	            if($request->hasfile('photo')) {
 	                $image = app('App\Http\Controllers\WelcomeController')->profile_file_upload($school_profile['school_code'],$request->file('photo'),$request->attachment_type,$target_file);
@@ -2320,7 +2320,7 @@ class APIConfigurationsController extends Controller
 
 	        $id = $individual_user_details->id;
 
-	        if($request->id=='')
+	        if($request->id=='') //if new user, update user id and insert record in user common table
         	{
         		$role_code = ($role == Config::get('app.Admin_role'))?'A':(($role == Config::get('app.Management_role'))?'M':'T');
 	        	// generate and update staff id in db 
@@ -2339,6 +2339,7 @@ class APIConfigurationsController extends Controller
 
 	        if($request->id=='')
 	        {
+	        	// given access to the groups based on the role  
 	        	$all_group_ids = [];
 	        	if($role == Config::get('app.Admin_role')) 
 	        	{
@@ -2365,27 +2366,35 @@ class APIConfigurationsController extends Controller
 		        {
 		        	$user_category = ($request->id!='')?$individual_user_details->user_category:'';
 			        if($request->user_category == 3 && $user_category != $request->user_category)
-			        {              
+			        {             
+			        	// remove the "Non-teaching group if user changed their role to teaching staff." 
 			            UserGroupsMapping::where('user_role',Config::get('app.Staff_role'))->where('group_id',5)->where('user_table_id',$individual_user_details->id)->delete();
+			            // checking teaching staff group alreay mapped with the user.
 			            $check_exists_nonteaching = UserGroupsMapping::where('user_role',Config::get('app.Staff_role'))->where('group_id',4)->where('user_table_id',$individual_user_details->id)->first();
-			            if(empty($check_exists_nonteaching))
+			            if(empty($check_exists_nonteaching)) //if not given access to user
 			                UserGroupsMapping::insert(['user_role'=>Config::get('app.Staff_role'),'group_id'=>4,'user_table_id'=>$individual_user_details->id,'group_access'=>2]);
 			        }
 			        else if($request->user_category == 4 && $user_category != $request->user_category)
 			        {
+			        	// remove the " teaching staff group if user changed their role to Non-teaching." 
 			            UserGroupsMapping::where('user_role',Config::get('app.Staff_role'))->where('group_id',4)->where('user_table_id',$individual_user_details->id)->delete();
+			            // checking Non-teaching staff group alreay mapped with the user.
 			            $check_exists_nonteaching = UserGroupsMapping::where('user_role',Config::get('app.Staff_role'))->where('group_id',5)->where('user_table_id',$individual_user_details->id)->first();
-			            if(empty($check_exists_nonteaching))
+			            if(empty($check_exists_nonteaching))//if not given access to user
 			                UserGroupsMapping::insert(['user_role'=>Config::get('app.Staff_role'),'group_id'=>5,'user_table_id'=>$individual_user_details->id,'group_access'=>2]);
 
+			            // remove access from the subject teacher
 			            AcademicSubjectsMapping::where('staff',$individual_user_details->id)->update(['staff'=>null]);
+			            // remove access from the class teacher
 			            AcademicClassConfiguration::where('class_teacher',$individual_user_details->id)->update(['class_teacher'=>null]);
+
+			            // check user have whole group access
 			            $staff_group_list = UserGroups::where('group_type',2)->where('group_status',Config::get('app.Group_Active'))->pluck('id')->toArray();
 
 			            UserGroupsMapping::where('user_role',Config::get('app.Staff_role'))->whereIn('group_id',$staff_group_list)->where('user_table_id',$individual_user_details->id)->delete();
 			        }
 		        }
-
+		        // update user details in config DB.
 	            $schoolusers = new SchoolUsers;
 	            $schoolusers->school_profile_id=$user->school_profile_id;
 	            $schoolusers->user_id=$user_id;
@@ -2415,9 +2424,12 @@ class APIConfigurationsController extends Controller
         	$check_exists = UserAdmin::where('employee_no',$employee_no);
         else if($user_role == Config::get('app.Staff_role'))
         	$check_exists = UserStaffs::where('employee_no',$employee_no);
-        else
+        else if($user_role == Config::get('app.Management_role'))
         	$check_exists = UserManagements::where('employee_no',$employee_no);
-        if(isset($id)!='')
+        else 
+        	return false;
+
+        if($id!='')
             $check_exists = $check_exists->where('id','!=',$id);
 
         $check_exists = $check_exists->first();
@@ -2434,10 +2446,12 @@ class APIConfigurationsController extends Controller
         	$check_exists = UserAdmin::where('mobile_number',$employee_no);
         else if($user_role == Config::get('app.Staff_role'))
         	$check_exists = UserStaffs::where('mobile_number',$employee_no);
-        else
+        else if($user_role == Config::get('app.Management_role'))
         	$check_exists = UserManagements::where('mobile_number',$employee_no);
+        else 
+        	return false;
         
-        if(isset($id)!='')
+        if($id!='')
             $check_exists = $check_exists->where('id','!=',$id);
 
         $check_exists = $check_exists->first();

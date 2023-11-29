@@ -2362,38 +2362,6 @@ class APIConfigurationsController extends Controller
 		        	UserGroupsMapping::insert(['group_id'=>$group_id,'user_table_id'=>$loginid,'user_role'=>$role,'group_access'=>$group_access,'user_status'=>Config::get('app.Group_Active')]);
 		        }
 
-		        if($role == Config::get('app.Staff_role'))
-		        {
-		        	$user_category = ($request->id!='')?$individual_user_details->user_category:'';
-			        if($request->user_category == 3 && $user_category != $request->user_category)
-			        {             
-			        	// remove the "Non-teaching group if user changed their role to teaching staff." 
-			            UserGroupsMapping::where('user_role',Config::get('app.Staff_role'))->where('group_id',5)->where('user_table_id',$individual_user_details->id)->delete();
-			            // checking teaching staff group alreay mapped with the user.
-			            $check_exists_nonteaching = UserGroupsMapping::where('user_role',Config::get('app.Staff_role'))->where('group_id',4)->where('user_table_id',$individual_user_details->id)->first();
-			            if(empty($check_exists_nonteaching)) //if not given access to user
-			                UserGroupsMapping::insert(['user_role'=>Config::get('app.Staff_role'),'group_id'=>4,'user_table_id'=>$individual_user_details->id,'group_access'=>2]);
-			        }
-			        else if($request->user_category == 4 && $user_category != $request->user_category)
-			        {
-			        	// remove the " teaching staff group if user changed their role to Non-teaching." 
-			            UserGroupsMapping::where('user_role',Config::get('app.Staff_role'))->where('group_id',4)->where('user_table_id',$individual_user_details->id)->delete();
-			            // checking Non-teaching staff group alreay mapped with the user.
-			            $check_exists_nonteaching = UserGroupsMapping::where('user_role',Config::get('app.Staff_role'))->where('group_id',5)->where('user_table_id',$individual_user_details->id)->first();
-			            if(empty($check_exists_nonteaching))//if not given access to user
-			                UserGroupsMapping::insert(['user_role'=>Config::get('app.Staff_role'),'group_id'=>5,'user_table_id'=>$individual_user_details->id,'group_access'=>2]);
-
-			            // remove access from the subject teacher
-			            AcademicSubjectsMapping::where('staff',$individual_user_details->id)->update(['staff'=>null]);
-			            // remove access from the class teacher
-			            AcademicClassConfiguration::where('class_teacher',$individual_user_details->id)->update(['class_teacher'=>null]);
-
-			            // check user have whole group access
-			            $staff_group_list = UserGroups::where('group_type',2)->where('group_status',Config::get('app.Group_Active'))->pluck('id')->toArray();
-
-			            UserGroupsMapping::where('user_role',Config::get('app.Staff_role'))->whereIn('group_id',$staff_group_list)->where('user_table_id',$individual_user_details->id)->delete();
-			        }
-		        }
 		        // update user details in config DB.
 	            $schoolusers = new SchoolUsers;
 	            $schoolusers->school_profile_id=$user->school_profile_id;
@@ -2406,6 +2374,39 @@ class APIConfigurationsController extends Controller
 	        $schoolusers->user_mobile_number=$request->mobile_number;
 	        $schoolusers->user_email_id=$request->email_address;
 	        $schoolusers->save();
+
+	        if($role == Config::get('app.Staff_role'))
+	        {
+	        	$user_category = ($request->id!='')?$individual_user_details->user_category:'';
+		        if($request->user_category == 3 && $user_category != $request->user_category)
+		        {             
+		        	// remove the "Non-teaching group if user changed their role to teaching staff." 
+		            UserGroupsMapping::where('user_role',Config::get('app.Staff_role'))->where('group_id',5)->where('user_table_id',$individual_user_details->id)->delete();
+		            // checking teaching staff group alreay mapped with the user.
+		            $check_exists_nonteaching = UserGroupsMapping::where('user_role',Config::get('app.Staff_role'))->where('group_id',4)->where('user_table_id',$individual_user_details->id)->first();
+		            if(empty($check_exists_nonteaching)) //if not given access to user
+		                UserGroupsMapping::insert(['user_role'=>Config::get('app.Staff_role'),'group_id'=>4,'user_table_id'=>$individual_user_details->id,'group_access'=>2]);
+		        }
+		        else if($request->user_category == 4 && $user_category != $request->user_category)
+		        {
+		        	// remove the " teaching staff group if user changed their role to Non-teaching." 
+		            UserGroupsMapping::where('user_role',Config::get('app.Staff_role'))->where('group_id',4)->where('user_table_id',$loginid)->delete();
+		            // checking Non-teaching staff group alreay mapped with the user.
+		            $check_exists_nonteaching = UserGroupsMapping::where('user_role',Config::get('app.Staff_role'))->where('group_id',5)->where('user_table_id',$individual_user_details->id)->first();
+		            if(empty($check_exists_nonteaching))//if not given access to user
+		                UserGroupsMapping::insert(['user_role'=>Config::get('app.Staff_role'),'group_id'=>5,'user_table_id'=>$individual_user_details->id,'group_access'=>2]);
+
+		            // remove access from the subject teacher
+		            AcademicSubjectsMapping::where('staff',$individual_user_details->id)->update(['staff'=>null]);
+		            // remove access from the class teacher
+		            AcademicClassConfiguration::where('class_teacher',$individual_user_details->id)->update(['class_teacher'=>null]);
+
+		            // check user have whole group access
+		            $staff_group_list = UserGroups::where('group_type',2)->where('group_status',Config::get('app.Group_Active'))->pluck('id')->toArray();
+
+		            UserGroupsMapping::where('user_role',Config::get('app.Staff_role'))->whereIn('group_id',$staff_group_list)->where('user_table_id',$individual_user_details->id)->delete();
+		        }
+	        }
 			
 			$rolename = (Config::get('app.Admin_role') == $role)?'Admin':((Config::get('app.Management_role') == $role)?'Management':'Staff');
 			if($request->id=='')

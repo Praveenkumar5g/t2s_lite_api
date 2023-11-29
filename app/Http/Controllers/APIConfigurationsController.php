@@ -2306,7 +2306,8 @@ class APIConfigurationsController extends Controller
 
 	        $individual_user_details->first_name= $request->name;
 	        $individual_user_details->mobile_number=$request->mobile_number;
-	        $individual_user_details->profile_image = ($image!='')?$image:'';
+	        if($image!='')
+	        	$individual_user_details->profile_image = $image;
 	        $individual_user_details->email_id=$request->email_address;
 	        if($request->employee_no!='' && $request->employee_no!= null)
 	       		$individual_user_details->employee_no=$request->employee_no;

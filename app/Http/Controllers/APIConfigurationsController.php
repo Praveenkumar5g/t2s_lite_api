@@ -2266,6 +2266,7 @@ class APIConfigurationsController extends Controller
         			$individual_user_details = new UserStaffs();
 
         		$target_file = '/staff/';
+        		$user_category = ($request->id!='')?$individual_user_details->user_category:'';
         	}
         	else
         		return response()->json(['status'=>false,'message'=>"You don't have a permission to create user!..."]);
@@ -2377,7 +2378,6 @@ class APIConfigurationsController extends Controller
 
 	        if($role == Config::get('app.Staff_role'))
 	        {
-	        	$user_category = ($request->id!='')?$individual_user_details->user_category:'';
 		        if($request->user_category == 3 && $user_category != $request->user_category)
 		        {             
 		        	// remove the "Non-teaching group if user changed their role to teaching staff." 

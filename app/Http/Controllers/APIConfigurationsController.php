@@ -4268,7 +4268,7 @@ class APIConfigurationsController extends Controller
 		if($user_role == Config::get('app.Admin_role'))
         	$check_exists = UserAdmin::where('employee_no',$employee_no);
         else if($user_role == Config::get('app.Staff_role'))
-        	$check_exists = UserStaffs::where('employee_no',$employee_no);
+        	$check_exists = UserStaffs::where('emsployee_no',$employee_no);
         else
         	$check_exists = UserManagements::where('employee_no',$employee_no);
         

@@ -182,6 +182,7 @@ Route::group(['middleware' => 'auth.connect','prefix' => 'user'], function ($rou
     Route::post('update_parent_details',[APIConfigurationsController::class,'update_parent_details']);//update parent details
     Route::post('checkMobileno',[APIConfigurationsController::class,'parentcheckMobileno']);//check mobile no already exists or not
     Route::get('get_parent_category',[APIConfigurationsController::class,'get_parent_category']);//user category
+    Route::post('checkEmployeeno',[APIConfigurationsController::class,'parentcheckEmployeeno']);//check mobile no already exists or not
     
     Route::post('/approval_process', [APICommunicationController::class, 'approval_process']); 
     Route::post('/store_message', [APICommunicationController::class, 'store_message']); 

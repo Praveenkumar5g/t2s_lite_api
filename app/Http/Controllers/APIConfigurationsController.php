@@ -2317,7 +2317,16 @@ class APIConfigurationsController extends Controller
 	        if($request->doj!='' && $request->doj!= null)
 	        	$individual_user_details->doj=date('Y-m-d',strtotime($request->doj));
 
-
+	        if($role == Config::get('app.Staff_role'))
+	        {
+	        	// Remove the subject and department related details for non-teaching staffs.
+				if($request->user_category == 4) //4- non teaching
+				{
+					$individual_user_details->specialized_in = null;
+					$individual_user_details->department = null;
+				}
+				
+	        }
 	        $individual_user_details->save();
 
 	        $loginid = $individual_user_details->id;
@@ -4248,5 +4257,29 @@ class APIConfigurationsController extends Controller
 	        else
             	return response()->json(['status'=>true,'tag'=>'']);
         }
+    }
+
+    // check employee number exists
+	public function parentcheckEmployeeno(Request $request)
+    {
+    	$user_role = $request->user_role;
+    	$employee_no = $request->employee_no;
+    	$id = $request->id;
+		if($user_role == Config::get('app.Admin_role'))
+        	$check_exists = UserAdmin::where('employee_no',$employee_no);
+        else if($user_role == Config::get('app.Staff_role'))
+        	$check_exists = UserStaffs::where('employee_no',$employee_no);
+        else
+        	$check_exists = UserManagements::where('employee_no',$employee_no);
+        
+        if(isset($id) && $id!='')
+            $check_exists = $check_exists->where('id','!=',$id);
+
+        $check_exists = $check_exists->first();
+
+        if(!empty($check_exists))
+        	return response()->json(['status'=>false]);
+        else
+        	return response()->json(['status'=>true]);
     }
 }

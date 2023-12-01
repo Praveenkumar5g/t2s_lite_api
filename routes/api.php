@@ -13,6 +13,7 @@ use App\Http\Controllers\APIHomeworkController;
 use App\Http\Controllers\APILoginController;
 use App\Http\Controllers\WelcomeController;
 use App\Http\Controllers\PayfeesController;
+use App\Models\ClientConfiguration;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -90,6 +91,21 @@ Route::group(['middleware' => 'auth.check','prefix' => 'user'], function ($route
 });
 
 Route::group(['middleware' => 'auth.connect','prefix' => 'user'], function ($router) {
+
+    Route::get('/forceUpdate', function() {
+        $user = auth()->user();
+        $model=ClientConfiguration::where('id',1)->first(); 
+        if($user->user_role == Config::get('app.Admin_role'))
+            $force_update = $model->admin_force_update;
+        else if($user->user_role == Config::get('app.Managment_role'))
+            $force_update = $model->mgnt_force_update;
+        else if($user->user_role == Config::get('app.Staff_role'))
+            $force_update = $model->staff_force_update;
+        else 
+            $force_update = $model->parent_force_update;
+        return response()->json(["min_version"=>$model->app_version,'force_update'=>$force_update]);
+    });
+
     Route::post('/onesignal_store_device_details',[APIConfigurationsController::class,'onesignal_store_device_details']);//fetch onesignal details
     Route::post('/change_mobile_number',[APIConfigurationsController::class,'change_mobile_number']);//change mobile number for parent
     Route::post('/send_welcome_message',[APIConfigurationsController::class,'send_welcome_message']);//send welcome message to all users.
@@ -136,7 +152,7 @@ Route::group(['middleware' => 'auth.connect','prefix' => 'user'], function ($rou
     Route::post('/onboarding_fetch_single_staff',[APIConfigurationsController::class,'onboarding_fetch_single_staff']);
     Route::post('/onboarding_edit_staff',[APIConfigurationsController::class,'onboarding_edit_staff']);
     Route::post('/onboarding_fetch_single_management',[APIConfigurationsController::class,'onboarding_fetch_single_management']);
-    Route::post('/onboarding_edit_management',[APIConfigurationsController::class,'onboarding_edit_management']);
+    Route::post('/onboarding_edit_management',[APIConfigurationsController::class,'create_update_users']);
     Route::post('/onboarding_fetch_single_parent',[APIConfigurationsController::class,'onboarding_fetch_single_parent']);
     Route::get('/onboarding_parent_list',[APIConfigurationsController::class,'onboarding_parent_list']);
     Route::post('/onboarding_edit_parent',[APIConfigurationsController::class,'onboarding_edit_parent']);
@@ -161,7 +177,13 @@ Route::group(['middleware' => 'auth.connect','prefix' => 'user'], function ($rou
     Route::post('/user_role_change',[APIConfigurationsController::class,'user_role_change']);//User stattus change
     Route::post('/check_staff_classes',[APIConfigurationsController::class,'check_staff_classes']);//Check classes for staff 
     Route::get('check_user_role_changed',[APIConfigurationsController::class,'check_user_role_changed']);//user role change status
-
+    Route::post('create_update_admin',[APIConfigurationsController::class,'create_update_users']);//create and update admin details
+    Route::post('create_update_staff',[APIConfigurationsController::class,'create_update_users']);//create and update staff details
+    Route::post('update_parent_details',[APIConfigurationsController::class,'update_parent_details']);//update parent details
+    Route::post('checkMobileno',[APIConfigurationsController::class,'parentcheckMobileno']);//check mobile no already exists or not
+    Route::get('get_parent_category',[APIConfigurationsController::class,'get_parent_category']);//user category
+    Route::post('checkEmployeeno',[APIConfigurationsController::class,'parentcheckEmployeeno']);//check mobile no already exists or not
+    
     Route::post('/approval_process', [APICommunicationController::class, 'approval_process']); 
     Route::post('/store_message', [APICommunicationController::class, 'store_message']); 
     Route::post('/message_visible_count', [APICommunicationController::class, 'message_visible_count']);

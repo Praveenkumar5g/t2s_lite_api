@@ -159,30 +159,11 @@ class APICommunicationController extends Controller
         $notification_id = $communications->id;
         if(count($_FILES)>0)
         {
-            $schoolcode = $school_profile = SchoolProfile::where(['id'=>$user['school_profile_id']])->get()->first();//get school code from school profile
-            $path = public_path('uploads/'.$school_profile['school_code']);//
-
-            if(!File::isDirectory($path)){ //check path already exists
-                File::makeDirectory($path, 0777, true, true);
-            }
-
-            // Insert attachment details in attachment table
             if($request->hasfile('attachment')) {
-                foreach($request->file('attachment') as $file)
-                {
-                    $attachment = new CommunicationAttachments;
-                    $attachment->communication_id = $notification_id;
-                    $name = explode('.',$file->getClientOriginalName());
-                    $filename = str_replace(["-",","," ","/"], '_', $name[0]);
-                    $names = $filename.time().'.'.$name[1];
-                    $file->move(public_path().'/uploads/'.$school_profile['school_code'], $names);
-                    $attachment->attachment_name = $names;
-                    $attachment->attachment_type = $request->attachment_type;  //1-image,2-audio,3-document
-                    $attachment->attachment_location = url('/').'/uploads/'.$school_profile['school_code'].'/';
-                    $attachment->save();
-                }
-            }
+                $schoolcode = $school_profile = SchoolProfile::where(['id'=>$user['school_profile_id']])->first();//get school code from school profile
 
+                app('App\Http\Controllers\WelcomeController')->file_upload($school_profile['school_code'],$request->file('attachment'),$notification_id,$request->attachment_type);
+            }
         }
 
         if($user->user_role != 3) //check user role and 3-parent goes under approval process if approval flow 'yes'
@@ -316,7 +297,7 @@ class APICommunicationController extends Controller
 
         Communications::where('id',$notification_id)->update(['delivered_users'=>count($user_list)]);
         $existing_userids = $communication_details= $player_ids = [];
-        $message = Communications::where('id',$notification_id)->get()->first();
+        $message = Communications::where('id',$notification_id)->first();
         // Insert communication message in notification log receipt tables(School DB)
         foreach ($user_list as $key => $value) {
 
@@ -495,7 +476,7 @@ class APICommunicationController extends Controller
 
         if($user->user_role == Config::get('app.Management_role'))
         {
-            $userdetails = UserManagements::where(['user_id'=>$user->user_id])->get()->first();
+            $userdetails = UserManagements::where(['user_id'=>$user->user_id])->first();
             $group_type = UserGroups::where(['id'=>$request->group_id])->pluck('group_type')->first();
             $group_id = ([$request->group_id]);
             if($group_type == 2)
@@ -507,11 +488,11 @@ class APICommunicationController extends Controller
         else if($user->user_role == Config::get('app.Staff_role'))
         {
             $group_id = ([$request->group_id]);
-            $userdetails = UserStaffs::where(['user_id'=>$user->user_id])->get()->first();
+            $userdetails = UserStaffs::where(['user_id'=>$user->user_id])->first();
         }
         else if($user->user_role == Config::get('app.Admin_role'))
         {
-            $userdetails = UserAdmin::where(['user_id'=>$user->user_id])->get()->first();
+            $userdetails = UserAdmin::where(['user_id'=>$user->user_id])->first();
             $group_type = UserGroups::where(['id'=>$request->group_id])->pluck('group_type')->first();
             $group_id = ([$request->group_id]);
             if($group_type == 2)
@@ -522,7 +503,7 @@ class APICommunicationController extends Controller
         }
         else if($user->user_role == Config::get('app.Parent_role'))
         {
-            $userdetails = UserParents::where(['user_id'=>$user->user_id])->get()->first();
+            $userdetails = UserParents::where(['user_id'=>$user->user_id])->first();
             $group_status = UserGroupsMapping::where('user_table_id',$userdetails->id)->where('user_role',$user->user_role)->where('group_id',$request->group_id)->pluck('user_status')->first();
             if($group_status == 1)
                 $group_id = ([2,$request->group_id]);
@@ -656,11 +637,11 @@ class APICommunicationController extends Controller
                 $unreadmessages = $index = 0;
                 foreach ($notification_ids as $key => $value) {
                     
-                    $fetch_sender_id = CommunicationRecipients::select('user_table_id','user_role')->where(['view_type'=>1,'communication_id'=>$value['communication_id']])->get()->first();
+                    $fetch_sender_id = CommunicationRecipients::select('user_table_id','user_role')->where(['view_type'=>1,'communication_id'=>$value['communication_id']])->first();
                     if($value['communication_type'] == 1) //chat or homework
-                        $message_details = Communications::select('*')->where(['id'=>$value['communication_id']])->get()->first();
+                        $message_details = Communications::select('*')->where(['id'=>$value['communication_id']])->first();
                     else if($value['communication_type'] == 2) //news and events
-                        $message_details = NewsEvents::select('*')->where(['id'=>$value['communication_id']])->get()->first();
+                        $message_details = NewsEvents::select('*')->where(['id'=>$value['communication_id']])->first();
                     if($value['message_status'] == 1)
                         $unreadmessages++;
                     $sender_details =[];
@@ -700,7 +681,6 @@ class APICommunicationController extends Controller
                         $user = ucfirst($sender_details['first_name']);
                         $designation = 'F/O Test';
                     }
-
                     
                     if($value['communication_type'] == 1)
                     {
@@ -733,10 +713,10 @@ class APICommunicationController extends Controller
                             foreach($parents_ids as $parents_key => $parents_value)
                             {
                                 if($parents_value!='')
-                                {
-                                    $parent_details = UserParents::where('id',$parents_value)->get()->first();
+                                {                                        
+                                    $parent_details = UserParents::where('id',$parents_value)->first();
                                     $student_id = UserStudentsMapping::where(['parent'=>$parent_details->id])->pluck('student')->toArray();
-                                    $student_details = UserStudents::where('id',$student_id)->get()->first();
+                                    $student_details = UserStudents::where('id',$student_id)->first();
                                     $user_category = ($parent_details->user_category == Config::get('app.Father'))?'F/O':($parent_details->user_category == Config::get('app.Mother')?'M/O':'G/O');
                                     $student_parent_names[] = $student_details->first_name.' '. $user_category.'  '.$parent_details->first_name;
                                 }
@@ -755,7 +735,7 @@ class APICommunicationController extends Controller
                             {
                                 if($management_value!='')
                                 {
-                                    $management_details = UserManagements::where('id',$management_value)->get()->first();
+                                    $management_details = UserManagements::where('id',$management_value)->first();
                                     if(!empty($management_details))
                                         $management_names[] = $management_details->first_name;
                                 }
@@ -829,7 +809,7 @@ class APICommunicationController extends Controller
                         {
                             if(!empty($message_details))
                             {
-                                $subject_details = AcademicSubjects::where('id',$message_details->subject_id)->get()->first();
+                                $subject_details = AcademicSubjects::where('id',$message_details->subject_id)->first();
                                 $messages[$index]['subject_id'] = isset($message_details->subject_id)?$message_details->subject_id:0;
                                 $messages[$index]['subject_name'] =isset($subject_details->subject_name)?$subject_details->subject_name:'';
                                 $messages[$index]['short_name'] = isset( $subject_details->short_name)?$subject_details->short_name:'';
@@ -913,24 +893,24 @@ class APICommunicationController extends Controller
         else
         {
             if($user->user_role == Config::get('app.Admin_role'))//check role and get current user id
-                $user_data = UserAdmin::where(['user_id'=>$user->user_id])->get()->first();
+                $user_data = UserAdmin::where(['user_id'=>$user->user_id])->first();
             else if($user->user_role == Config::get('app.Management_role'))
-                $user_data = UserManagements::where(['user_id'=>$user->user_id])->get()->first();
+                $user_data = UserManagements::where(['user_id'=>$user->user_id])->first();
             else if($user->user_role == Config::get('app.Staff_role'))
-                $user_data = UserStaffs::where(['user_id'=>$user->user_id])->get()->first();
+                $user_data = UserStaffs::where(['user_id'=>$user->user_id])->first();
             $user_table_id = $user_data->id;
             $userall_id = UserAll::where(['user_table_id'=>$user_table_id,'user_role'=>$user->user_role])->pluck('id')->first();
             $notification_id = $request->notification_id;
             if($request->communication_type == 3)
             {
-                $communication_data = NewsEvents::where(['id'=>$notification_id])->get()->first();
+                $communication_data = NewsEvents::where(['id'=>$notification_id])->first();
                 $delete_status = NewsEvents::where(['id'=>$notification_id])->update(['status'=>3,'updated_by'=>$userall_id,'updated_time'=>Carbon::now()->timezone('Asia/Kolkata')]);
 
             }
             else
             {
 
-                $communication_data = Communications::where(['group_id'=>$request->group_id,'id'=>$notification_id])->get()->first();
+                $communication_data = Communications::where(['group_id'=>$request->group_id,'id'=>$notification_id])->first();
                 // foreach ($notification_id as $key => $value) {
                 $delete_status = Communications::where(['group_id'=>$request->group_id,'id'=>$notification_id])->update(['message_status'=>Config::get('app.Deleted'),'deleted_by'=>$userall_id,'deleted_time'=>Carbon::now()->timezone('Asia/Kolkata')]);
 
@@ -974,18 +954,18 @@ class APICommunicationController extends Controller
         $user = auth()->user();
 
         if($user->user_role == Config::get('app.Admin_role'))//check role and get current user id
-            $user_data = UserAdmin::where(['user_id'=>$user->user_id])->get()->first();
+            $user_data = UserAdmin::where(['user_id'=>$user->user_id])->first();
         else if($user->user_role == Config::get('app.Management_role'))
-            $user_data = UserManagements::where(['user_id'=>$user->user_id])->get()->first();
+            $user_data = UserManagements::where(['user_id'=>$user->user_id])->first();
         else if($user->user_role == Config::get('app.Staff_role'))
-            $user_data = UserStaffs::where(['user_id'=>$user->user_id])->get()->first();
+            $user_data = UserStaffs::where(['user_id'=>$user->user_id])->first();
         else if($user->user_role == Config::get('app.Parent_role'))
-            $user_data = UserParents::where(['user_id'=>$user->user_id])->get()->first();//fetch id from user all table to store notification triggered user
+            $user_data = UserParents::where(['user_id'=>$user->user_id])->first();//fetch id from user all table to store notification triggered user
         $user_table_id = $user_data->id;
         $userall_id = UserAll::where(['user_table_id'=>$user_table_id,'user_role'=>$user->user_role])->pluck('id')->first();
 
         // foreach ($request->notification_id as $key => $value) {
-            $communication_data = Communications::where(['id'=>$request->notification_id])->get()->first();
+            $communication_data = Communications::where(['id'=>$request->notification_id])->first();
             $player_ids[] = Appusers::where('loginid',$communication_data->created_by)->pluck('player_id')->first();
             if($request->approval_status == 1)
             {
@@ -1098,24 +1078,24 @@ class APICommunicationController extends Controller
         $user = auth()->user();
 
         if($request->communication_type == 3)
-            $message_details = NewsEvents::where(['id'=>$request->notification_id])->get()->first();
+            $message_details = NewsEvents::where(['id'=>$request->notification_id])->first();
         else
-            $message_details = Communications::where(['id'=>$request->notification_id])->get()->first();
+            $message_details = Communications::where(['id'=>$request->notification_id])->first();
         if(!empty($message_details))
         {
-            $initated_user_details = UserAll::where(['id'=>$message_details->created_by])->get()->first();
+            $initated_user_details = UserAll::where(['id'=>$message_details->created_by])->first();
             if(!empty($initated_user_details))
             {
                 $initated_users = $this->user_details($initated_user_details);
                 $approver_user_details=[];
                 if($message_details->approved_by!='' && $message_details->approved_by!= null)
                 {
-                    $approver_users = UserAll::where(['id'=>$message_details->approved_by])->get()->first();
+                    $approver_users = UserAll::where(['id'=>$message_details->approved_by])->first();
                     $approver_user_details = $this->user_details($approver_users);
                 }
                 if($message_details->message_status==Config::get('app.Deleted') && $message_details->deleted_by!='' && $message_details->deleted_by!=null)
                 {
-                    $deleted_users = UserAll::where(['id'=>$message_details->deleted_by])->get()->first();
+                    $deleted_users = UserAll::where(['id'=>$message_details->deleted_by])->first();
                     $deleted_user_details = $this->user_details($deleted_users);
                 }
                
@@ -1142,7 +1122,7 @@ class APICommunicationController extends Controller
         $user_details = [];
         if($userdetails->user_role == Config::get('app.Management_role'))
         {
-            $user_details = UserManagements::where(['id'=>$userdetails->user_table_id])->get()->first();
+            $user_details = UserManagements::where(['id'=>$userdetails->user_table_id])->first();
             if(!empty($user_details))
             {
                 $management_categories = array_column(UserCategories::select('id','category_name')->where('user_role',Config::get('app.Management_role'))->get()->toArray(),'category_name','id');
@@ -1151,12 +1131,12 @@ class APICommunicationController extends Controller
         }
         else if($userdetails->user_role == Config::get('app.Admin_role'))//check role and get current user id
         {
-            $user_details = UserAdmin::where(['id'=>$userdetails->user_table_id])->get()->first();
+            $user_details = UserAdmin::where(['id'=>$userdetails->user_table_id])->first();
             $user_category = 'Admin';
         }
         else if($userdetails->user_role == Config::get('app.Staff_role'))
         {
-            $user_details = UserStaffs::where(['id'=>$userdetails->user_table_id])->get()->first();
+            $user_details = UserStaffs::where(['id'=>$userdetails->user_table_id])->first();
             if(!empty($user_details))
             {
                 $staff_categories = array_column(UserCategories::select('id','category_name')->where('user_role',Config::get('app.Staff_role'))->get()->toArray(),'category_name','id');
@@ -1166,7 +1146,7 @@ class APICommunicationController extends Controller
         else if($userdetails->user_role == Config::get('app.Parent_role'))
         {
             $user_category = 'Parent';
-            $user_details = UserParents::where(['id'=>$userdetails->user_table_id])->get()->first();//fetch id from user all table to store notification triggered user
+            $user_details = UserParents::where(['id'=>$userdetails->user_table_id])->first();//fetch id from user all table to store notification triggered user
         }
         return (['user_details'=>$user_details,'user_category'=>$user_category]);
     }
@@ -1177,7 +1157,7 @@ class APICommunicationController extends Controller
         $user_details = [];
         if($userdetails['user_role'] == Config::get('app.Management_role'))
         {
-            $user_details = UserManagements::where(['id'=>$userdetails['user_table_id']])->get()->first();
+            $user_details = UserManagements::where(['id'=>$userdetails['user_table_id']])->first();
             if(!empty($user_details))
             {
                 $management_categories = array_column(UserCategories::select('id','category_name')->where('user_role',Config::get('app.Management_role'))->get()->toArray(),'category_name','id');
@@ -1186,12 +1166,12 @@ class APICommunicationController extends Controller
         }
         else if($userdetails['user_role'] == Config::get('app.Admin_role'))//check role and get current user id
         {
-            $user_details = UserAdmin::where(['id'=>$userdetails['user_table_id']])->get()->first();
+            $user_details = UserAdmin::where(['id'=>$userdetails['user_table_id']])->first();
             $user_category = 'Admin';
         }
         else if($userdetails['user_role'] == Config::get('app.Staff_role'))
         {
-            $user_details = UserStaffs::where(['id'=>$userdetails['user_table_id']])->get()->first();
+            $user_details = UserStaffs::where(['id'=>$userdetails['user_table_id']])->first();
             if(!empty($user_details))
             {
                 $staff_categories = array_column(UserCategories::select('id','category_name')->where('user_role',Config::get('app.Staff_role'))->get()->toArray(),'category_name','id');
@@ -1201,7 +1181,7 @@ class APICommunicationController extends Controller
         else if($userdetails['user_role'] == Config::get('app.Parent_role'))
         {
             $user_category = 'Parent';
-            $user_details = UserParents::where(['id'=>$userdetails['user_table_id']])->get()->first();//fetch id from user all table to store notification triggered user
+            $user_details = UserParents::where(['id'=>$userdetails['user_table_id']])->first();//fetch id from user all table to store notification triggered user
         }
         return (['user_details'=>$user_details,'user_category'=>$user_category]);
     }
@@ -1221,9 +1201,9 @@ class APICommunicationController extends Controller
         // Get authorizated user details
         $user = auth()->user();
         if($request->communication_type != 3)
-            $message_details = Communications::where(['id'=>$request->notification_id])->get()->first();
+            $message_details = Communications::where(['id'=>$request->notification_id])->first();
         else if($request->communication_type == 3)
-            $message_details = NewsEvents::where(['id'=>$request->notification_id])->get()->first();
+            $message_details = NewsEvents::where(['id'=>$request->notification_id])->first();
         if(!empty($message_details))
         {
             $delivery_details=CommunicationRecipients::where(['communication_id'=>$request->notification_id]);
@@ -1265,7 +1245,7 @@ class APICommunicationController extends Controller
                                 $category = $user_category.' '.(isset($student_name->first_name)?$student_name->first_name:'');
                                 if(isset($student_name->class_config))
                                 {
-                                    $class_section_details = AcademicClassConfiguration::where(['id'=>$student_name->class_config])->get()->first();
+                                    $class_section_details = AcademicClassConfiguration::where(['id'=>$student_name->class_config])->first();
                                     if(isset($class_section_details['class_id']) && $class_section_details['class_id']!='')
                                         $class_name = AcademicClasses::where('id',$class_section_details['class_id'])->pluck('class_name')->first();
                                     if(isset($class_section_details['section_id']) && $class_section_details['section_id'])
@@ -1307,33 +1287,44 @@ class APICommunicationController extends Controller
         if($request->user_role!='' && $request->id!='')
         {
             if($request->user_role == Config::get('app.Staff_role'))
-                $data = UserStaffs::where(['id'=>$request->id])->get()->first();
+                $data = UserStaffs::where(['id'=>$request->id])->first();
             else if($request->user_role == Config::get('app.Parent_role'))
-                $data = UserParents::where(['id'=>$request->id])->get()->first();
+                $data = UserParents::where(['id'=>$request->id])->first();
+            else if($request->user_role == Config::get('app.Management_role'))
+                $data = UserManagements::where(['id'=>$request->id])->first();
+            else if($request->user_role == Config::get('app.Admin_role'))//check role and get current user id
+                $data = UserAdmin::where(['id'=>$request->id])->first();
              $role= $request->user_role;
 
-            $userdata = SchoolUsers::where(['user_id'=>$data->user_id,'user_role'=>$request->user_role])->get()->first();
+            $userdata = SchoolUsers::where(['user_id'=>$data->user_id,'user_role'=>$request->user_role])->first();
         }
         else
         {
             $role= $user->user_role;
             if($user->user_role == Config::get('app.Management_role'))
-                $data = UserManagements::where(['user_id'=>$user->user_id])->get()->first();
+                $data = UserManagements::where(['user_id'=>$user->user_id])->first();
             else if($user->user_role == Config::get('app.Admin_role'))//check role and get current user id
-                $data = UserAdmin::where(['user_id'=>$user->user_id])->get()->first();
+                $data = UserAdmin::where(['user_id'=>$user->user_id])->first();
             else if($user->user_role == Config::get('app.Staff_role'))
-                $data = UserStaffs::where(['user_id'=>$user->user_id])->get()->first();
+                $data = UserStaffs::where(['user_id'=>$user->user_id])->first();
             else if($user->user_role == Config::get('app.Parent_role'))
-                $data = UserParents::where(['user_id'=>$user->user_id])->get()->first();
+                $data = UserParents::where(['user_id'=>$user->user_id])->first();
         }
 
         if(!empty($data))
         {
+            $school_name = SchoolProfile::where('id',$user->school_profile_id)->pluck('school_name')->first();
             $user_details=([
                 'name'=>$data->first_name,
                 'mobile_no'=>$data->mobile_number,
                 'profile'=>$data->profile_image,
+                'student_profile'=>null,
                 "last_login"=>($userdata->last_login!=null)?$userdata->last_login:null,
+                "dob" => ($data->dob!=null && $data->dob!='')?date('d-m-Y',strtotime($data->dob)):null,
+                "doj"=> ($data->doj!=null && $data->doj!='')?date('d-m-Y',strtotime($data->doj)):null,
+                "employee_no" => $data->employee_no,
+                "email_address"=>$data->email_id,
+                "school_name"=>$school_name
             ]);
 
             if( $role== Config::get('app.Management_role') || $role == Config::get('app.Admin_role'))
@@ -1341,12 +1332,9 @@ class APICommunicationController extends Controller
             else if($role == Config::get('app.Staff_role'))
             {
                 $user_details['designation'] = $data['user_category'];
-                $user_details['dob'] = date('d-m-Y',strtotime($data['dob']));
-                $user_details['doj'] = date('d-m-Y',strtotime($data['doj']));
-                $user_details['employee_no'] = $data['employee_no'];
                 $department_name = AcademicSubjects::where('id',$data['department'])->pluck('subject_name')->first();
                 $user_details['department'] = $department_name;
-                $classessections = AcademicClassConfiguration::select('id','class_id','section_id','division_id','class_teacher')->where('class_teacher',$data['id'])->get()->first();
+                $classessections = AcademicClassConfiguration::select('id','class_id','section_id','division_id','class_teacher')->where('class_teacher',$data['id'])->first();
                 $user_details['class'] = (!empty($classessections))?$classessections->classsectionName():'';
 
             }
@@ -1358,16 +1346,16 @@ class APICommunicationController extends Controller
                     $student_id = $request->student_id;
                 else
                     $student_id =UserStudentsMapping::where(['parent'=>$data->id])->pluck('student')->first();
-                $student_details = UserStudents::select('first_name','class_config')->where(['id'=>$student_id])->get()->first();
+                $student_details = UserStudents::select('first_name','class_config','profile_image')->where(['id'=>$student_id])->first();
                 $user_details['name'] = $data->first_name." ".$category." ".$student_details['first_name'];
                 $user_details['dob'] = $student_details['dob'];
                 $user_details['admission_number'] = $student_details['admission_number'];
                 $classessections =[];
                 if(isset($student_details['class_config']))
-                    $classessections = AcademicClassConfiguration::select('id','class_id','section_id','division_id','class_teacher')->where('id',$student_details['class_config'])->get()->first();
+                    $classessections = AcademicClassConfiguration::select('id','class_id','section_id','division_id','class_teacher')->where('id',$student_details['class_config'])->first();
                 $user_details['class'] = (!empty($classessections))?$classessections->classsectionName():'';
                 $user_details['class_teacher'] = (!empty($classessections))?UserStaffs::where('id',$classessections->class_teacher)->pluck('first_name')->first():'';
-                $class_section_details = AcademicClassConfiguration::where(['id'=>$student_details['class_config']])->get()->first();
+                $class_section_details = AcademicClassConfiguration::where(['id'=>$student_details['class_config']])->first();
                 if(isset($class_section_details['class_id']) && $class_section_details['class_id']!='')
                     $class_name = AcademicClasses::where('id',$class_section_details['class_id'])->pluck('class_name')->first();
                 if(isset($class_section_details['section_id']) && $class_section_details['section_id'])
@@ -1376,6 +1364,8 @@ class APICommunicationController extends Controller
                     $user_details['designation'] = $class_name." ".$section_name;
                 else
                     $user_details['designation'] = null;
+
+                $user_details['student_profile']=$student_details->profile_image;
             }
         }
         else
@@ -1384,7 +1374,9 @@ class APICommunicationController extends Controller
                 'name'=>null,
                 'mobile_no'=>null,
                 'profile'=>null,
+                'student_profile'=>null,
                 "designation"=> null,
+                "email_address"=>null,
                 "last_login"=>null,
                 "dob"=>null,
                 "doj"=>null,
@@ -1393,7 +1385,7 @@ class APICommunicationController extends Controller
                 "admission_number"=>null,
                 "class"=>null,
                 "class_teacher"=>null,
-
+                "school_name"=>null,
             ]);
         }
         
@@ -1409,7 +1401,7 @@ class APICommunicationController extends Controller
         $profile_image='';
         if($request->hasfile('profile_image')) {
 
-            $schoolcode = $school_profile = SchoolProfile::where(['id'=>$user['school_profile_id']])->get()->first();//get school code from school profile
+            $schoolcode = $school_profile = SchoolProfile::where(['id'=>$user['school_profile_id']])->first();//get school code from school profile
             $path = public_path('uploads/'.$school_profile['school_code'].'/profile_images');//
 
             if(!File::isDirectory($path)){ //check path already exists
@@ -1465,13 +1457,13 @@ class APICommunicationController extends Controller
                     if($value['communication_type'] == 2)
                         $fetch_sender_id = UserAll::where('id',$value['created_by'])->first(); 
                     else
-                        $fetch_sender_id = CommunicationRecipients::select('user_table_id','user_role')->where(['view_type'=>1,'communication_id'=>$value['id']])->get()->first();
+                        $fetch_sender_id = CommunicationRecipients::select('user_table_id','user_role')->where(['view_type'=>1,'communication_id'=>$value['id']])->first();
                     if(!empty($fetch_sender_id))
                     {
                         $sender_details = $fetch_sender_id->userDetails();
                         if(!empty($sender_details))
                         {
-                            $group_details = UserGroups::select('class_config','group_name')->where('id',$value['group_id'])->get()->first();
+                            $group_details = UserGroups::select('class_config','group_name')->where('id',$value['group_id'])->first();
                             if($fetch_sender_id->user_role == Config::get('app.Management_role'))
                             {
                                 $user = isset($management_categories[$sender_details['user_category']])?ucfirst($sender_details['first_name'])." ".$management_categories[$sender_details['user_category']]:ucfirst($sender_details['first_name']);
@@ -1552,9 +1544,9 @@ class APICommunicationController extends Controller
                             }
                             if($value['communication_type'] == 2)//2-homework,1-chat
                             {
-                                $subject_details = AcademicSubjects::where('id',$value['subject_id'])->get()->first();
+                                $subject_details = AcademicSubjects::where('id',$value['subject_id'])->first();
                                 $teachingstaff = AcademicSubjectsMapping::where(['subject'=>$value['subject_id'],'class_config'=>$group_details['class_config']])->pluck('staff')->first();
-                                $staff_details = UserStaffs::select('id','first_name')->where('id',$teachingstaff)->get()->first();
+                                $staff_details = UserStaffs::select('id','first_name')->where('id',$teachingstaff)->first();
                                 $classteacher = 'no';
                                 if($logged_in_staff!='')
                                 {
@@ -1731,7 +1723,7 @@ class APICommunicationController extends Controller
                     if($default_password_type == 'admission_number' || $default_password_type == 'dob')
                     {
                         $mapped_student = UserStudentsMapping::where('parent',$user_table_id->id)->pluck('student')->first();
-                        $student_details = UserStudents::where('id',$mapped_student)->get()->first();
+                        $student_details = UserStudents::where('id',$mapped_student)->first();
                     }
 
                     if($default_password_type == 'mobile_number')
@@ -1796,7 +1788,7 @@ class APICommunicationController extends Controller
 
         if(!empty($templates)) //check empty condition
         {
-            $schooluser = SchoolUsers::where('user_id',$user_table_id->user_id)->get()->first();
+            $schooluser = SchoolUsers::where('user_id',$user_table_id->user_id)->first();
             // run the loop and trigger the sms to all users one by one.
             if($request->user_role == 3)
             {
@@ -1805,7 +1797,7 @@ class APICommunicationController extends Controller
                 if($default_password_type == 'admission_number' || $default_password_type == 'dob')
                 {
                     $mapped_student = UserStudentsMapping::where('parent',$user_table_id->id)->pluck('student')->first();
-                    $student_details = UserStudents::where('id',$mapped_student)->get()->first();
+                    $student_details = UserStudents::where('id',$mapped_student)->first();
                 }
 
                 if($default_password_type == 'mobile_number')
@@ -1862,10 +1854,10 @@ class APICommunicationController extends Controller
             foreach ($parent_ids as $key => $value) {
                 $student_ids_list = UserStudentsMapping::where('parent',$value)->pluck('student')->toArray();
                 $class_config = UserGroups::where('id',$request->group_id)->pluck('class_config')->first();
-                $student_details = UserStudents::select('id','first_name')->whereIn('id',$student_ids_list)->where('class_config',$class_config)->get()->first();
+                $student_details = UserStudents::select('id','first_name')->whereIn('id',$student_ids_list)->where('class_config',$class_config)->first();
                 if(!empty($student_details))
                 {                    
-                    $parent_details = UserParents::select('first_name','user_category','id')->where('id',$value)->get()->first();
+                    $parent_details = UserParents::select('first_name','user_category','id')->where('id',$value)->first();
                     $user_category = $parent_details->user_category == 1?'F/O':($parent_details->user_category == 2?'M/O':'G/O');
                     $student_list[] = ([
                         'id'=>$parent_details->id,
@@ -1905,7 +1897,7 @@ class APICommunicationController extends Controller
 
         foreach($student_details as $key => $value)
         {
-            $class_sec_value = AcademicClassConfiguration::where('id',$value['class_config'])->get()->first();
+            $class_sec_value = AcademicClassConfiguration::where('id',$value['class_config'])->first();
             $student_list[$key] = ([
                 'id'=>$value['id'],
                 'first_name'=>$value['first_name'],
@@ -1967,7 +1959,7 @@ class APICommunicationController extends Controller
         }
 
         foreach ($visible_to as $key => $value) {
-            $student_detail = UserStudents::where('id',$value)->get()->first();
+            $student_detail = UserStudents::where('id',$value)->first();
             $group_id = UserGroups::where('class_config',$student_detail->class_config)->pluck('id')->first();
             $parent_id = UserStudentsMapping::where('student',$student_detail->id)->pluck('parent')->first();
             $message = str_replace("*wardname*",$student_detail->first_name,$request->chat_message);
@@ -2055,7 +2047,7 @@ class APICommunicationController extends Controller
                     if($item['communication_type'] == 2)
                         $fetch_sender_id = UserAll::where('id',$item['created_by'])->first(); 
                     else
-                        $fetch_sender_id = CommunicationRecipients::select('user_table_id','user_role')->where(['view_type'=>1,'communication_id'=>$item['id']])->get()->first();
+                        $fetch_sender_id = CommunicationRecipients::select('user_table_id','user_role')->where(['view_type'=>1,'communication_id'=>$item['id']])->first();
                     if(!empty($fetch_sender_id))
                         return $item;
                 }

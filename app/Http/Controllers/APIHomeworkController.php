@@ -322,27 +322,11 @@ class APIHomeworkController extends Controller
             //     CommunicationAttachments::where('communication_id',$request->notification_id)->delete();
             // }
             // Insert attachment details in attachment table
-            $schoolcode = $school_profile = SchoolProfile::where(['id'=>$user['school_profile_id']])->get()->first();//get school code from school profile
-            $path = public_path('uploads/'.$school_profile['school_code']);//
-
-            if(!File::isDirectory($path)){ //check path already exists
-                File::makeDirectory($path, 0777, true, true);
-            }
-
             if($request->hasfile('attachment')) {
-                foreach($request->file('attachment') as $file)
-                {
-                    $attachment = new CommunicationAttachments;
-                    $attachment->communication_id = $notification_id;
-                    $name = explode('.',$file->getClientOriginalName());
-                    $filename = str_replace(' ', '_', $name[0]);
-                    $names = $filename.time().'.'.$name[1];
-                    $file->move(public_path().'/uploads/'.$school_profile['school_code'], $names);  
-                    $attachment->attachment_name = $names;
-                    $attachment->attachment_type = $request->attachment_type;  //1-image,2-audio,3-document,4-study material
-                    $attachment->attachment_location = url('/').'/uploads/'.$school_profile['school_code'].'/';
-                    $attachment->save();
-                }
+                // Insert attachment details in attachment table
+                $schoolcode = $school_profile = SchoolProfile::where(['id'=>$user['school_profile_id']])->get()->first();//get school code from school profile
+
+                app('App\Http\Controllers\WelcomeController')->file_upload($school_profile['school_code'],$request->file('attachment'),$notification_id,$request->attachment_type);
             }
 
         }

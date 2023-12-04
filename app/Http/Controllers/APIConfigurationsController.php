@@ -1040,12 +1040,6 @@ class APIConfigurationsController extends Controller
 		return response()->json($staffs);
 	}
 
-	public function get_divisions()
-	{
-		$divisions = AcademicDivisions::select('id','division_name')->get()->toArray();
-		return response()->json(compact('divisions'));
-	}
-
 	//Staffs Category
 	public function get_combine_class_section_list(Request $request)
 	{
@@ -1061,681 +1055,6 @@ class APIConfigurationsController extends Controller
 			}
 		}
 		return response()->json($class_sections);
-	}
-
-	// To activate or create static groups
-	public function activate_default_groups()
-	{
-		$user_data = auth()->user();
-		$management_group = $admin_group = $staff_group = $parent_group = $teaching_staffs = $parent_class_group=[];
-
-		if($user_data->user_role == 1)//check role and get current user id
-            $user_admin = UserAdmin::where(['user_id'=>$user_data->user_id])->pluck('id')->first();
-
-        $userall_id = UserAll::where(['user_table_id'=>$user_admin,'user_role'=>$user_data->user_role])->pluck('id')->first();
-
-		$group_activated = Configurations::where('school_profile_id',$user_data->school_profile_id)->pluck('default_group_activated')->first();
-		if($group_activated==0)
-		{
-			// Create Management only group
-			$usergroups = new UserGroups;
-	        $usergroups->group_name='Management Only';
-	        $usergroups->group_description='This group only contains management users.';
-	        $usergroups->group_action=1;//1-admin
-	        $usergroups->group_status=1;//1-active
-	        $usergroups->group_type=1;
-	        $usergroups->created_by=$userall_id;
-	        $usergroups->created_time=Carbon::now()->timezone('Asia/Kolkata');
-	        $usergroups->save();
-
-	        // Get inserted recored id
-	        $usergroup_id = $usergroups->id;
-
-	        // Fetch all managment users
-			$management_users = UserManagements::select('id','user_id')->where('user_status',1)->get()->toArray();
-
-			foreach ($management_users as $management_key => $management_value) {
-				$management_group[] = ([
-					'group_id'=>$usergroup_id,
-					'user_table_id'=>$management_value['id'],
-					'group_access'=>1,
-					'user_role'=>Config::get('app.Management_role'),
-				]);
-			}
-			// Insert group users in mapping table
-			if(!empty($management_group))
-				UserGroupsMapping::insert($management_group);
-
-			$management_group=[];
-			// Create Whole School group - Starts
-			$usergroups = new UserGroups;
-	        $usergroups->group_name='Whole School';
-	        $usergroups->group_description='This group contains all users in the school.';
-			$usergroups->group_action=1;//1-admin
-	        $usergroups->group_status=1;//1-active
-	        $usergroups->group_type=1;
-	        $usergroups->created_by=$userall_id;
-	        $usergroups->created_time=Carbon::now()->timezone('Asia/Kolkata');
-	        $usergroups->save();
-
-	        // Get inserted recored id
-	        $usergroup_id = $usergroups->id;
-
-	        foreach ($management_users as $management_key => $management_value) {
-				$management_group[] = ([
-					'group_id'=>$usergroup_id,
-					'user_table_id'=>$management_value['id'],
-					'group_access'=>1,
-					'user_role'=>Config::get('app.Management_role'),
-				]);
-			}
-
-			// Insert group users in mapping table
-			if(!empty($management_group))
-				UserGroupsMapping::insert($management_group);
-			$management_group=[];
-	        // Fetch all admin users
-			$admin_users = UserAdmin::select('id','user_id')->where('user_status',1)->get()->toArray();
-
-			foreach ($admin_users as $admin_key => $admin_value) {
-				$admin_group[] = ([
-					'group_id'=>$usergroup_id,
-					'user_table_id'=>$admin_value['id'],
-					'group_access'=>1,
-					'user_role'=>Config::get('app.Admin_role'),
-				]);
-			}
-			// Insert group users in mapping table
-			if(!empty($admin_group))
-				UserGroupsMapping::insert($admin_group);
-			$admin_group=[];
-			// Fetch all Staffs users
-			$staff_users = UserStaffs::select('id','user_id')->where('user_status',1)->get()->toArray();
-
-			foreach ($staff_users as $staff_key => $staff_value) {
-				$staff_group[] = ([
-					'group_id'=>$usergroup_id,
-					'user_table_id'=>$staff_value['id'],
-					'group_access'=>1,
-					'user_role'=>Config::get('app.Staff_role'),
-				]);
-			}
-			// Insert group users in mapping table
-			if(!empty($staff_group))
-				UserGroupsMapping::insert($staff_group);
-			$staff_group=[];
-			// Fetch all Parent users
-			$parent_users = UserParents::select('id','user_id')->where('user_status',1)->get()->toArray();
-			foreach ($parent_users as $parent_key => $parent_value) {
-				$parent_group[] = ([
-					'group_id'=>$usergroup_id,
-					'user_table_id'=>$parent_value['id'],
-					'group_access'=>1,
-					'user_role'=>Config::get('app.Parent_role'),
-				]);
-			}
-			// Insert group users in mapping table
-			if(!empty($parent_group))
-				UserGroupsMapping::insert($parent_group);
-			$parent_group=[];
-			// Create Whole School group - Ends
-
-
-			// Create school internal communication group
-			$usergroups = new UserGroups;
-	        $usergroups->group_name='School Internal Communication';
-	        $usergroups->group_description='This group contains all teaching staffs and non-teaching staffs.';
-	        $usergroups->group_action=1;//1-admin
-	        $usergroups->group_status=1;//1-active
-	        $usergroups->group_type=1;
-	        $usergroups->created_by=$userall_id;
-	        $usergroups->created_time=Carbon::now()->timezone('Asia/Kolkata');
-	        $usergroups->save();
-
-	        // Get inserted recored id
-	        $usergroup_id = $usergroups->id;
-
-	        foreach ($management_users as $management_key => $management_value) {
-				$management_group[] = ([
-					'group_id'=>$usergroup_id,
-					'user_table_id'=>$management_value['id'],
-					'group_access'=>1,
-					'user_role'=>Config::get('app.Management_role'),
-				]);
-			}
-
-			// Insert group users in mapping table
-			if(!empty($management_group))
-				UserGroupsMapping::insert($management_group);
-			$management_group=[];
-
-	        // Fetch all admin users
-			$admin_users = UserAdmin::select('id','user_id')->where('user_status',1)->get()->toArray();
-
-			foreach ($admin_users as $admin_key => $admin_value) {
-				$admin_group[] = ([
-					'group_id'=>$usergroup_id,
-					'user_table_id'=>$admin_value['id'],
-					'group_access'=>1,
-					'user_role'=>Config::get('app.Admin_role'),
-				]);
-			}
-			// Insert group users in mapping table
-			if(!empty($admin_group))
-				UserGroupsMapping::insert($admin_group);
-			
-			$admin_group=[];
-			// Fetch all Staffs users
-			$staff_users = UserStaffs::select('id','user_id')->where('user_status',1)->get()->toArray();
-
-			foreach ($staff_users as $staff_key => $staff_value) {
-				$staff_group[] = ([
-					'group_id'=>$usergroup_id,
-					'user_table_id'=>$staff_value['id'],
-					'group_access'=>1,
-					'user_role'=>Config::get('app.Staff_role'),
-				]);
-			}
-			// Insert group users in mapping table
-			if(!empty($staff_group))
-				UserGroupsMapping::insert($staff_group);
-
-			$staff_group=[];
-			// Create Academic Staff group
-			$usergroups = new UserGroups;
-	        $usergroups->group_name='Academic Staffs';
-	        $usergroups->group_description='This group contains only teaching staffs.';
-	        $usergroups->group_action=1;//1-admin
-	        $usergroups->group_status=1;//1-active
-	        $usergroups->group_type=1;
-	        $usergroups->created_by=$userall_id;
-	        $usergroups->created_time=Carbon::now()->timezone('Asia/Kolkata');
-	        $usergroups->save();
-
-	        // Get inserted recored id
-	        $usergroup_id = $usergroups->id;
-
-	        foreach ($management_users as $management_key => $management_value) {
-				$management_group[] = ([
-					'group_id'=>$usergroup_id,
-					'user_table_id'=>$management_value['id'],
-					'group_access'=>1,
-					'user_role'=>Config::get('app.Management_role'),
-				]);
-			}
-
-			// Insert group users in mapping table
-			if(!empty($management_group))
-				UserGroupsMapping::insert($management_group);
-			$management_group=[];
-
-	        /// Fetch all Staffs users
-			$staff_users = UserStaffs::select('id','user_id')->where('user_category',Config::get('app.Teaching_staff'))->where('user_status',1)->get()->toArray();
-
-			foreach ($staff_users as $staff_key => $staff_value) {
-				$staff_group[] = ([
-					'group_id'=>$usergroup_id,
-					'user_table_id'=>$staff_value['id'],
-					'group_access'=>1,
-					'user_role'=>Config::get('app.Staff_role'),
-				]);
-			}
-			// Insert group users in mapping table
-			if(!empty($staff_group))
-				UserGroupsMapping::insert($staff_group);
-			$staff_group=[];
-
-			// Fetch all admin users
-			$admin_users = UserAdmin::select('id','user_id')->where('user_status',1)->get()->toArray();
-
-			foreach ($admin_users as $admin_key => $admin_value) {
-				$admin_group[] = ([
-					'group_id'=>$usergroup_id,
-					'user_table_id'=>$admin_value['id'],
-					'group_access'=>1,
-					'user_role'=>Config::get('app.Admin_role'),
-				]);
-			}
-			// Insert group users in mapping table
-			if(!empty($admin_group))
-				UserGroupsMapping::insert($admin_group);
-			
-			$admin_group=[];
-
-			// Create Non-Teaching Staff group
-			$usergroups = new UserGroups;
-	        $usergroups->group_name='Non-Teaching Staffs';
-	        $usergroups->group_description='This group contains only non-teaching staffs.';
-	        $usergroups->group_action=1;//1-admin
-	        $usergroups->group_status=1;//1-active
-	        $usergroups->group_type=1;
-	        $usergroups->created_by=$userall_id;
-	        $usergroups->created_time=Carbon::now()->timezone('Asia/Kolkata');
-	        $usergroups->save();
-
-	        // Get inserted recored id
-	        $usergroup_id = $usergroups->id;
-
-	        foreach ($management_users as $management_key => $management_value) {
-				$management_group[] = ([
-					'group_id'=>$usergroup_id,
-					'user_table_id'=>$management_value['id'],
-					'group_access'=>1,
-					'user_role'=>Config::get('app.Management_role'),
-				]);
-			}
-
-			// Insert group users in mapping table
-			if(!empty($management_group))
-				UserGroupsMapping::insert($management_group);
-			$management_group=[];
-
-	        /// Fetch all Staffs users
-			$staff_users = UserStaffs::select('id','user_id')->where('user_category',Config::get('app.Non_teaching_staff'))->where('user_status',1)->get()->toArray();
-
-			foreach ($staff_users as $staff_key => $staff_value) {
-				$staff_group[] = ([
-					'group_id'=>$usergroup_id,
-					'user_table_id'=>$staff_value['id'],
-					'group_access'=>1,
-					'user_role'=>Config::get('app.Staff_role'),
-				]);
-			}
-			// Insert group users in mapping table
-			if(!empty($staff_group))
-				UserGroupsMapping::insert($staff_group);
-			$staff_group=[];
-
-			// Fetch all admin users
-			$admin_users = UserAdmin::select('id','user_id')->where('user_status',1)->get()->toArray();
-
-			foreach ($admin_users as $admin_key => $admin_value) {
-				$admin_group[] = ([
-					'group_id'=>$usergroup_id,
-					'user_table_id'=>$admin_value['id'],
-					'group_access'=>1,
-					'user_role'=>Config::get('app.Admin_role'),
-				]);
-			}
-			// Insert group users in mapping table
-			if(!empty($admin_group))
-				UserGroupsMapping::insert($admin_group);
-			
-			$admin_group=[];
-
-						/*Admin - Management group*/
-			$usergroups = new UserGroups;
-	        $usergroups->group_name='Admin-Management';
-	        $usergroups->group_description='This group contains all admin and Management users.';
-	        $usergroups->group_action=1;//1-admin
-	        $usergroups->group_status=1;//1-active
-	        $usergroups->group_type=1;
-	        $usergroups->created_by=$userall_id;
-	        $usergroups->created_time=Carbon::now()->timezone('Asia/Kolkata');
-	        $usergroups->save();
-
-	        // Get inserted recored id
-	        $usergroup_id = $usergroups->id;
-
-	        foreach ($management_users as $management_key => $management_value) {
-				$management_group[] = ([
-					'group_id'=>$usergroup_id,
-					'user_table_id'=>$management_value['id'],
-					'group_access'=>1,
-					'user_role'=>Config::get('app.Management_role'),
-				]);
-			}
-
-			// Insert group users in mapping table
-			if(!empty($management_group))
-				UserGroupsMapping::insert($management_group);
-			$management_group=[];
-
-			// Fetch all admin users
-			$admin_users = UserAdmin::select('id','user_id')->where('user_status',1)->get()->toArray();
-
-			foreach ($admin_users as $admin_key => $admin_value) {
-				$admin_group[] = ([
-					'group_id'=>$usergroup_id,
-					'user_table_id'=>$admin_value['id'],
-					'group_access'=>1,
-					'user_role'=>Config::get('app.Admin_role'),
-				]);
-			}
-			// Insert group users in mapping table
-			if(!empty($admin_group))
-				UserGroupsMapping::insert($admin_group);
-			
-			$admin_group=[];
-			/*Admin - Management group*/
-			
-			/*create class-sections groups -  starts*/
-			$class_config = AcademicClassConfiguration::select('id','class_id','section_id','class_teacher')->get()->toArray();
-
-			if(!empty($class_config))
-			{
-				$classes = array_column(AcademicClasses::select('id','class_name')->get()->toArray(),'class_name','id');
-				$sections = array_column(AcademicSections::select('id','section_name')->get()->toArray(),'section_name','id');
-				foreach ($class_config as $class_key => $class_value) {
-					if(isset($classes[$class_value['class_id']]) && $classes[$class_value['class_id']]!='' && isset($sections[$class_value['section_id']]) && $sections[$class_value['section_id']]!='' )
-					{
-						$usergroups = new UserGroups;
-				        $usergroups->group_name=$classes[$class_value['class_id']].' - '.$sections[$class_value['section_id']];
-				        $usergroups->group_description='This group contains only parents in class '.$classes[$class_value['class_id']].' - '.$sections[$class_value['section_id']];
-				        $usergroups->group_action=1;//1-admin
-				        $usergroups->group_status=1;//1-active
-				        $usergroups->group_type=2;
-				        $usergroups->class_config=$class_value['id'];
-				        $usergroups->created_by=$userall_id;
-				        $usergroups->created_time=Carbon::now()->timezone('Asia/Kolkata');
-				        $usergroups->save();
-
-				        // Get inserted recored id
-				        $usergroup_id = $usergroups->id;
-				        if(isset($class_value['class_teacher']))
-				        {
-					        // Insert class teacher into group
-					        $classteacher_group = ([
-								'group_id'=>$usergroup_id,
-								'user_table_id'=>$class_value['class_teacher'],
-								'group_access'=>1,
-								'user_role'=>Config::get('app.Staff_role'),
-							]);
-							// Insert group users in mapping table
-							UserGroupsMapping::insert($classteacher_group);
-							$classteacher_group=[];
-						}
-
-						 // Fetch all admin users
-						$admin_users = UserAdmin::select('id','user_id')->where('user_status',1)->get()->toArray();
-
-						foreach ($admin_users as $admin_key => $admin_value) {
-							$admin_group[] = ([
-								'group_id'=>$usergroup_id,
-								'user_table_id'=>$admin_value['id'],
-								'group_access'=>1,
-								'user_role'=>Config::get('app.Admin_role'),
-							]);
-						}
-						// Insert group users in mapping table
-						if(!empty($admin_group))
-							UserGroupsMapping::insert($admin_group);
-						
-						$admin_group=[];
-
-						foreach ($management_users as $management_key => $management_value) {
-							$management_group[] = ([
-								'group_id'=>$usergroup_id,
-								'user_table_id'=>$management_value['id'],
-								'group_access'=>1,
-								'user_role'=>Config::get('app.Management_role'),
-							]);
-						}
-
-						// Insert group users in mapping table
-						if(!empty($management_group))
-							UserGroupsMapping::insert($management_group);
-						$management_group=[];
-
-				        // Fetch all Staffs users
-						$teaching_staffs = AcademicSubjectsMapping::where('class_config',$class_value['id'])->pluck('staff')->toArray();
-
-						if(!empty($teaching_staffs) && !empty($teaching_staffs[0]))
-						{
-							foreach ($teaching_staffs as $staff_key => $staff_value) {
-								$teaching_staffs_group[] = ([
-									'group_id'=>$usergroup_id,
-									'user_table_id'=>$staff_value,
-									'group_access'=>2,
-									'user_role'=>Config::get('app.Staff_role'),
-								]);
-							}
-							// Insert group users in mapping table
-							if(!empty($teaching_staffs_group))
-								UserGroupsMapping::insert($teaching_staffs_group);
-							$teaching_staffs_group=[];
-						}
-						//Fetch all Parent users
-						$student_ids = UserStudents::select('id')->where('class_config',$class_value['id'])->get()->toArray();
-
-						if(!empty($student_ids))
-						{
-							$studentids = array_column($student_ids,'id');
-
-							$parent_ids = UserStudentsMapping::whereIn('student',$studentids)->pluck('parent')->toArray();
-							if(!empty($parent_ids))
-							{
-								$teaching_staffs_group = [];
-								foreach ($parent_ids as $parentkey => $parentvalue) {
-									$teaching_staffs_group[] = ([
-										'group_id'=>$usergroup_id,
-										'user_table_id'=>$parentvalue,
-										'group_access'=>2,
-										'user_role'=>Config::get('app.Parent_role'),
-									]);
-								}
-
-								// Insert group users in mapping table
-								if(!empty($teaching_staffs_group))
-									UserGroupsMapping::insert($teaching_staffs_group);
-								$teaching_staffs_group=[];
-							}
-						}
-				    }
-				}
-			}
-			/*create class-sections groups -  ends*/
-			
-			Configurations::where('school_profile_id',$user_data->school_profile_id)->update(['default_group_activated'=>1]);
-
-			return response()->json(['message'=>'Default Group Activated Successfully...']);
-		}
-		else
-			return response()->json(['message'=>'Default Group Already Activated...']);
-	}
-	// Fetch group details
-	public function user_group_list()
-	{
-		$user_data = auth()->user();
-		$user_role = '';
-		$school_name = SchoolProfile::where('id',$user_data->school_profile_id)->pluck('school_name')->first();
-		if($user_data->user_role == Config::get('app.Admin_role'))//check role and get current user id
-		{
-            $userid = UserAdmin::where(['user_id'=>$user_data->user_id])->pluck('id')->first();
-            $user_role = 'admin';
-		}
-        else if($user_data->user_role == Config::get('app.Management_role'))
-        {
-        	$userid = UserManagements::where(['user_id'=>$user_data->user_id])->pluck('id')->first();
-        	$user_role = 'management';
-        }
-        else if($user_data->user_role == Config::get('app.Staff_role'))
-        {
-        	$userid = UserStaffs::where(['user_id'=>$user_data->user_id])->pluck('id')->first();
-        	$user_role = 'staff';
-        }
-        else if($user_data->user_role == Config::get('app.Parent_role'))
-        {
-        	$userid = UserParents::where(['user_id'=>$user_data->user_id])->pluck('id')->first();
-        	$user_role = 'parent';
-        }
-
-		$group_ids = UserGroupsMapping::select('group_id')->where('user_role',$user_data->user_role)->where('user_table_id',$userid)->groupBy('group_id')->get()->toArray();
-		
-		if(!empty($group_ids))
-		{
-			$groupids = array_column($group_ids,'group_id');
-			$group_list = UserGroups::select('id','group_name','group_description')->where('group_type',1)->whereIn('id',$groupids)->get()->toArray(); //default groups
-			return response()->json(compact('school_name','user_role','group_list'));
-		}
-		else
-			return response()->json(['status'=>false,'message'=>'No groups Configured!...']);
-	}
-
-	public function classes_group(Request $request)
-	{
-		$user_data = auth()->user(); //check authentication
-		$class_group=[];
-		$school_name = SchoolProfile::where('id',$user_data->school_profile_id)->pluck('school_name')->first();//fetch school name
-		$user_category = '';
-		if($user_data->user_role == Config::get('app.Admin_role'))//check role and get current user id
-            $userid = UserAdmin::where(['user_id'=>$user_data->user_id])->pluck('id')->first();
-        else if($user_data->user_role == Config::get('app.Management_role'))
-        	$userid = UserManagements::where(['user_id'=>$user_data->user_id])->pluck('id')->first();
-        else if($user_data->user_role == Config::get('app.Staff_role'))
-        {
-        	$data = UserStaffs::select('id','user_category')->where(['user_id'=>$user_data->user_id])->first();
-        	$userid = $data['id'];
-        	$user_category = ($data['user_category']!=null && $data['user_category']!='' && $data['user_category'] == Config::get('app.Teaching_staff'))?'teaching staff':'nonteaching staff';
-        }
-        else if($user_data->user_role == Config::get('app.Parent_role'))
-        	$userid = UserParents::where(['user_id'=>$user_data->user_id])->pluck('id')->first();
-
-        $group_ids = UserGroupsMapping::select('group_id','group_access')->where('user_role',$user_data->user_role)->where('user_table_id',$userid)->groupBy('group_id')->get()->toArray();
-
-		if(!empty($group_ids)) //fetch school groups
-		{
-			$groupids = array_column($group_ids,'group_id');
-			$groupaccess = array_column($group_ids,'group_access','group_id');
-			$group_list = UserGroups::select('id','group_name','group_description','class_config')->where('group_type',2)->whereIn('id',$groupids);
-			if($request->student_id!='')
-			{
-				$config_id = UserStudents::where('id',$request->student_id)->pluck('class_config')->first();
-				$group_list = $group_list->where('class_config',$config_id);
-			}
-			$group_list = $group_list->get()->toArray(); //class groups
-			foreach ($group_list as $group_key => $group_value) {
-				$approval_pending = $class_approval_pending = $section_approval_pending = 0;
-				$classteacher_name ='';
-				$classteacher_id = AcademicClassConfiguration::where('id',$group_value['class_config'])->pluck('class_teacher')->first();
-				if($classteacher_id!='')
-					$classteacher_name = UserStaffs::where('id',$classteacher_id)->pluck('first_name')->first();
-				$chat_count = $homework_count = 0;
-				$chat_count = count(Communications::select('id')->where('group_id',$group_value['id'])->whereNull('approval_status')->where('communication_type',1)->where('distribution_type','!=',6)->where('distribution_type','!=',8)->get()->toArray());
-				$homework_count = count(Communications::select('id')->where('group_id',$group_value['id'])->whereNull('approval_status')->where('communication_type',2)->where('actioned_time','>=',date("Y-m-d",strtotime(Carbon::now()->timezone('Asia/Kolkata'))))->get()->toArray());
-				$approval_pending = $chat_count+$homework_count;
-
-				$class_approval_pending = count(Communications::where('group_id',2)->Where('visible_to', 'like', '%' .$group_value['class_config']. ',%')->where('communication_type',1)->where('distribution_type',8)->whereNull('approval_status')->pluck('id')->toArray());
-
-				$section_approval_pending = count(Communications::where('group_id',2)->Where('visible_to', 'like', '%' .$group_value['class_config']. ',%')->where('communication_type',1)->where('distribution_type',6)->whereNull('approval_status')->pluck('id')->toArray());
-
-				$approval_pending+=$class_approval_pending+$section_approval_pending;
-
-				$parent_ids = UserGroupsMapping::where(['user_role'=>Config::get('app.Parent_role'),'group_id'=>$group_value['id']])->pluck('user_table_id')->toArray();
-				$all_user_count = UserGroupsMapping::where(['group_id'=>$group_value['id']])->pluck('user_table_id')->toArray();
-				$parent_online = 0;
-				if(!empty($parent_ids))
-				{
-					$parent_user_ids = UserParents::whereIn('id',$parent_ids)->pluck('user_id')->toArray();
-					$last_login_details = SchoolUsers::whereIn('user_id',$parent_user_ids)->whereDate('last_login', Carbon::today())->pluck('last_login')->toArray();
-					if(!empty($last_login_details))
-					{
-						foreach ($last_login_details as $loginkey => $loginvalue) {
-
-    						$newDate = strtotime(Carbon::now()->timezone('Asia/Kolkata').'-1 minutes');
-							$last_login_time = strtotime($loginvalue);
-							if($last_login_time>=$newDate)
-							{
-								$parent_online++;
-							}
-						}
-					}
-				}
-				$subject_list = [];
-				$get_subject_ids = AcademicSubjectsMapping::select('subject')->where('class_config',$group_value['class_config'])->get()->toArray(); //fetch all the subject ids for that corresponding class
-				if(!empty($get_subject_ids))
-				{
-					$subject_list = AcademicSubjects::select('id','subject_name')->whereIn('id',$get_subject_ids)->get()->toArray(); //fetch all subject names from ids
-					$homework_date = date("Y-m-d");
-					if($request->homework_date!='')
-						$homework_date = $request->homework_date;
-					$approved_subject_homeworks = Communications::whereIn('subject_id',$get_subject_ids)->where('communication_type',2)->where('group_id',$group_value['id'])->where('actioned_time', 'like', '%' .$homework_date. '%')->get()->toArray();
-				}
-
-				if($groupaccess[$group_value['id']] == 1)
-				{
-					$classteacher_group[$group_key]['group_id'] = $group_value['id'];
-					$classteacher_group[$group_key]['group_name'] = $group_value['group_name'];
-					$classteacher_group[$group_key]['group_description'] = $group_value['group_description'];
-					$classteacher_group[$group_key]['class_teacher'] = $classteacher_name;
-					$classteacher_group[$group_key]['approval_pending'] = $approval_pending;
-					$classteacher_group[$group_key]['parent_online'] = $parent_online;
-					$classteacher_group[$group_key]['class_config'] = $group_value['class_config'];
-					$classteacher_group[$group_key]['classteacher']=($groupaccess[$group_value['id']] == 1)?'yes':'no';
-					$classteacher_group[$group_key]['total_parent_count'] =(!empty($parent_ids))?count($parent_ids):0;
-					$classteacher_group[$group_key]['all_user_count'] =(!empty($all_user_count))?count($all_user_count):0;
-					$classteacher_group[$group_key]['subject_list']= $subject_list;
-					$classteacher_group[$group_key]['uploaded_homeworks_count']=(!empty($approved_subject_homeworks))?count($approved_subject_homeworks):0;
-
-
-				}
-				else
-				{
-					$staff_group[$group_key]['group_id'] = $group_value['id'];
-					$staff_group[$group_key]['group_name'] = $group_value['group_name'];
-					$staff_group[$group_key]['group_description'] = $group_value['group_description'];
-					$staff_group[$group_key]['class_teacher'] = $classteacher_name;
-					$staff_group[$group_key]['approval_pending'] = $approval_pending;
-					$staff_group[$group_key]['parent_online'] = $parent_online;
-					$staff_group[$group_key]['class_config'] = $group_value['class_config'];
-					$staff_group[$group_key]['classteacher']=($groupaccess[$group_value['id']] == 1)?'yes':'no';
-					$staff_group[$group_key]['total_parent_count'] =(!empty($parent_ids))?count($parent_ids):0;
-					$staff_group[$group_key]['all_user_count'] =(!empty($all_user_count))?count($all_user_count):0;
-					$staff_group[$group_key]['subject_list']= $subject_list;
-					$staff_group[$group_key]['uploaded_homeworks_count']=(!empty($approved_subject_homeworks))?count($approved_subject_homeworks):0;
-				}
-			}
-			if(!empty($classteacher_group))
-				$class_group =  array_merge($class_group,$classteacher_group);
-
-			if(!empty($staff_group))
-				$class_group =  array_merge($class_group,$staff_group);
-
-			return response()->json(compact('school_name','user_category','class_group'));
-		}
-		else
-			return response()->json(['status'=>false,'message'=>'No groups Configured!...']);
-	}
-
-	// Configurations tags
-	public function configuration_tags()
-	{
-		// Save last login in DB
-        $user = auth()->user();
-
-		// Fetch configuration details from DB for corresponding school
-        $configurations = Configurations::where('school_profile_id',$user->school_profile_id)->first();
-
-        // configuration details
-        $configuration = ([
-        	'divisions'=>($configurations->division==1)?true:false,
-            'sections'=>($configurations->sections==1)?true:false,
-            'classes'=>($configurations->classes==1)?true:false,
-            'map_classes_sections'=>($configurations->map_classes_sections==1)?true:false,
-            'subjects'=>($configurations->subjects==1)?true:false,
-            'map_subjects'=>($configurations->map_subjects==1)?true:false,
-            'staffs'=>($configurations->staffs==1)?true:false,
-            'map_staffs'=>($configurations->map_staffs==1)?true:false,
-            'management'=>($configurations->management==1)?true:false,
-            'students'=>($configurations->students==1)?true:false,
-        ]);
-        // return token 
-        return response()->json(compact('configuration'));
-	}
-
-	// Delete division
-	public function delete_division(Request $request)
-	{
-		if(isset($request->division_id) && $request->division_id!='') //check input exist
-		{
-			// Delete records 
-	        AcademicSubjects::where('division_id',$request->division_id)->delete();
-	        AcademicSections::where('division_id',$request->division_id)->delete();
-	       	AcademicClasses::where('division_id',$request->division_id)->delete();
-	        AcademicClassConfiguration::where('division_id',$request->division_id)->delete();
-	        AcademicDivisions::where('id',$request->division_id)->delete();
-		}
-		return response()->json(['message'=>'Deleted Successfully!...']);
 	}
 
 	// Delete class
@@ -3016,7 +2335,57 @@ class APIConfigurationsController extends Controller
         $student_map->save();
     }
 
+    /*Onboarding Manual*/
 
+    // create and update division
+    public function create_update_division_manual(Request $request)
+    {
+    	$user_data = auth()->user();
+		$inserted_records=0;
+        $status = 'insert';
+		foreach ($request->divisions as $key => $value) {
+			$check_exists = AcademicDivisions::where(['division_name'=>$value['division_name']])->pluck('id')->first(); //check whether the given sub-division name already exists ro not
+
+			if(isset($value['division_id']) && $value['division_id']!='' && $check_exists=='')        		$academic_division = AcademicDivisions::where(['id'=>$value['division_id']])->first();//if already exists update the details
+        	else
+                $academic_division = new AcademicDivisions;//insert record if new sub-division 
+            
+    		$academic_division->division_name = $value['division_name'];
+            $academic_division->updated_by = $userall_id;
+            $academic_division->updated_time = Carbon::now()->timezone('Asia/Kolkata');
+            $academic_division->created_time = Carbon::now()->timezone('Asia/Kolkata');
+            $academic_division->created_by = $userall_id;
+            $academic_division->save();
+
+           	if(isset($value['division_id']) && $value['division_id']!='')
+            	$status = 'edit';
+		}
+
+    	Configurations::where('school_profile_id',$user_data->school_profile_id)->update(['division'=>1]);
+    }
+
+    // get division list
+	public function get_divisions()
+	{
+		$divisions = AcademicDivisions::select('id','division_name')->get()->toArray();
+		return response()->json(compact('divisions'));
+	}
+
+    // Delete division
+	public function delete_division(Request $request)
+	{
+		if(isset($request->division_id) && $request->division_id!='') //check input exist
+		{
+			// Delete records 
+	        AcademicSubjects::where('division_id',$request->division_id)->delete();
+	        AcademicSections::where('division_id',$request->division_id)->delete();
+	       	AcademicClasses::where('division_id',$request->division_id)->delete();
+	        AcademicClassConfiguration::where('division_id',$request->division_id)->delete();
+	        AcademicDivisions::where('id',$request->division_id)->delete();
+		}
+		return response()->json(['message'=>'Deleted Successfully!...']);
+	}
+    /*Onboarding Manual*/    
 
     // Add students in DB along with parents and guardian details (old need to remove)
 	public static function students_excel_upload($data,$userall_id,$upload_type)
@@ -3221,6 +2590,666 @@ class APIConfigurationsController extends Controller
 	        }
 	    }
 
+	}
+
+	// To activate or create static groups
+	public function activate_default_groups()
+	{
+		$user_data = auth()->user();
+		$management_group = $admin_group = $staff_group = $parent_group = $teaching_staffs = $parent_class_group=[];
+
+		if($user_data->user_role == 1)//check role and get current user id
+            $user_admin = UserAdmin::where(['user_id'=>$user_data->user_id])->pluck('id')->first();
+
+        $userall_id = UserAll::where(['user_table_id'=>$user_admin,'user_role'=>$user_data->user_role])->pluck('id')->first();
+
+		$group_activated = Configurations::where('school_profile_id',$user_data->school_profile_id)->pluck('default_group_activated')->first();
+		if($group_activated==0)
+		{
+			// Create Management only group
+			$usergroups = new UserGroups;
+	        $usergroups->group_name='Management Only';
+	        $usergroups->group_description='This group only contains management users.';
+	        $usergroups->group_action=1;//1-admin
+	        $usergroups->group_status=1;//1-active
+	        $usergroups->group_type=1;
+	        $usergroups->created_by=$userall_id;
+	        $usergroups->created_time=Carbon::now()->timezone('Asia/Kolkata');
+	        $usergroups->save();
+
+	        // Get inserted recored id
+	        $usergroup_id = $usergroups->id;
+
+	        // Fetch all managment users
+			$management_users = UserManagements::select('id','user_id')->where('user_status',1)->get()->toArray();
+
+			foreach ($management_users as $management_key => $management_value) {
+				$management_group[] = ([
+					'group_id'=>$usergroup_id,
+					'user_table_id'=>$management_value['id'],
+					'group_access'=>1,
+					'user_role'=>Config::get('app.Management_role'),
+				]);
+			}
+			// Insert group users in mapping table
+			if(!empty($management_group))
+				UserGroupsMapping::insert($management_group);
+
+			$management_group=[];
+			// Create Whole School group - Starts
+			$usergroups = new UserGroups;
+	        $usergroups->group_name='Whole School';
+	        $usergroups->group_description='This group contains all users in the school.';
+			$usergroups->group_action=1;//1-admin
+	        $usergroups->group_status=1;//1-active
+	        $usergroups->group_type=1;
+	        $usergroups->created_by=$userall_id;
+	        $usergroups->created_time=Carbon::now()->timezone('Asia/Kolkata');
+	        $usergroups->save();
+
+	        // Get inserted recored id
+	        $usergroup_id = $usergroups->id;
+
+	        foreach ($management_users as $management_key => $management_value) {
+				$management_group[] = ([
+					'group_id'=>$usergroup_id,
+					'user_table_id'=>$management_value['id'],
+					'group_access'=>1,
+					'user_role'=>Config::get('app.Management_role'),
+				]);
+			}
+
+			// Insert group users in mapping table
+			if(!empty($management_group))
+				UserGroupsMapping::insert($management_group);
+			$management_group=[];
+	        // Fetch all admin users
+			$admin_users = UserAdmin::select('id','user_id')->where('user_status',1)->get()->toArray();
+
+			foreach ($admin_users as $admin_key => $admin_value) {
+				$admin_group[] = ([
+					'group_id'=>$usergroup_id,
+					'user_table_id'=>$admin_value['id'],
+					'group_access'=>1,
+					'user_role'=>Config::get('app.Admin_role'),
+				]);
+			}
+			// Insert group users in mapping table
+			if(!empty($admin_group))
+				UserGroupsMapping::insert($admin_group);
+			$admin_group=[];
+			// Fetch all Staffs users
+			$staff_users = UserStaffs::select('id','user_id')->where('user_status',1)->get()->toArray();
+
+			foreach ($staff_users as $staff_key => $staff_value) {
+				$staff_group[] = ([
+					'group_id'=>$usergroup_id,
+					'user_table_id'=>$staff_value['id'],
+					'group_access'=>1,
+					'user_role'=>Config::get('app.Staff_role'),
+				]);
+			}
+			// Insert group users in mapping table
+			if(!empty($staff_group))
+				UserGroupsMapping::insert($staff_group);
+			$staff_group=[];
+			// Fetch all Parent users
+			$parent_users = UserParents::select('id','user_id')->where('user_status',1)->get()->toArray();
+			foreach ($parent_users as $parent_key => $parent_value) {
+				$parent_group[] = ([
+					'group_id'=>$usergroup_id,
+					'user_table_id'=>$parent_value['id'],
+					'group_access'=>1,
+					'user_role'=>Config::get('app.Parent_role'),
+				]);
+			}
+			// Insert group users in mapping table
+			if(!empty($parent_group))
+				UserGroupsMapping::insert($parent_group);
+			$parent_group=[];
+			// Create Whole School group - Ends
+
+
+			// Create school internal communication group
+			$usergroups = new UserGroups;
+	        $usergroups->group_name='School Internal Communication';
+	        $usergroups->group_description='This group contains all teaching staffs and non-teaching staffs.';
+	        $usergroups->group_action=1;//1-admin
+	        $usergroups->group_status=1;//1-active
+	        $usergroups->group_type=1;
+	        $usergroups->created_by=$userall_id;
+	        $usergroups->created_time=Carbon::now()->timezone('Asia/Kolkata');
+	        $usergroups->save();
+
+	        // Get inserted recored id
+	        $usergroup_id = $usergroups->id;
+
+	        foreach ($management_users as $management_key => $management_value) {
+				$management_group[] = ([
+					'group_id'=>$usergroup_id,
+					'user_table_id'=>$management_value['id'],
+					'group_access'=>1,
+					'user_role'=>Config::get('app.Management_role'),
+				]);
+			}
+
+			// Insert group users in mapping table
+			if(!empty($management_group))
+				UserGroupsMapping::insert($management_group);
+			$management_group=[];
+
+	        // Fetch all admin users
+			$admin_users = UserAdmin::select('id','user_id')->where('user_status',1)->get()->toArray();
+
+			foreach ($admin_users as $admin_key => $admin_value) {
+				$admin_group[] = ([
+					'group_id'=>$usergroup_id,
+					'user_table_id'=>$admin_value['id'],
+					'group_access'=>1,
+					'user_role'=>Config::get('app.Admin_role'),
+				]);
+			}
+			// Insert group users in mapping table
+			if(!empty($admin_group))
+				UserGroupsMapping::insert($admin_group);
+			
+			$admin_group=[];
+			// Fetch all Staffs users
+			$staff_users = UserStaffs::select('id','user_id')->where('user_status',1)->get()->toArray();
+
+			foreach ($staff_users as $staff_key => $staff_value) {
+				$staff_group[] = ([
+					'group_id'=>$usergroup_id,
+					'user_table_id'=>$staff_value['id'],
+					'group_access'=>1,
+					'user_role'=>Config::get('app.Staff_role'),
+				]);
+			}
+			// Insert group users in mapping table
+			if(!empty($staff_group))
+				UserGroupsMapping::insert($staff_group);
+
+			$staff_group=[];
+			// Create Academic Staff group
+			$usergroups = new UserGroups;
+	        $usergroups->group_name='Academic Staffs';
+	        $usergroups->group_description='This group contains only teaching staffs.';
+	        $usergroups->group_action=1;//1-admin
+	        $usergroups->group_status=1;//1-active
+	        $usergroups->group_type=1;
+	        $usergroups->created_by=$userall_id;
+	        $usergroups->created_time=Carbon::now()->timezone('Asia/Kolkata');
+	        $usergroups->save();
+
+	        // Get inserted recored id
+	        $usergroup_id = $usergroups->id;
+
+	        foreach ($management_users as $management_key => $management_value) {
+				$management_group[] = ([
+					'group_id'=>$usergroup_id,
+					'user_table_id'=>$management_value['id'],
+					'group_access'=>1,
+					'user_role'=>Config::get('app.Management_role'),
+				]);
+			}
+
+			// Insert group users in mapping table
+			if(!empty($management_group))
+				UserGroupsMapping::insert($management_group);
+			$management_group=[];
+
+	        /// Fetch all Staffs users
+			$staff_users = UserStaffs::select('id','user_id')->where('user_category',Config::get('app.Teaching_staff'))->where('user_status',1)->get()->toArray();
+
+			foreach ($staff_users as $staff_key => $staff_value) {
+				$staff_group[] = ([
+					'group_id'=>$usergroup_id,
+					'user_table_id'=>$staff_value['id'],
+					'group_access'=>1,
+					'user_role'=>Config::get('app.Staff_role'),
+				]);
+			}
+			// Insert group users in mapping table
+			if(!empty($staff_group))
+				UserGroupsMapping::insert($staff_group);
+			$staff_group=[];
+
+			// Fetch all admin users
+			$admin_users = UserAdmin::select('id','user_id')->where('user_status',1)->get()->toArray();
+
+			foreach ($admin_users as $admin_key => $admin_value) {
+				$admin_group[] = ([
+					'group_id'=>$usergroup_id,
+					'user_table_id'=>$admin_value['id'],
+					'group_access'=>1,
+					'user_role'=>Config::get('app.Admin_role'),
+				]);
+			}
+			// Insert group users in mapping table
+			if(!empty($admin_group))
+				UserGroupsMapping::insert($admin_group);
+			
+			$admin_group=[];
+
+			// Create Non-Teaching Staff group
+			$usergroups = new UserGroups;
+	        $usergroups->group_name='Non-Teaching Staffs';
+	        $usergroups->group_description='This group contains only non-teaching staffs.';
+	        $usergroups->group_action=1;//1-admin
+	        $usergroups->group_status=1;//1-active
+	        $usergroups->group_type=1;
+	        $usergroups->created_by=$userall_id;
+	        $usergroups->created_time=Carbon::now()->timezone('Asia/Kolkata');
+	        $usergroups->save();
+
+	        // Get inserted recored id
+	        $usergroup_id = $usergroups->id;
+
+	        foreach ($management_users as $management_key => $management_value) {
+				$management_group[] = ([
+					'group_id'=>$usergroup_id,
+					'user_table_id'=>$management_value['id'],
+					'group_access'=>1,
+					'user_role'=>Config::get('app.Management_role'),
+				]);
+			}
+
+			// Insert group users in mapping table
+			if(!empty($management_group))
+				UserGroupsMapping::insert($management_group);
+			$management_group=[];
+
+	        /// Fetch all Staffs users
+			$staff_users = UserStaffs::select('id','user_id')->where('user_category',Config::get('app.Non_teaching_staff'))->where('user_status',1)->get()->toArray();
+
+			foreach ($staff_users as $staff_key => $staff_value) {
+				$staff_group[] = ([
+					'group_id'=>$usergroup_id,
+					'user_table_id'=>$staff_value['id'],
+					'group_access'=>1,
+					'user_role'=>Config::get('app.Staff_role'),
+				]);
+			}
+			// Insert group users in mapping table
+			if(!empty($staff_group))
+				UserGroupsMapping::insert($staff_group);
+			$staff_group=[];
+
+			// Fetch all admin users
+			$admin_users = UserAdmin::select('id','user_id')->where('user_status',1)->get()->toArray();
+
+			foreach ($admin_users as $admin_key => $admin_value) {
+				$admin_group[] = ([
+					'group_id'=>$usergroup_id,
+					'user_table_id'=>$admin_value['id'],
+					'group_access'=>1,
+					'user_role'=>Config::get('app.Admin_role'),
+				]);
+			}
+			// Insert group users in mapping table
+			if(!empty($admin_group))
+				UserGroupsMapping::insert($admin_group);
+			
+			$admin_group=[];
+
+						/*Admin - Management group*/
+			$usergroups = new UserGroups;
+	        $usergroups->group_name='Admin-Management';
+	        $usergroups->group_description='This group contains all admin and Management users.';
+	        $usergroups->group_action=1;//1-admin
+	        $usergroups->group_status=1;//1-active
+	        $usergroups->group_type=1;
+	        $usergroups->created_by=$userall_id;
+	        $usergroups->created_time=Carbon::now()->timezone('Asia/Kolkata');
+	        $usergroups->save();
+
+	        // Get inserted recored id
+	        $usergroup_id = $usergroups->id;
+
+	        foreach ($management_users as $management_key => $management_value) {
+				$management_group[] = ([
+					'group_id'=>$usergroup_id,
+					'user_table_id'=>$management_value['id'],
+					'group_access'=>1,
+					'user_role'=>Config::get('app.Management_role'),
+				]);
+			}
+
+			// Insert group users in mapping table
+			if(!empty($management_group))
+				UserGroupsMapping::insert($management_group);
+			$management_group=[];
+
+			// Fetch all admin users
+			$admin_users = UserAdmin::select('id','user_id')->where('user_status',1)->get()->toArray();
+
+			foreach ($admin_users as $admin_key => $admin_value) {
+				$admin_group[] = ([
+					'group_id'=>$usergroup_id,
+					'user_table_id'=>$admin_value['id'],
+					'group_access'=>1,
+					'user_role'=>Config::get('app.Admin_role'),
+				]);
+			}
+			// Insert group users in mapping table
+			if(!empty($admin_group))
+				UserGroupsMapping::insert($admin_group);
+			
+			$admin_group=[];
+			/*Admin - Management group*/
+			
+			/*create class-sections groups -  starts*/
+			$class_config = AcademicClassConfiguration::select('id','class_id','section_id','class_teacher')->get()->toArray();
+
+			if(!empty($class_config))
+			{
+				$classes = array_column(AcademicClasses::select('id','class_name')->get()->toArray(),'class_name','id');
+				$sections = array_column(AcademicSections::select('id','section_name')->get()->toArray(),'section_name','id');
+				foreach ($class_config as $class_key => $class_value) {
+					if(isset($classes[$class_value['class_id']]) && $classes[$class_value['class_id']]!='' && isset($sections[$class_value['section_id']]) && $sections[$class_value['section_id']]!='' )
+					{
+						$usergroups = new UserGroups;
+				        $usergroups->group_name=$classes[$class_value['class_id']].' - '.$sections[$class_value['section_id']];
+				        $usergroups->group_description='This group contains only parents in class '.$classes[$class_value['class_id']].' - '.$sections[$class_value['section_id']];
+				        $usergroups->group_action=1;//1-admin
+				        $usergroups->group_status=1;//1-active
+				        $usergroups->group_type=2;
+				        $usergroups->class_config=$class_value['id'];
+				        $usergroups->created_by=$userall_id;
+				        $usergroups->created_time=Carbon::now()->timezone('Asia/Kolkata');
+				        $usergroups->save();
+
+				        // Get inserted recored id
+				        $usergroup_id = $usergroups->id;
+				        if(isset($class_value['class_teacher']))
+				        {
+					        // Insert class teacher into group
+					        $classteacher_group = ([
+								'group_id'=>$usergroup_id,
+								'user_table_id'=>$class_value['class_teacher'],
+								'group_access'=>1,
+								'user_role'=>Config::get('app.Staff_role'),
+							]);
+							// Insert group users in mapping table
+							UserGroupsMapping::insert($classteacher_group);
+							$classteacher_group=[];
+						}
+
+						 // Fetch all admin users
+						$admin_users = UserAdmin::select('id','user_id')->where('user_status',1)->get()->toArray();
+
+						foreach ($admin_users as $admin_key => $admin_value) {
+							$admin_group[] = ([
+								'group_id'=>$usergroup_id,
+								'user_table_id'=>$admin_value['id'],
+								'group_access'=>1,
+								'user_role'=>Config::get('app.Admin_role'),
+							]);
+						}
+						// Insert group users in mapping table
+						if(!empty($admin_group))
+							UserGroupsMapping::insert($admin_group);
+						
+						$admin_group=[];
+
+						foreach ($management_users as $management_key => $management_value) {
+							$management_group[] = ([
+								'group_id'=>$usergroup_id,
+								'user_table_id'=>$management_value['id'],
+								'group_access'=>1,
+								'user_role'=>Config::get('app.Management_role'),
+							]);
+						}
+
+						// Insert group users in mapping table
+						if(!empty($management_group))
+							UserGroupsMapping::insert($management_group);
+						$management_group=[];
+
+				        // Fetch all Staffs users
+						$teaching_staffs = AcademicSubjectsMapping::where('class_config',$class_value['id'])->pluck('staff')->toArray();
+
+						if(!empty($teaching_staffs) && !empty($teaching_staffs[0]))
+						{
+							foreach ($teaching_staffs as $staff_key => $staff_value) {
+								$teaching_staffs_group[] = ([
+									'group_id'=>$usergroup_id,
+									'user_table_id'=>$staff_value,
+									'group_access'=>2,
+									'user_role'=>Config::get('app.Staff_role'),
+								]);
+							}
+							// Insert group users in mapping table
+							if(!empty($teaching_staffs_group))
+								UserGroupsMapping::insert($teaching_staffs_group);
+							$teaching_staffs_group=[];
+						}
+						//Fetch all Parent users
+						$student_ids = UserStudents::select('id')->where('class_config',$class_value['id'])->get()->toArray();
+
+						if(!empty($student_ids))
+						{
+							$studentids = array_column($student_ids,'id');
+
+							$parent_ids = UserStudentsMapping::whereIn('student',$studentids)->pluck('parent')->toArray();
+							if(!empty($parent_ids))
+							{
+								$teaching_staffs_group = [];
+								foreach ($parent_ids as $parentkey => $parentvalue) {
+									$teaching_staffs_group[] = ([
+										'group_id'=>$usergroup_id,
+										'user_table_id'=>$parentvalue,
+										'group_access'=>2,
+										'user_role'=>Config::get('app.Parent_role'),
+									]);
+								}
+
+								// Insert group users in mapping table
+								if(!empty($teaching_staffs_group))
+									UserGroupsMapping::insert($teaching_staffs_group);
+								$teaching_staffs_group=[];
+							}
+						}
+				    }
+				}
+			}
+			/*create class-sections groups -  ends*/
+			
+			Configurations::where('school_profile_id',$user_data->school_profile_id)->update(['default_group_activated'=>1]);
+
+			return response()->json(['message'=>'Default Group Activated Successfully...']);
+		}
+		else
+			return response()->json(['message'=>'Default Group Already Activated...']);
+	}
+	// Fetch group details
+	public function user_group_list()
+	{
+		$user_data = auth()->user();
+		$user_role = '';
+		$school_name = SchoolProfile::where('id',$user_data->school_profile_id)->pluck('school_name')->first();
+		if($user_data->user_role == Config::get('app.Admin_role'))//check role and get current user id
+		{
+            $userid = UserAdmin::where(['user_id'=>$user_data->user_id])->pluck('id')->first();
+            $user_role = 'admin';
+		}
+        else if($user_data->user_role == Config::get('app.Management_role'))
+        {
+        	$userid = UserManagements::where(['user_id'=>$user_data->user_id])->pluck('id')->first();
+        	$user_role = 'management';
+        }
+        else if($user_data->user_role == Config::get('app.Staff_role'))
+        {
+        	$userid = UserStaffs::where(['user_id'=>$user_data->user_id])->pluck('id')->first();
+        	$user_role = 'staff';
+        }
+        else if($user_data->user_role == Config::get('app.Parent_role'))
+        {
+        	$userid = UserParents::where(['user_id'=>$user_data->user_id])->pluck('id')->first();
+        	$user_role = 'parent';
+        }
+
+		$group_ids = UserGroupsMapping::select('group_id')->where('user_role',$user_data->user_role)->where('user_table_id',$userid)->groupBy('group_id')->get()->toArray();
+		
+		if(!empty($group_ids))
+		{
+			$groupids = array_column($group_ids,'group_id');
+			$group_list = UserGroups::select('id','group_name','group_description')->where('group_type',1)->whereIn('id',$groupids)->get()->toArray(); //default groups
+			return response()->json(compact('school_name','user_role','group_list'));
+		}
+		else
+			return response()->json(['status'=>false,'message'=>'No groups Configured!...']);
+	}
+
+	public function classes_group(Request $request)
+	{
+		$user_data = auth()->user(); //check authentication
+		$class_group=[];
+		$school_name = SchoolProfile::where('id',$user_data->school_profile_id)->pluck('school_name')->first();//fetch school name
+		$user_category = '';
+		if($user_data->user_role == Config::get('app.Admin_role'))//check role and get current user id
+            $userid = UserAdmin::where(['user_id'=>$user_data->user_id])->pluck('id')->first();
+        else if($user_data->user_role == Config::get('app.Management_role'))
+        	$userid = UserManagements::where(['user_id'=>$user_data->user_id])->pluck('id')->first();
+        else if($user_data->user_role == Config::get('app.Staff_role'))
+        {
+        	$data = UserStaffs::select('id','user_category')->where(['user_id'=>$user_data->user_id])->first();
+        	$userid = $data['id'];
+        	$user_category = ($data['user_category']!=null && $data['user_category']!='' && $data['user_category'] == Config::get('app.Teaching_staff'))?'teaching staff':'nonteaching staff';
+        }
+        else if($user_data->user_role == Config::get('app.Parent_role'))
+        	$userid = UserParents::where(['user_id'=>$user_data->user_id])->pluck('id')->first();
+
+        $group_ids = UserGroupsMapping::select('group_id','group_access')->where('user_role',$user_data->user_role)->where('user_table_id',$userid)->groupBy('group_id')->get()->toArray();
+
+		if(!empty($group_ids)) //fetch school groups
+		{
+			$groupids = array_column($group_ids,'group_id');
+			$groupaccess = array_column($group_ids,'group_access','group_id');
+			$group_list = UserGroups::select('id','group_name','group_description','class_config')->where('group_type',2)->whereIn('id',$groupids);
+			if($request->student_id!='')
+			{
+				$config_id = UserStudents::where('id',$request->student_id)->pluck('class_config')->first();
+				$group_list = $group_list->where('class_config',$config_id);
+			}
+			$group_list = $group_list->get()->toArray(); //class groups
+			foreach ($group_list as $group_key => $group_value) {
+				$approval_pending = $class_approval_pending = $section_approval_pending = 0;
+				$classteacher_name ='';
+				$classteacher_id = AcademicClassConfiguration::where('id',$group_value['class_config'])->pluck('class_teacher')->first();
+				if($classteacher_id!='')
+					$classteacher_name = UserStaffs::where('id',$classteacher_id)->pluck('first_name')->first();
+				$chat_count = $homework_count = 0;
+				$chat_count = count(Communications::select('id')->where('group_id',$group_value['id'])->whereNull('approval_status')->where('communication_type',1)->where('distribution_type','!=',6)->where('distribution_type','!=',8)->get()->toArray());
+				$homework_count = count(Communications::select('id')->where('group_id',$group_value['id'])->whereNull('approval_status')->where('communication_type',2)->where('actioned_time','>=',date("Y-m-d",strtotime(Carbon::now()->timezone('Asia/Kolkata'))))->get()->toArray());
+				$approval_pending = $chat_count+$homework_count;
+
+				$class_approval_pending = count(Communications::where('group_id',2)->Where('visible_to', 'like', '%' .$group_value['class_config']. ',%')->where('communication_type',1)->where('distribution_type',8)->whereNull('approval_status')->pluck('id')->toArray());
+
+				$section_approval_pending = count(Communications::where('group_id',2)->Where('visible_to', 'like', '%' .$group_value['class_config']. ',%')->where('communication_type',1)->where('distribution_type',6)->whereNull('approval_status')->pluck('id')->toArray());
+
+				$approval_pending+=$class_approval_pending+$section_approval_pending;
+
+				$parent_ids = UserGroupsMapping::where(['user_role'=>Config::get('app.Parent_role'),'group_id'=>$group_value['id']])->pluck('user_table_id')->toArray();
+				$all_user_count = UserGroupsMapping::where(['group_id'=>$group_value['id']])->pluck('user_table_id')->toArray();
+				$parent_online = 0;
+				if(!empty($parent_ids))
+				{
+					$parent_user_ids = UserParents::whereIn('id',$parent_ids)->pluck('user_id')->toArray();
+					$last_login_details = SchoolUsers::whereIn('user_id',$parent_user_ids)->whereDate('last_login', Carbon::today())->pluck('last_login')->toArray();
+					if(!empty($last_login_details))
+					{
+						foreach ($last_login_details as $loginkey => $loginvalue) {
+
+    						$newDate = strtotime(Carbon::now()->timezone('Asia/Kolkata').'-1 minutes');
+							$last_login_time = strtotime($loginvalue);
+							if($last_login_time>=$newDate)
+							{
+								$parent_online++;
+							}
+						}
+					}
+				}
+				$subject_list = [];
+				$get_subject_ids = AcademicSubjectsMapping::select('subject')->where('class_config',$group_value['class_config'])->get()->toArray(); //fetch all the subject ids for that corresponding class
+				if(!empty($get_subject_ids))
+				{
+					$subject_list = AcademicSubjects::select('id','subject_name')->whereIn('id',$get_subject_ids)->get()->toArray(); //fetch all subject names from ids
+					$homework_date = date("Y-m-d");
+					if($request->homework_date!='')
+						$homework_date = $request->homework_date;
+					$approved_subject_homeworks = Communications::whereIn('subject_id',$get_subject_ids)->where('communication_type',2)->where('group_id',$group_value['id'])->where('actioned_time', 'like', '%' .$homework_date. '%')->get()->toArray();
+				}
+
+				if($groupaccess[$group_value['id']] == 1)
+				{
+					$classteacher_group[$group_key]['group_id'] = $group_value['id'];
+					$classteacher_group[$group_key]['group_name'] = $group_value['group_name'];
+					$classteacher_group[$group_key]['group_description'] = $group_value['group_description'];
+					$classteacher_group[$group_key]['class_teacher'] = $classteacher_name;
+					$classteacher_group[$group_key]['approval_pending'] = $approval_pending;
+					$classteacher_group[$group_key]['parent_online'] = $parent_online;
+					$classteacher_group[$group_key]['class_config'] = $group_value['class_config'];
+					$classteacher_group[$group_key]['classteacher']=($groupaccess[$group_value['id']] == 1)?'yes':'no';
+					$classteacher_group[$group_key]['total_parent_count'] =(!empty($parent_ids))?count($parent_ids):0;
+					$classteacher_group[$group_key]['all_user_count'] =(!empty($all_user_count))?count($all_user_count):0;
+					$classteacher_group[$group_key]['subject_list']= $subject_list;
+					$classteacher_group[$group_key]['uploaded_homeworks_count']=(!empty($approved_subject_homeworks))?count($approved_subject_homeworks):0;
+
+
+				}
+				else
+				{
+					$staff_group[$group_key]['group_id'] = $group_value['id'];
+					$staff_group[$group_key]['group_name'] = $group_value['group_name'];
+					$staff_group[$group_key]['group_description'] = $group_value['group_description'];
+					$staff_group[$group_key]['class_teacher'] = $classteacher_name;
+					$staff_group[$group_key]['approval_pending'] = $approval_pending;
+					$staff_group[$group_key]['parent_online'] = $parent_online;
+					$staff_group[$group_key]['class_config'] = $group_value['class_config'];
+					$staff_group[$group_key]['classteacher']=($groupaccess[$group_value['id']] == 1)?'yes':'no';
+					$staff_group[$group_key]['total_parent_count'] =(!empty($parent_ids))?count($parent_ids):0;
+					$staff_group[$group_key]['all_user_count'] =(!empty($all_user_count))?count($all_user_count):0;
+					$staff_group[$group_key]['subject_list']= $subject_list;
+					$staff_group[$group_key]['uploaded_homeworks_count']=(!empty($approved_subject_homeworks))?count($approved_subject_homeworks):0;
+				}
+			}
+			if(!empty($classteacher_group))
+				$class_group =  array_merge($class_group,$classteacher_group);
+
+			if(!empty($staff_group))
+				$class_group =  array_merge($class_group,$staff_group);
+
+			return response()->json(compact('school_name','user_category','class_group'));
+		}
+		else
+			return response()->json(['status'=>false,'message'=>'No groups Configured!...']);
+	}
+
+	// Configurations tags
+	public function configuration_tags()
+	{
+		// Save last login in DB
+        $user = auth()->user();
+
+		// Fetch configuration details from DB for corresponding school
+        $configurations = Configurations::where('school_profile_id',$user->school_profile_id)->first();
+
+        // configuration details
+        $configuration = ([
+        	'divisions'=>($configurations->division==1)?true:false,
+            'sections'=>($configurations->sections==1)?true:false,
+            'classes'=>($configurations->classes==1)?true:false,
+            'map_classes_sections'=>($configurations->map_classes_sections==1)?true:false,
+            'subjects'=>($configurations->subjects==1)?true:false,
+            'map_subjects'=>($configurations->map_subjects==1)?true:false,
+            'staffs'=>($configurations->staffs==1)?true:false,
+            'map_staffs'=>($configurations->map_staffs==1)?true:false,
+            'management'=>($configurations->management==1)?true:false,
+            'students'=>($configurations->students==1)?true:false,
+        ]);
+        // return token 
+        return response()->json(compact('configuration'));
 	}
 
 	// send welcome message to all users

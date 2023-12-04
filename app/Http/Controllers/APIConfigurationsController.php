@@ -2362,7 +2362,7 @@ class APIConfigurationsController extends Controller
             $academic_division->created_by = $userall_id;
             $academic_division->save();
 
-           	if(isset($value['division_id']) && $value['division_id']!='')
+           	if((isset($value['division_id']) && $value['division_id']!='') || $check_exists!='')
             	$status = 'edit';
 		}
 

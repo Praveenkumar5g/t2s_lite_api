@@ -131,7 +131,6 @@ Route::group(['middleware' => 'auth.connect','prefix' => 'user'], function ($rou
     
     Route::get('/get_sections_list',[APIConfigurationsController::class,'get_edit_sections_list']);
     Route::get('/get_edit_sections_list',[APIConfigurationsController::class,'get_edit_sections_list']);
-    Route::get('/get_divisions',[APIConfigurationsController::class,'get_divisions']);
     Route::get('/class_review',[APIConfigurationsController::class,'class_review']);
     Route::post('/class_section_review',[APIConfigurationsController::class,'class_section_review']);
     Route::post('/get_class_section',[APIConfigurationsController::class,'get_class_section']);
@@ -158,7 +157,7 @@ Route::group(['middleware' => 'auth.connect','prefix' => 'user'], function ($rou
     Route::post('/onboarding_edit_parent',[APIConfigurationsController::class,'onboarding_edit_parent']);
     Route::post('/check_admission_unique',[APIConfigurationsController::class,'check_admission_unique']);
     /*Delete Configuration*/
-    Route::post('/delete_division',[APIConfigurationsController::class,'delete_division']);
+    
     Route::post('/delete_class',[APIConfigurationsController::class,'delete_class']);
     Route::post('/delete_section',[APIConfigurationsController::class,'delete_section']);
     Route::post('/delete_class_section',[APIConfigurationsController::class,'delete_class_section']);
@@ -167,6 +166,12 @@ Route::group(['middleware' => 'auth.connect','prefix' => 'user'], function ($rou
     Route::post('/onboarding_delete_management',[APIConfigurationsController::class,'onboarding_delete_management']);
      Route::post('/onboarding_delete_parent',[APIConfigurationsController::class,'onboarding_delete_parent']);
     /*Delete Configuration*/
+
+    /*Onboarding - manual*/
+    Route::post('/create_update_division_manual',[APIConfigurationsController::class,'create_update_division_manual']);
+    Route::get('/get_divisions',[APIConfigurationsController::class,'get_divisions']);
+    Route::post('/delete_division',[APIConfigurationsController::class,'delete_division']);
+    /*Onboarding - Manual*/
 
     Route::get('/activate_default_groups',[APIConfigurationsController::class,'activate_default_groups']);
     Route::get('/user_group_list',[APIConfigurationsController::class,'user_group_list']);

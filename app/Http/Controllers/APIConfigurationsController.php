@@ -2341,6 +2341,11 @@ class APIConfigurationsController extends Controller
     public function create_update_division_manual(Request $request)
     {
     	$user_data = auth()->user();
+    	 // get user details from table
+        $user_details =  app('App\Http\Controllers\APILoginController')->get_user_table_id($user);
+
+        $userall_id = UserAll::where(['user_table_id'=>$user_details->id,'user_role'=>$user->user_role])->pluck('id')->first();//fetch id from user all table to store notification triggered user
+
 		$inserted_records=0;
         $status = 'insert';
 		foreach ($request->divisions as $key => $value) {

@@ -2367,6 +2367,8 @@ class APIConfigurationsController extends Controller
 		}
 
     	Configurations::where('school_profile_id',$user_data->school_profile_id)->update(['division'=>1]);
+
+    	return response()->json(['status'=>true,'message'=>'Division '.$status.' Successfully!...']);
     }
 
     // get division list

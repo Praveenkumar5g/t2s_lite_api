@@ -2232,7 +2232,8 @@ class APIConfigurationsController extends Controller
             $academicclasses->created_time = Carbon::now()->timezone('Asia/Kolkata');
             $class_details->save();
 
-            $status = $this->map_classes_sections($userall_id); //Map classes and sections
+            if(!isset($value['class_id']) && $class_id !='')
+            	$status = $this->map_classes_sections($userall_id); //Map classes and sections
             if(isset($value['class_id']) && $value['class_id']!='')
             	$status = 'edit';
         }
@@ -2326,27 +2327,27 @@ class APIConfigurationsController extends Controller
 	    return response()->json($class_section_review);
 	}
 
-	// public function get_class_section(Request $request) //list all classes and sections for mapping(on-boarding)
-	// {
-	// 	$sections_list = $selected_section= [];
-	// 	$classconfig = AcademicClassConfiguration::select('section_id')->where(['class_id'=> $request->class_id,'division_id'=>$request->division_id])->get()->toArray();
+	public function get_selected_class_section(Request $request) //list all classes and sections for mapping(on-boarding)
+	{
+		$sections_list = $selected_section= [];
+		$classconfig = AcademicClassConfiguration::select('section_id')->where(['class_id'=> $request->class_id,'division_id'=>$request->division_id])->get()->toArray();
 
-	// 	$sections = AcademicSections::select('id','section_name')->where(['division_id'=>$request->division_id])->get()->toArray();
-	// 	if(!empty($sections))
-	// 	{
-	// 		if(!empty($classconfig))
-	// 			$selected_section = array_column($classconfig, 'section_id');
+		$sections = AcademicSections::select('id','section_name')->where(['division_id'=>$request->division_id])->get()->toArray();
+		if(!empty($sections))
+		{
+			if(!empty($classconfig))
+				$selected_section = array_column($classconfig, 'section_id');
 
-	// 		foreach ($sections as $key => $value) {
-	// 			$sections_list[] = ([
-	// 				'id'=>$value['id'],
-	// 				'section_name'=>$value['section_name'],
-	// 				'is_checked'=>in_array($value['id'], $selected_section)
-	// 			]);
-	// 		}
-	// 	}
-	// 	return response()->json($sections_list);
-	// }
+			foreach ($sections as $key => $value) {
+				$sections_list[] = ([
+					'id'=>$value['id'],
+					'section_name'=>$value['section_name'],
+					'is_checked'=>in_array($value['id'], $selected_section)
+				]);
+			}
+		}
+		return response()->json($sections_list);
+	}
 
 	public function delete_class_section(Request $request) //delete unchecked mapping (on-boarding)
 	{

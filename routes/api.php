@@ -171,6 +171,7 @@ Route::group(['middleware' => 'auth.connect','prefix' => 'user'], function ($rou
     Route::post('/create_update_class_manual',[APIConfigurationsController::class,'create_update_class_manual']);
     Route::get('/get_classes',[APIConfigurationsController::class,'get_classes']);
     Route::post('/get_class_section',[APIConfigurationsController::class,'get_class_section']);
+    Route::post('/get_selected_class_section',[APIConfigurationsController::class,'get_selected_class_section']);
     Route::post('/delete_class_section',[APIConfigurationsController::class,'delete_class_section']);
     /*Onboarding - Manual*/
 

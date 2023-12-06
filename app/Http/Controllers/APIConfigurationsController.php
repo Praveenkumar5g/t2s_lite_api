@@ -175,57 +175,6 @@ class APIConfigurationsController extends Controller
                 else
                     return response()->json(['message'=>'Inserted Successfully!...']);
 		}
-		else if($request->configuration_type == 'sections')// Import sections data into DB
-		{
-			$status='insert';
-			if(strtolower($request->update_type) == 'excel')
-				Excel::import(new SectionsImport,request()->file('import_file'));
-			else
-			{
-				$sections = $request->data;
-				$division_id = $request->division_id;
-				foreach ($sections as $key => $value) {
-					$section_id = AcademicSections::where(['section_name'=>$value['section_name'],'division_id'=>$division_id])->pluck('id')->first(); //check given section name is already exists or not
-		            if(!isset($value['section_id']) && $section_id=='')
-		            {
-		            	// updated sections along with sub-division
-		                $academicsections = new AcademicSections;
-		                $academicsections->section_name = $value['section_name'];
-		                $academicsections->division_id = $division_id;
-		                $academicsections->created_by = $userall_id;
-		                $academicsections->created_time = Carbon::now()->timezone('Asia/Kolkata');
-		                $academicsections->save();
-
-		                $section_id = $academicsections->id;
-		            }
-		            else
-		            {
-		            	if($section_id=='')
-		            	{
-		            		// insert sections along with sub-division details
-		                	$section_details = AcademicSections::where(['id'=>$value['section_id'],'division_id'=>$division_id])->first();
-			        		$section_details->section_name = $value['section_name'];
-			        		$section_details->division_id = $division_id;
-		                    $section_details->updated_by = $userall_id;
-		                    $section_details->updated_time = Carbon::now()->timezone('Asia/Kolkata');
-		                    $section_details->save();
-		                }
-		        	}
-		        	if(isset($value['section_id']) && $value['section_id']!='')
-	                   	$status = 'edit';
-		        }
-			    	
-			    Configurations::where('school_profile_id',$user_data->school_profile_id)->update(['sections'=>1]);
-	   		}
-
-	   		// Excel::store(new MapClassesSectionsExport,'MapClassesSections.xlsx');//creating dynamic excels
-   			// File::copy(storage_path('app/MapClassesSections.xlsx'), public_path(env('SAMPLE_CONFIG_URL').$school_profile->school_code.'/'.'MapClassesSections.xlsx'));
-		    
-			if($status == 'edit')
-                    return response()->json(['message'=>'Updated Successfully!...']);
-                else
-                    return response()->json(['message'=>'Inserted Successfully!...']);
-		}
 		else if($request->configuration_type == 'mapclassessections')// Import map classes and sections data into DB
 		{
 			$status='insert';
@@ -406,188 +355,6 @@ class APIConfigurationsController extends Controller
         return response()->json(['message'=>'Inserted Successfully!...']);
 	}
 
-	public static function divisions($data,$userall_id,$upload_type) //upload sub-division in DB (on-boarding)
-	{
-		$user_data = auth()->user();
-		$inserted_records=0;
-        $status = 'insert';
-		foreach ($data as $key => $value) {
-			$check_exists = AcademicDivisions::where(['division_name'=>$value['division_name']])->pluck('id')->first(); //check whether the given sub-division name already exists ro not
-			if(isset($value['division_id']) && $value['division_id']!='' && $check_exists=='')
-        	{
-        		//if already exists update the details
-        		$academic_division = AcademicDivisions::where(['id'=>$value['division_id']])->first();
-        		$academic_division->division_name = $value['division_name'];
-                $academic_division->updated_by = $userall_id;
-                $academic_division->updated_time = Carbon::now()->timezone('Asia/Kolkata');
-                $academic_division->save();
-        	}
-        	else
-        	{
-                if($check_exists=='')
-                {
-               	 	//insert record if new sub-division 
-                    $academic_division = new AcademicDivisions;
-                    $academic_division->division_name = $value['division_name'];
-                    $academic_division->created_by = $userall_id;
-                    $academic_division->created_time = Carbon::now()->timezone('Asia/Kolkata');
-                    $academic_division->save();
-
-                    $division_id = $academic_division->id;
-                }
-            }
-            if(isset($value['division_id']) && $value['division_id']!='')
-            	$status = 'edit';
-		}
-
-    	Configurations::where('school_profile_id',$user_data->school_profile_id)->update(['division'=>1]);
-	}
-	public function map_classes_sections($userall_id) //map classes and section - on-boarding
-	{
-		$user_data = auth()->user(); //check authentication
-		$academicyear = SchoolAcademicYears::where(['school_profile_id'=>$user_data->school_profile_id])->pluck('academic_year')->first();//fetch academic year
-		$classes = AcademicClasses::select('id','division_id')->get()->toArray(); //get all classes id and division 
-		if(!empty($classes)) //check empty
-		{
-			foreach ($classes as $key => $value) {
-				$sections =AcademicSections::select('id')->where('division_id',$value['division_id'])->get()->toArray(); //fetch all the sections inside selected sub-division id
-				if(!empty($sections))
-				{
-					foreach ($sections as $sec_key => $sec_value) {
-						$classconfig = AcademicClassConfiguration::where(['class_id'=>$value['id'],'section_id'=>$sec_value['id']])->pluck('id')->first(); //check the configuration already exist in db
-						if($classconfig=='') //not exists means,insert configuration (map)
-		            	{
-			        		$class_config = new AcademicClassConfiguration;
-		                    $class_config->academic_year = $academicyear;
-		                    $class_config->class_id = $value['id'];
-		                    $class_config->section_id = $sec_value['id'];
-		                    $class_config->division_id=$value['division_id'];
-		                    $class_config->created_by=$userall_id;
-		                    $class_config->created_time=Carbon::now()->timezone('Asia/Kolkata');
-		                    $class_config->save();
-		                    $class_config_id = $class_config->id;
-		            	}
-					}
-				}
-	        }
-	    }	
-	}
-
-	public function class_review() //check inserted classes review (on-boarding)
-	{
-		// Save last login in DB
-        $userdata = auth()->user();
-        $classes = AcademicClasses::select('id','class_name','division_id')->get(); //fetch all the classes and form in array format
-        foreach ($classes as $key => $value) {
-        	$class_review[]=([
-        		'id'=>$value->id,
-        		'class_name'=>$value->class_name,
-        		'division_id'=>$value->division_id,
-        		'division_name'=>$value->divisionName(),
-        	]);
-        }
-        return response()->json($class_review);
-	}
-
-	public function class_section_review(Request $request) //check inserted classes and sections review (on-boarding)
-	{
-		// Save last login in DB
-        $userdata = auth()->user();
-        $division_id = $request->division_id;
-        $class_section_review=[];
-        $classessections = AcademicClassConfiguration::select('id','class_id','section_id')->where('division_id',$division_id)->get(); //fetch all mapped classes and section from table
-        if(!empty($classessections))
-        {
-	        foreach ($classessections as $key => $value) { //formed mulit-dimenisional array along with sections
-	        	$section_details = $value->sectionName();
-
-	        	$classsection_data[$value->class_id]=([
-	        		'id'=>$value->id,
-	        		'class_id'=>$value->class_id,
-	        		'class_name'=>$value->className(),
-	        		'division_id'=>$section_details->division_id,
-	        		'division_name'=>$section_details->divisionName(),
-	        	]);
-
-	        	$sections[$value->class_id][]= ([
-	        		'section_id'=>$value->section_id,
-	        		'section_name'=>$section_details->section_name
-	        	]);
-	        }
-	        $index = 0;
-	        foreach ($classsection_data as $class_key => $class_value) {
-	        	$class_section_review[$index] = $classsection_data[$class_value['class_id']];
-	        	$class_section_review[$index]['sections'] = $sections[$class_value['class_id']];
-	        	$index++;
-	        }
-	       
-	    }
-	    return response()->json($class_section_review);
-	}
-
-	public function get_class_section(Request $request) //list all classes and sections for mapping(on-boarding)
-	{
-		$sections_list = $selected_section= [];
-		$classconfig = AcademicClassConfiguration::select('section_id')->where(['class_id'=> $request->class_id,'division_id'=>$request->division_id])->get()->toArray();
-
-		$sections = AcademicSections::select('id','section_name')->where(['division_id'=>$request->division_id])->get()->toArray();
-		if(!empty($sections))
-		{
-			if(!empty($classconfig))
-				$selected_section = array_column($classconfig, 'section_id');
-
-			foreach ($sections as $key => $value) {
-				$sections_list[] = ([
-					'id'=>$value['id'],
-					'section_name'=>$value['section_name'],
-					'is_checked'=>in_array($value['id'], $selected_section)
-				]);
-			}
-		}
-		return response()->json($sections_list);
-	}
-
-	public function delete_class_section(Request $request) //delete unchecked mapping (on-boarding)
-	{
-		$data = $request->data;
-		if(!empty($data))
-		{
-			foreach ($data as $key => $value) {
-				$classconfig = AcademicClassConfiguration::select('id')->where(['class_id'=> $request->class_id,'section_id'=>$value['section_id']])->get()->toArray();
-				if(!empty($classconfig) && $value['is_checked'] == 'false')
-				{
-					$classconfig = array_column($classconfig,'id');
-			        CommunicationDistribution::whereIn('class_config_id',$classconfig)->delete();
-			        UserStudents::whereIn('class_config',$classconfig)->delete();
-			        AcademicSubjectsMapping::whereIn('class_config',$classconfig)->delete();
-			        AcademicClassConfiguration::whereIn('id',$classconfig)->delete();
-			    }
-			    else if($value['is_checked'] == 'true' && empty($classconfig)) 
-			    {
-			    	$user_data = auth()->user();
-
-			        if($user_data->user_role == 1)
-			            $user_admin = UserAdmin::where(['user_id'=>$user_data->user_id])->pluck('id')->first();
-
-			        $userall_id = UserAll::where(['user_table_id'=>$user_admin,'user_role'=>$user_data->user_role])->pluck('id')->first(); //fetch id from user all table to store setting triggered user
-
-			    	$academicyear = SchoolAcademicYears::where(['school_profile_id'=>$user_data->school_profile_id])->pluck('academic_year')->first();
-			    	$class_config = new AcademicClassConfiguration;
-                    $class_config->academic_year = $academicyear;
-                    $class_config->class_id = $request->class_id;
-                    $class_config->section_id = $value['section_id'];
-                    $class_config->division_id=$request->division_id;
-                    $class_config->created_by=$userall_id;
-                    $class_config->created_time=Carbon::now()->timezone('Asia/Kolkata');
-                    $class_config->save();
-                    $class_config_id = $class_config->id;
-			    }
-			}
-	        
-		}
-	    return response()->json(['message'=>'Submitted Successfully!...']);
-	}
-
 	// Get Subjects list 
 	public function get_subjects(Request $request) //get all subjects list (on-boarding)
 	{
@@ -719,17 +486,6 @@ class APIConfigurationsController extends Controller
 		$student_list = [];//empty array declaration
 		$parents = UserParents::select('id','first_name','mobile_number')->where('user_category',1)->get()->toArray();//get student list
 		return response()->json($parents); //return student details 
-	}
-
-	// Fetch Sections list
-	public function get_edit_sections_list()
-	{
-		$sections = AcademicSections::select('id','section_name')->get()->toArray();
-		foreach ($sections as $key => $value) {
-			$sections[$key]=$value;
-			$sections[$key]['isclicked']=false;
-		}
-		return response()->json(compact('sections'));
 	}
 
 	public static function subjects($data,$division_id,$userall_id,$upload_type)
@@ -1069,22 +825,6 @@ class APIConfigurationsController extends Controller
 			UserStudents::whereIn('class_config',$classconfig)->delete();
 	        AcademicClassConfiguration::whereIn('id',$classconfig)->delete();
 	        AcademicClasses::where('id',$request->class_id)->delete();
-		}
-		return response()->json(['message'=>'Deleted Successfully!...']);
-	}
-
-	// Delete section
-	public function delete_section(Request $request)
-	{
-		if(isset($request->division_id) && $request->division_id!='' && isset($request->section) && $request->section!='')
-		{
-			$classconfig = AcademicClassConfiguration::select('id')->where(['section_id'=> $request->section_id,'division_id'=>$request->division_id])->get()->toArray();
-
-	       	AcademicSubjectsMapping::whereIn('class_config',$classconfig)->delete();
-	        CommunicationDistribution::whereIn('class_config_id',$classconfig)->delete();
-			UserStudents::whereIn('class_config',$classconfig)->delete();
-	        AcademicClassConfiguration::whereIn('id',$classconfig)->delete();
-	        AcademicSections::where('id',$request->section_id)->delete();
 		}
 		return response()->json(['message'=>'Deleted Successfully!...']);
 	}
@@ -2335,7 +2075,7 @@ class APIConfigurationsController extends Controller
         $student_map->save();
     }
 
-    /*Onboarding Manual*/
+    /*------------------------------Onboarding Manual-----------------------------*/
 
     // create and update division
     public function create_update_division_manual(Request $request)
@@ -2351,13 +2091,16 @@ class APIConfigurationsController extends Controller
 		foreach ($request->divisions as $key => $value) {
 			$check_exists = AcademicDivisions::where(['division_name'=>$value['division_name']])->pluck('id')->first(); //check whether the given sub-division name already exists ro not
 
-			if(isset($value['division_id']) && $value['division_id']!='' && $check_exists=='')        		$academic_division = AcademicDivisions::where(['id'=>$value['division_id']])->first();//if already exists update the details
+			if(isset($value['division_id']) && $value['division_id']!='' && $check_exists=='')        
+			{
+				$academic_division = AcademicDivisions::where(['id'=>$value['division_id']])->first();//if already exists update the details
+	            $academic_division->updated_by = $userall_id;
+	            $academic_division->updated_time = Carbon::now()->timezone('Asia/Kolkata');
+			}		
         	else
                 $academic_division = new AcademicDivisions;//insert record if new sub-division 
             
     		$academic_division->division_name = $value['division_name'];
-            $academic_division->updated_by = $userall_id;
-            $academic_division->updated_time = Carbon::now()->timezone('Asia/Kolkata');
             $academic_division->created_time = Carbon::now()->timezone('Asia/Kolkata');
             $academic_division->created_by = $userall_id;
             $academic_division->save();
@@ -2390,9 +2133,264 @@ class APIConfigurationsController extends Controller
 	        AcademicClassConfiguration::where('division_id',$request->division_id)->delete();
 	        AcademicDivisions::where('id',$request->division_id)->delete();
 		}
-		return response()->json(['message'=>'Deleted Successfully!...']);
+		return response()->json(['status'=>true,'message'=>'Deleted Successfully!...']);
 	}
-    /*Onboarding Manual*/    
+
+	//create and update section
+	public function create_update_section_manual(Request $request)
+	{
+		$user_data = auth()->user();
+    	 // get user details from table
+        $user_details =  app('App\Http\Controllers\APILoginController')->get_user_table_id($user_data);
+
+        $userall_id = UserAll::where(['user_table_id'=>$user_details->id,'user_role'=>$user_data->user_role])->pluck('id')->first();//fetch id from user all table to store notification triggered user
+
+		$sections = $request->sections;
+		$division_id = $request->division_id;
+		foreach ($sections as $key => $value) {
+			$section_id = AcademicSections::where(['section_name'=>$value['section_name'],'division_id'=>$division_id])->pluck('id')->first(); //check given section name is already exists or not
+
+            if(!isset($value['section_id']) && $section_id=='')
+                $academicsections = new AcademicSections;// updated sections along with sub-division
+            else
+            {
+                $academicsections = AcademicSections::where(['id'=>$value['section_id'],'division_id'=>$division_id])->first();// insert sections along with sub-division details
+	            $academicsections->updated_by = $userall_id;
+	            $academicsections->updated_time = Carbon::now()->timezone('Asia/Kolkata');
+            }
+
+            $academicsections->section_name = $value['section_name'];
+            $academicsections->division_id = $division_id;
+            $academicsections->created_by = $userall_id;
+            $academicsections->created_time = Carbon::now()->timezone('Asia/Kolkata');
+            $academicsections->save();
+            
+            $section_id = $academicsections->id;
+        	if(isset($value['section_id']) && $value['section_id']!='')
+               	$status = 'edit';
+        }
+	    	
+	    Configurations::where('school_profile_id',$user_data->school_profile_id)->update(['sections'=>1]);
+
+	    return response()->json(['status'=>true,'message'=>'Section '.$status.' Successfully!...']);
+	}
+
+	// Fetch Sections list
+	public function get_sections()
+	{
+		$sections = AcademicSections::select('id','section_name')->get()->toArray();
+		foreach ($sections as $key => $value) {
+			$sections[$key]=$value;
+			$sections[$key]['isclicked']=false;
+		}
+		return response()->json(compact('sections'));
+	}
+
+	// Delete section
+	public function delete_section(Request $request)
+	{
+		if(isset($request->division_id) && $request->division_id!='' && isset($request->section) && $request->section!='')
+		{
+			$classconfig = AcademicClassConfiguration::select('id')->where(['section_id'=> $request->section_id,'division_id'=>$request->division_id])->get()->toArray();
+
+	       	AcademicSubjectsMapping::whereIn('class_config',$classconfig)->delete();
+	        CommunicationDistribution::whereIn('class_config_id',$classconfig)->delete();
+			UserStudents::whereIn('class_config',$classconfig)->delete();
+	        AcademicClassConfiguration::whereIn('id',$classconfig)->delete();
+	        AcademicSections::where('id',$request->section_id)->delete();
+		}
+		return response()->json(['status'=>true,'message'=>'Deleted Successfully!...']);
+	}
+
+	// create and update classes
+	public function create_update_class_manual(Request $request)
+	{
+		$user_data = auth()->user();
+    	 // get user details from table
+        $user_details =  app('App\Http\Controllers\APILoginController')->get_user_table_id($user_data);
+
+        $userall_id = UserAll::where(['user_table_id'=>$user_details->id,'user_role'=>$user_data->user_role])->pluck('id')->first();//fetch id from user all table to store notification triggered user
+
+		$classes = $request->classes;
+        $division_id = $request->division_id;
+        foreach ($classes as $key => $value) {
+        	$class_id ='';
+        	if(!isset($value['class_id']))
+        		$class_id = AcademicClasses::where(['class_name'=>$value['class_name'],'division_id'=>$division_id])->pluck('id')->first(); //check given class name is already exists or not
+        	if(isset($value['class_id']) && $value['class_id']!='' && $class_id=='')
+        	{
+        		$class_details = AcademicClasses::where(['id'=>$value['class_id'],'division_id'=>$division_id])->first();// updated classes along with sub-division
+	            $class_details->updated_by = $userall_id;
+	            $class_details->updated_time = Carbon::now()->timezone('Asia/Kolkata');
+        	}
+        	else
+                $class_details = new AcademicClasses;// insert classes along with sub-division details
+
+    		$class_details->class_name = $value['class_name'];
+    		$class_details->division_id= $division_id;
+            $academicclasses->created_by = $userall_id;
+            $academicclasses->created_time = Carbon::now()->timezone('Asia/Kolkata');
+            $class_details->save();
+
+            $status = $this->map_classes_sections($userall_id); //Map classes and sections
+            if(isset($value['class_id']) && $value['class_id']!='')
+            	$status = 'edit';
+        }
+        Configurations::where('school_profile_id',$user_data->school_profile_id)->update(['classes'=>1]);
+
+
+        // Configurations::where('school_profile_id',$user_data->school_profile_id)->update(['map_classes_sections'=>1]); //update completion status in configuration table
+        return response()->json(['message'=>'Inserted Successfully!...']);exit();
+	}
+
+	public function map_classes_sections($userall_id) //map classes and section - on-boarding
+	{
+		$user_data = auth()->user(); //check authentication
+		$academicyear = SchoolAcademicYears::where(['school_profile_id'=>$user_data->school_profile_id])->pluck('academic_year')->first();//fetch academic year
+		$classes = AcademicClasses::select('id','division_id')->get()->toArray(); //get all classes id and division 
+		if(!empty($classes)) //check empty
+		{
+			foreach ($classes as $key => $value) {
+				$sections =AcademicSections::select('id')->where('division_id',$value['division_id'])->get()->toArray(); //fetch all the sections inside selected sub-division id
+				if(!empty($sections))
+				{
+					foreach ($sections as $sec_key => $sec_value) {
+						$classconfig = AcademicClassConfiguration::where(['class_id'=>$value['id'],'section_id'=>$sec_value['id']])->pluck('id')->first(); //check the configuration already exist in db
+						if($classconfig=='') //not exists means,insert configuration (map)
+		            	{
+			        		$class_config = new AcademicClassConfiguration;
+		                    $class_config->academic_year = $academicyear;
+		                    $class_config->class_id = $value['id'];
+		                    $class_config->section_id = $sec_value['id'];
+		                    $class_config->division_id=$value['division_id'];
+		                    $class_config->created_by=$userall_id;
+		                    $class_config->created_time=Carbon::now()->timezone('Asia/Kolkata');
+		                    $class_config->save();
+		                    $class_config_id = $class_config->id;
+		            	}
+					}
+				}
+	        }
+	    }	
+	}
+
+	public function get_classes() //check inserted classes review (on-boarding)
+	{
+		// Save last login in DB
+        $userdata = auth()->user();
+        $classes = AcademicClasses::select('id','class_name','division_id')->get(); //fetch all the classes and form in array format
+        foreach ($classes as $key => $value) {
+        	$class_review[]=([
+        		'id'=>$value->id,
+        		'class_name'=>$value->class_name,
+        		'division_id'=>$value->division_id,
+        		'division_name'=>$value->divisionName(),
+        	]);
+        }
+        return response()->json($class_review);
+	}
+
+	public function get_class_section(Request $request) //check inserted classes and sections review (on-boarding)
+	{
+		// Save last login in DB
+        $userdata = auth()->user();
+        $division_id = $request->division_id;
+        $class_section_review=[];
+        $classessections = AcademicClassConfiguration::select('id','class_id','section_id')->where('division_id',$division_id)->get(); //fetch all mapped classes and section from table
+        if(!empty($classessections))
+        {
+	        foreach ($classessections as $key => $value) { //formed mulit-dimenisional array along with sections
+	        	$section_details = $value->sectionName();
+
+	        	$classsection_data[$value->class_id]=([
+	        		'id'=>$value->id,
+	        		'class_id'=>$value->class_id,
+	        		'class_name'=>$value->className(),
+	        		'division_id'=>$section_details->division_id,
+	        		'division_name'=>$section_details->divisionName(),
+	        	]);
+
+	        	$sections[$value->class_id][]= ([
+	        		'section_id'=>$value->section_id,
+	        		'section_name'=>$section_details->section_name
+	        	]);
+	        }
+	        $index = 0;
+	        foreach ($classsection_data as $class_key => $class_value) {
+	        	$class_section_review[$index] = $classsection_data[$class_value['class_id']];
+	        	$class_section_review[$index]['sections'] = $sections[$class_value['class_id']];
+	        	$index++;
+	        }
+	       
+	    }
+	    return response()->json($class_section_review);
+	}
+
+	// public function get_class_section(Request $request) //list all classes and sections for mapping(on-boarding)
+	// {
+	// 	$sections_list = $selected_section= [];
+	// 	$classconfig = AcademicClassConfiguration::select('section_id')->where(['class_id'=> $request->class_id,'division_id'=>$request->division_id])->get()->toArray();
+
+	// 	$sections = AcademicSections::select('id','section_name')->where(['division_id'=>$request->division_id])->get()->toArray();
+	// 	if(!empty($sections))
+	// 	{
+	// 		if(!empty($classconfig))
+	// 			$selected_section = array_column($classconfig, 'section_id');
+
+	// 		foreach ($sections as $key => $value) {
+	// 			$sections_list[] = ([
+	// 				'id'=>$value['id'],
+	// 				'section_name'=>$value['section_name'],
+	// 				'is_checked'=>in_array($value['id'], $selected_section)
+	// 			]);
+	// 		}
+	// 	}
+	// 	return response()->json($sections_list);
+	// }
+
+	public function delete_class_section(Request $request) //delete unchecked mapping (on-boarding)
+	{
+		$data = $request->data;
+		if(!empty($data))
+		{
+			foreach ($data as $key => $value) {
+				$classconfig = AcademicClassConfiguration::select('id')->where(['class_id'=> $request->class_id,'section_id'=>$value['section_id']])->get()->toArray();
+				if(!empty($classconfig) && $value['is_checked'] == 'false')
+				{
+					$classconfig = array_column($classconfig,'id');
+			        CommunicationDistribution::whereIn('class_config_id',$classconfig)->delete();
+			        UserStudents::whereIn('class_config',$classconfig)->delete();
+			        AcademicSubjectsMapping::whereIn('class_config',$classconfig)->delete();
+			        AcademicClassConfiguration::whereIn('id',$classconfig)->delete();
+			    }
+			    else if($value['is_checked'] == 'true' && empty($classconfig)) 
+			    {
+			    	$user_data = auth()->user();
+
+			        if($user_data->user_role == 1)
+			            $user_admin = UserAdmin::where(['user_id'=>$user_data->user_id])->pluck('id')->first();
+
+			        $userall_id = UserAll::where(['user_table_id'=>$user_admin,'user_role'=>$user_data->user_role])->pluck('id')->first(); //fetch id from user all table to store setting triggered user
+
+			    	$academicyear = SchoolAcademicYears::where(['school_profile_id'=>$user_data->school_profile_id])->pluck('academic_year')->first();
+			    	$class_config = new AcademicClassConfiguration;
+                    $class_config->academic_year = $academicyear;
+                    $class_config->class_id = $request->class_id;
+                    $class_config->section_id = $value['section_id'];
+                    $class_config->division_id=$request->division_id;
+                    $class_config->created_by=$userall_id;
+                    $class_config->created_time=Carbon::now()->timezone('Asia/Kolkata');
+                    $class_config->save();
+                    $class_config_id = $class_config->id;
+			    }
+			}
+	        
+		}
+	    return response()->json(['message'=>'Submitted Successfully!...']);
+	}
+
+
+    /*----------------------------Onboarding Manual--------------------------------*/    
 
     // Add students in DB along with parents and guardian details (old need to remove)
 	public static function students_excel_upload($data,$userall_id,$upload_type)

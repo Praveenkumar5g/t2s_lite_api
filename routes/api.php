@@ -129,11 +129,7 @@ Route::group(['middleware' => 'auth.connect','prefix' => 'user'], function ($rou
     Route::get('/get_edit_management_list',[APIConfigurationsController::class,'get_edit_management_list']);
     Route::get('/get_edit_student_list',[APIConfigurationsController::class,'get_edit_student_list']);
     
-    Route::get('/get_sections_list',[APIConfigurationsController::class,'get_edit_sections_list']);
-    Route::get('/get_edit_sections_list',[APIConfigurationsController::class,'get_edit_sections_list']);
-    Route::get('/class_review',[APIConfigurationsController::class,'class_review']);
-    Route::post('/class_section_review',[APIConfigurationsController::class,'class_section_review']);
-    Route::post('/get_class_section',[APIConfigurationsController::class,'get_class_section']);
+
     Route::post('/get_combine_class_section_list',[APIConfigurationsController::class,'get_combine_class_section_list']);
     Route::post('/get_allsubjects_list',[APIConfigurationsController::class,'get_allsubjects_list']);
     Route::post('/get_subjects',[APIConfigurationsController::class,'get_subjects']);
@@ -159,8 +155,6 @@ Route::group(['middleware' => 'auth.connect','prefix' => 'user'], function ($rou
     /*Delete Configuration*/
     
     Route::post('/delete_class',[APIConfigurationsController::class,'delete_class']);
-    Route::post('/delete_section',[APIConfigurationsController::class,'delete_section']);
-    Route::post('/delete_class_section',[APIConfigurationsController::class,'delete_class_section']);
     Route::post('/onboarding_delete_subject',[APIConfigurationsController::class,'onboarding_delete_subject']);
     Route::post('/onboarding_delete_staff',[APIConfigurationsController::class,'onboarding_delete_staff']);
     Route::post('/onboarding_delete_management',[APIConfigurationsController::class,'onboarding_delete_management']);
@@ -171,6 +165,13 @@ Route::group(['middleware' => 'auth.connect','prefix' => 'user'], function ($rou
     Route::post('/create_update_division_manual',[APIConfigurationsController::class,'create_update_division_manual']);
     Route::get('/get_divisions',[APIConfigurationsController::class,'get_divisions']);
     Route::post('/delete_division',[APIConfigurationsController::class,'delete_division']);
+    Route::post('/create_update_section_manual',[APIConfigurationsController::class,'create_update_section_manual']);
+    Route::get('/get_sections',[APIConfigurationsController::class,'get_sections']);
+    Route::post('/delete_section',[APIConfigurationsController::class,'delete_section']);
+    Route::post('/create_update_class_manual',[APIConfigurationsController::class,'create_update_class_manual']);
+    Route::get('/get_classes',[APIConfigurationsController::class,'get_classes']);
+    Route::post('/get_class_section',[APIConfigurationsController::class,'get_class_section']);
+    Route::post('/delete_class_section',[APIConfigurationsController::class,'delete_class_section']);
     /*Onboarding - Manual*/
 
     Route::get('/activate_default_groups',[APIConfigurationsController::class,'activate_default_groups']);

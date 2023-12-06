@@ -813,21 +813,6 @@ class APIConfigurationsController extends Controller
 		return response()->json($class_sections);
 	}
 
-	// Delete class
-	public function delete_class(Request $request)
-	{
-		if(isset($request->division_id) && $request->division_id!='' && isset($request->class_id) && $request->class_id!='')
-		{
-			$classconfig = AcademicClassConfiguration::select('id')->where(['class_id'=> $request->class_id,'division_id'=>$request->division_id])->get()->toArray();
-
-	       	AcademicSubjectsMapping::whereIn('class_config',$classconfig)->delete();
-	        CommunicationDistribution::whereIn('class_config_id',$classconfig)->delete();
-			UserStudents::whereIn('class_config',$classconfig)->delete();
-	        AcademicClassConfiguration::whereIn('id',$classconfig)->delete();
-	        AcademicClasses::where('id',$request->class_id)->delete();
-		}
-		return response()->json(['message'=>'Deleted Successfully!...']);
-	}
 
 	// All users list
 	public function all_staff_list(Request $request)
@@ -2349,6 +2334,22 @@ class APIConfigurationsController extends Controller
 		return response()->json($sections_list);
 	}
 
+	// Delete class
+	public function delete_class(Request $request)
+	{
+		if(isset($request->division_id) && $request->division_id!='' && isset($request->class_id) && $request->class_id!='')
+		{
+			$classconfig = AcademicClassConfiguration::select('id')->where(['class_id'=> $request->class_id,'division_id'=>$request->division_id])->get()->toArray();
+
+	       	AcademicSubjectsMapping::whereIn('class_config',$classconfig)->delete();
+	        CommunicationDistribution::whereIn('class_config_id',$classconfig)->delete();
+			UserStudents::whereIn('class_config',$classconfig)->delete();
+	        AcademicClassConfiguration::whereIn('id',$classconfig)->delete();
+	        AcademicClasses::where('id',$request->class_id)->delete();
+		}
+		return response()->json(['message'=>'Deleted Successfully!...']);
+	}
+	
 	public function delete_class_section(Request $request) //delete unchecked mapping (on-boarding)
 	{
 		$data = $request->data;

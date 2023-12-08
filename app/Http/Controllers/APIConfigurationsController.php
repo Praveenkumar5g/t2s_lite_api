@@ -355,31 +355,6 @@ class APIConfigurationsController extends Controller
         return response()->json(['message'=>'Inserted Successfully!...']);
 	}
 
-	// Get Subjects list 
-	public function get_subjects(Request $request) //get all subjects list (on-boarding)
-	{
-		$subjectslist = $selected_subject =[];
-		$classconfig = AcademicClassConfiguration::select('id')->where(['class_id'=> $request->class_id,'section_id'=>$request->section_id,'division_id'=>$request->division_id])->get()->toArray();
-
-		$subjects = AcademicSubjectsMapping::select('subject')->where(['class_config'=> $classconfig])->get()->toArray();
-
-		$subjects_list = AcademicSubjects::select('id','subject_name')->where(['division_id'=>$request->division_id])->get()->toArray();
-		if(!empty($subjects_list))
-		{
-			if(!empty($subjects))
-				$selected_subject = array_column($subjects, 'subject');
-
-			foreach ($subjects_list as $key => $value) {
-				$subjectslist[] = ([
-					'id'=>$value['id'],
-					'subject_name'=>$value['subject_name'],
-					'is_checked'=>in_array($value['id'], $selected_subject)
-				]);
-			}
-		}
-		return response()->json($subjectslist);
-	}
-
 	// Configuration page list
 	public function configuration_list()
 	{
@@ -486,124 +461,6 @@ class APIConfigurationsController extends Controller
 		$student_list = [];//empty array declaration
 		$parents = UserParents::select('id','first_name','mobile_number')->where('user_category',1)->get()->toArray();//get student list
 		return response()->json($parents); //return student details 
-	}
-
-	public static function subjects($data,$division_id,$userall_id,$upload_type)
-	{
-		$user_data = auth()->user();
-		$subject_list =$subject_data=[];
-		$inserted_records=0;
-        $status = 'insert';
-        foreach ($data as $row=>$value) {
-
-        	if($value['subject_name']!='')
-        	{
-        		if(isset($value['subject_id']) && $value['subject_id']!='')
-        		{
-        			$status = 'edit';
-
-        			$subject_data = AcademicSubjects::where(['id'=>$value['subject_id'],'division_id'=>$division_id])->first(); //To check given subject name is already exists in DB.
-        			// Prepare subjects array
-	                $subject_data->subject_name = $value['subject_name'];
-	                $subject_data->short_name = isset($value['short_name'])?$value['short_name']:'';
-	                $subject_data->division_id = $division_id;
-	                $subject_data->updated_by=$userall_id;
-	            	$subject_data->updated_time=Carbon::now()->timezone('Asia/Kolkata');
-	            	$subject_data->save();
-        		}
-        		else
-        		{
-        			$status = 'insert';
-        			if(isset($value['division_name']) && $value['division_name'] !='')
-        				$division_id = AcademicDivisions::where(['division_name'=>$value['division_name']])->pluck('id')->first();
-		        	$check_exists = AcademicSubjects::where(DB::raw('lower(subject_name)'), strtolower($value['subject_name']))->where('division_id',$division_id)->pluck('id')->first(); //To check given subject name is already exists in DB.
-		            if($check_exists == '' && !in_array($value['subject_name'],$subject_list)) //if no then insert 
-		            {
-		                array_push($subject_list, $value['subject_name']);//check mobile number already exists in array
-
-		                // Prepare subjects array
-		                $subject_data[]=([
-		                    'subject_name' => $value['subject_name'],
-		                    'short_name' => isset($value['short_name'])?$value['short_name']:'',
-		                    'division_id' => $division_id,
-		                    'created_by'=>$userall_id,
-		            		'created_time'=>Carbon::now()->timezone('Asia/Kolkata')
-		                ]);
-		            }
-		        }
-	        }
-        }
-        if($status == 'insert')
-        	AcademicSubjects::insert($subject_data); // Insert subjects data into DB
-    	Configurations::where('school_profile_id',$user_data->school_profile_id)->update(['subjects'=>1]);
-	}
-
-	// Map subjects
-	public static function mapsubjects($collection,$userall_id,$academicyear,$upload_type)
-	{
-		$user_data = auth()->user();
-		$inserted_records = 0;
-		//Process each and every row ,insert all data in db
-        foreach ($collection as $row) {
-            if($row['class_name']!='' && $row['section_name']!='' && $row['subject_name']!='')
-            {         
-            	if($upload_type == 'import')
-            	{          
-	                $class_id = AcademicClasses::where(DB::raw('lower(class_name)'), strtolower($row['class_name']))->pluck('id')->first(); //To check given class name is already exists in DB.
-
-	                $section_id = AcademicSections::where(DB::raw('lower(section_name)'), strtolower($row['section_name']))->pluck('id')->first(); //To check given section name is already exists in DB.
-
-	                $subject_id = AcademicSubjects::where(DB::raw('lower(subject_name)'), strtolower($row['subject_name']))->pluck('id')->first(); //To check given subject name is already exists in DB.
-
-	                $division_id = AcademicDivisions::where(DB::raw('lower(division_name)'), strtolower($row['division_name']))->pluck('id')->first(); //To check given subject name is already exists in DB.
-	            }
-	            else
-	            {
-	            	$class_id = $row['class_name'];
-	            	$section_id = $row['section_name'];
-	            	$subject_id = $row['subject_name'];
-	            	$division_id = $row['division_name'];
-
-	            }
-
-                if($class_id != '' && $section_id!='' && $subject_id!='')
-                {
-                    $class_config_id = AcademicClassConfiguration::where(['class_id'=>$class_id,'section_id'=>$section_id,'division_id'=>$division_id])->pluck('id')->first(); //To check given config details is already exists in DB.
-
-                    if($class_config_id == '')
-                    {
-                        $class_config = new AcademicClassConfiguration;
-                        $class_config->academic_year = $academicyear;
-                        $class_config->class_id = $class_id;
-                        $class_config->section_id = $section_id;
-                        $class_config->division_id = $division_id;
-                        $class_config->created_by=$userall_id;
-                        $class_config->created_time=Carbon::now()->timezone('Asia/Kolkata');
-                        $class_config->save();
-                        $class_config_id = $class_config->id;
-                    }
-                    if($class_config_id!='')
-                    {
-                        $subject_config_id = AcademicSubjectsMapping::where(['class_config'=>$class_config_id ,'subject'=>$subject_id])->pluck('id')->first(); //To check given subject mapping is already exists in DB.
-                        if($subject_config_id == '')
-                        {
-                            // Insert mapping in table
-                            $subject_config = new AcademicSubjectsMapping;
-                            $subject_config->subject = $subject_id;
-                            $subject_config->class_config = $class_config_id;
-                            $subject_config->created_by=$userall_id;
-                            $subject_config->created_time=Carbon::now()->timezone('Asia/Kolkata');
-                            $subject_config->save();
-                            $inserted_records++;
-                        }
-                    }
-                }
-
-            }
-        }
-
-        if($inserted_records>0)
-            Configurations::where('school_profile_id',$user_data->school_profile_id)->update(['map_subjects'=>1]);
 	}
 
 	//Staffs Category
@@ -2161,9 +2018,9 @@ class APIConfigurationsController extends Controller
 	}
 
 	// Fetch Sections list
-	public function get_sections()
+	public function get_sections(Request $request)
 	{
-		$sections = AcademicSections::select('id','section_name')->get()->toArray();
+		$sections = AcademicSections::select('id','section_name')->where('division_id',$request->division_id)->get()->toArray();
 		foreach ($sections as $key => $value) {
 			$sections[$key]=$value;
 			$sections[$key]['isclicked']=false;
@@ -2195,7 +2052,7 @@ class APIConfigurationsController extends Controller
         $user_details =  app('App\Http\Controllers\APILoginController')->get_user_table_id($user_data);
 
         $userall_id = UserAll::where(['user_table_id'=>$user_details->id,'user_role'=>$user_data->user_role])->pluck('id')->first();//fetch id from user all table to store notification triggered user
-
+        $status = 'insert';
 		$classes = $request->classes;
         $division_id = $request->division_id;
         foreach ($classes as $key => $value) {
@@ -2226,7 +2083,7 @@ class APIConfigurationsController extends Controller
 
 
         // Configurations::where('school_profile_id',$user_data->school_profile_id)->update(['map_classes_sections'=>1]); //update completion status in configuration table
-        return response()->json(['message'=>'Inserted Successfully!...']);exit();
+        return response()->json(['status'=>true,'message'=>'Classes '.$status.' Successfully!...']);
 	}
 
 	public function map_classes_sections($userall_id) //map classes and section - on-boarding
@@ -2389,6 +2246,118 @@ class APIConfigurationsController extends Controller
 	        
 		}
 	    return response()->json(['message'=>'Submitted Successfully!...']);
+	}
+
+	public function subjects(Request $request)
+	{
+		$user_data = auth()->user();
+
+		$subjects = $request->subjects;
+		$division_id = $request->division_id;
+		 // get user details from table
+        $user_details =  app('App\Http\Controllers\APILoginController')->get_user_table_id($user_data);
+
+        $userall_id = UserAll::where(['user_table_id'=>$user_details->id,'user_role'=>$user_data->user_role])->pluck('id')->first();//fetch id from user all table to store notification triggered user
+        foreach ($subjects as $row=>$value) {
+
+        	if($value['subject_name']!='')
+        	{
+        		if(isset($value['subject_id']) && $value['subject_id']!='')
+        		{
+        			$status = 'edit';
+
+        			$subject_data = AcademicSubjects::where(['id'=>$value['subject_id'],'division_id'=>$division_id])->first(); //To check given subject name is already exists in DB.
+        			$subject_data->updated_by=$userall_id;
+            		$subject_data->updated_time=Carbon::now()->timezone('Asia/Kolkata');
+        			
+        		}
+        		else
+        		{
+        			$status = 'insert';
+        			if(isset($value['division_name']) && $value['division_name'] !='')
+        				$division_id = AcademicDivisions::where(['division_name'=>$value['division_name']])->pluck('id')->first();
+		        	$check_exists = AcademicSubjects::where(DB::raw('lower(subject_name)'), strtolower($value['subject_name']))->where('division_id',$division_id)->pluck('id')->first(); //To check given subject name is already exists in DB.
+		            if($check_exists == '' && !in_array($value['subject_name'],$subject_list)) //if no then insert 
+		            {
+		                array_push($subject_list, $value['subject_name']);//check mobile number already exists in array
+
+		                $subject_data = new AcademicSubjects;
+		                $subject_data->created_by=$userall_id;
+            			$subject_data->created_time=Carbon::now()->timezone('Asia/Kolkata');
+		            }
+		        }
+		        // Prepare subjects array
+                $subject_data->subject_name = $value['subject_name'];
+                $subject_data->short_name = isset($value['short_name'])?$value['short_name']:'';
+                $subject_data->division_id = $division_id;
+            	$subject_data->save();
+	        }
+        }
+       
+    	Configurations::where('school_profile_id',$user_data->school_profile_id)->update(['subjects'=>1]);
+
+    	return response()->json(['status'=>true,'message'=>'Subjects '.$status.' Successfully!...']);
+	}
+
+	// Map subjects to classes
+	public function mapsubjects(Request $request)
+	{
+		$mapsubjects = $request->mapsubjects;//get all inputs
+		 // get user details from table
+        $user_details =  app('App\Http\Controllers\APILoginController')->get_user_table_id($user_data);
+
+        $userall_id = UserAll::where(['user_table_id'=>$user_details->id,'user_role'=>$user_data->user_role])->pluck('id')->first();//fetch id from user all table to store notification triggered user
+		if(!empty($mapsubjects))//check array is empty or not
+		{
+			foreach ($mapsubjects as $key => $value) { //process the input in loop
+				$subjects = AcademicSubjectsMapping::select('id')->where(['class_config'=> $request->class_config,'subject'=>$value['subject_id']])->get()->toArray(); //fetch all data for corresponding class and subject
+				if(!empty($subjects) && $value['is_checked'] == 'false') //check not empty and not checked 
+				{
+					$group_id = UserGroups::where('class_config',$request->class_config)->pluck('id')->first();//fetch group id to remove message dropped for that unselected subject.
+			        Communications::where('group_id',$group_id)->where('subject_id',$value['subject_id'])->where('communication_type',2)->delete();//delete subject related message from homework
+			        AcademicSubjectsMapping::where('id',$subjects['id'])->delete(); //delete subject mapping record
+			    }
+			    else if($value['is_checked'] == 'true' && empty($subjects)) //check its a new entry
+			    {
+			    	$subject_config = new AcademicSubjectsMapping;
+                    $subject_config->subject = $value['subject_id'];
+                    $subject_config->class_config = $request->class_config;
+                    $subject_config->created_by=$userall_id;
+                    $subject_config->created_time=Carbon::now()->timezone('Asia/Kolkata');
+                    $subject_config->save();//insert new record if not exist already
+			    }
+			}
+    		Configurations::where('school_profile_id',$user_data->school_profile_id)->update(['map_subjects'=>1]);
+
+
+    		return response()->json(['status'=>true,'message'=>'MapSubjects updated Successfully!...']);
+		}
+		return response()->json(['message'=>"Some inputs can't be empty!..."]);
+	}
+
+	// Get Subjects list 
+	public function get_subjects(Request $request) //get all subjects list (on-boarding)
+	{
+		$subjectslist = $selected_subject =[];
+		$classconfig = AcademicClassConfiguration::select('id')->where(['class_id'=> $request->class_id,'section_id'=>$request->section_id,'division_id'=>$request->division_id])->get()->toArray();
+
+		$subjects = AcademicSubjectsMapping::select('subject')->where(['class_config'=> $classconfig])->get()->toArray();
+
+		$subjects_list = AcademicSubjects::select('id','subject_name')->where(['division_id'=>$request->division_id])->get()->toArray();
+		if(!empty($subjects_list))
+		{
+			if(!empty($subjects))
+				$selected_subject = array_column($subjects, 'subject');
+
+			foreach ($subjects_list as $key => $value) {
+				$subjectslist[] = ([
+					'id'=>$value['id'],
+					'subject_name'=>$value['subject_name'],
+					'is_checked'=>in_array($value['id'], $selected_subject)
+				]);
+			}
+		}
+		return response()->json($subjectslist);
 	}
 
 

@@ -132,7 +132,7 @@ Route::group(['middleware' => 'auth.connect','prefix' => 'user'], function ($rou
 
     Route::post('/get_combine_class_section_list',[APIConfigurationsController::class,'get_combine_class_section_list']);
     Route::post('/get_allsubjects_list',[APIConfigurationsController::class,'get_allsubjects_list']);
-    Route::post('/get_subjects',[APIConfigurationsController::class,'get_subjects']);
+    
     Route::post('/get_staff_details',[APIConfigurationsController::class,'get_staff_details']);
 
     Route::get('/get_edit_classes_sections',[APIConfigurationsController::class,'get_edit_classes_sections']);
@@ -165,7 +165,7 @@ Route::group(['middleware' => 'auth.connect','prefix' => 'user'], function ($rou
     Route::get('/get_divisions',[APIConfigurationsController::class,'get_divisions']);
     Route::post('/delete_division',[APIConfigurationsController::class,'delete_division']);
     Route::post('/create_update_section_manual',[APIConfigurationsController::class,'create_update_section_manual']);
-    Route::get('/get_sections',[APIConfigurationsController::class,'get_sections']);
+    Route::post('/get_sections',[APIConfigurationsController::class,'get_sections']);
     Route::post('/delete_section',[APIConfigurationsController::class,'delete_section']);
     Route::post('/create_update_class_manual',[APIConfigurationsController::class,'create_update_class_manual']);
     Route::get('/get_classes',[APIConfigurationsController::class,'get_classes']);
@@ -173,6 +173,9 @@ Route::group(['middleware' => 'auth.connect','prefix' => 'user'], function ($rou
     Route::post('/get_selected_class_section',[APIConfigurationsController::class,'get_selected_class_section']);
     Route::post('/delete_class_section',[APIConfigurationsController::class,'delete_class_section']);
     Route::post('/delete_class',[APIConfigurationsController::class,'delete_class']);
+    Route::post('/subjects',[APIConfigurationsController::class,'subjects']);
+    Route::post('/mapsubjects',[APIConfigurationsController::class,'mapsubjects']);
+    Route::post('/get_subjects',[APIConfigurationsController::class,'get_subjects']);
     /*Onboarding - Manual*/
 
     Route::get('/activate_default_groups',[APIConfigurationsController::class,'activate_default_groups']);

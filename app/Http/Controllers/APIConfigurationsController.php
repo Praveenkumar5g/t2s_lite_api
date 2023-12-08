@@ -2031,7 +2031,7 @@ class APIConfigurationsController extends Controller
 	// Delete section
 	public function delete_section(Request $request)
 	{
-		if(isset($request->division_id) && $request->division_id!='' && isset($request->section) && $request->section!='')
+		if(isset($request->division_id) && $request->division_id!='' && isset($request->section_id) && $request->section_id!='')
 		{
 			$classconfig = AcademicClassConfiguration::select('id')->where(['section_id'=> $request->section_id,'division_id'=>$request->division_id])->get()->toArray();
 

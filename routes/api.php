@@ -154,7 +154,6 @@ Route::group(['middleware' => 'auth.connect','prefix' => 'user'], function ($rou
     Route::post('/check_admission_unique',[APIConfigurationsController::class,'check_admission_unique']);
     /*Delete Configuration*/
     
-    Route::post('/onboarding_delete_subject',[APIConfigurationsController::class,'onboarding_delete_subject']);
     Route::post('/onboarding_delete_staff',[APIConfigurationsController::class,'onboarding_delete_staff']);
     Route::post('/onboarding_delete_management',[APIConfigurationsController::class,'onboarding_delete_management']);
      Route::post('/onboarding_delete_parent',[APIConfigurationsController::class,'onboarding_delete_parent']);
@@ -176,6 +175,7 @@ Route::group(['middleware' => 'auth.connect','prefix' => 'user'], function ($rou
     Route::post('/subjects',[APIConfigurationsController::class,'subjects']);
     Route::post('/mapsubjects',[APIConfigurationsController::class,'mapsubjects']);
     Route::post('/get_subjects',[APIConfigurationsController::class,'get_subjects']);
+    Route::post('/delete_subject',[APIConfigurationsController::class,'delete_subject']);
     /*Onboarding - Manual*/
 
     Route::get('/activate_default_groups',[APIConfigurationsController::class,'activate_default_groups']);

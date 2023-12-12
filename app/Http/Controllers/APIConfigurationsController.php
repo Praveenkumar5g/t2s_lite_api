@@ -1094,32 +1094,7 @@ class APIConfigurationsController extends Controller
         return response()->json('Deleted Successfully!...');
     }
 
-    // delete subject (onboarding)
-    public function onboarding_delete_subject(Request $request)
-    {
-    	// Check authenticate user
-        $userdata = auth()->user();
-        // reset to null with selected subject staffs
-        UserStaffs::where('specialized_in',$request->id)->update(['specialized_in'=>null]);
-		// Delete the class mapping to the subject record
-        AcademicSubjectsMapping::where('subject',$request->id)->delete();
-        // fetch subject related communication from table
-        $communication_ids = Communications::where('subject_id',$request->id)->get()->toArray();
-        if(!empty($communication_ids))
-        {
-        	// get id from fetched details
-        	$ids_list = array_column($communication_ids,'id');
-        	//delete subject related records from communication recipients table
-        	CommunicationRecipients::whereIn('communication_id',$ids_list)->delete();
-        	CommunicationAttachments::whereIn('communication_id',$ids_list)->delete();
-        	CommunicationDistribution::whereIn('communication_id',$ids_list)->delete();
-        	HomeworkParentStatus::whereIn('notification_id',$ids_list)->delete();
-        	// delete subject related records from communication table
-        	Communications::where('subject_id',$request->id)->delete();
-        }
-        AcademicSubjects::where('id',$request->id)->delete(); //delete staff record
-        return response()->json('Deleted Successfully!...');
-    }
+    
 
     // Create and update users
     public function create_update_users(Request $request)
@@ -2360,6 +2335,32 @@ class APIConfigurationsController extends Controller
 		return response()->json($subjectslist);
 	}
 
+	// delete subject (onboarding)
+    public function delete_subject(Request $request)
+    {
+    	// Check authenticate user
+        $userdata = auth()->user();
+        // reset to null with selected subject staffs
+        UserStaffs::where('specialized_in',$request->subject_id)->update(['specialized_in'=>null]);
+		// Delete the class mapping to the subject record
+        AcademicSubjectsMapping::where('subject',$request->subject_id)->delete();
+        // fetch subject related communication from table
+        $communication_ids = Communications::where('subject_id',$request->subject_id)->get()->toArray();
+        if(!empty($communication_ids))
+        {
+        	// get id from fetched details
+        	$ids_list = array_column($communication_ids,'id');
+        	//delete subject related records from communication recipients table
+        	CommunicationRecipients::whereIn('communication_id',$ids_list)->delete();
+        	CommunicationAttachments::whereIn('communication_id',$ids_list)->delete();
+        	CommunicationDistribution::whereIn('communication_id',$ids_list)->delete();
+        	HomeworkParentStatus::whereIn('notification_id',$ids_list)->delete();
+        	// delete subject related records from communication table
+        	Communications::where('subject_id',$request->subject_id)->delete();
+        }
+        AcademicSubjects::where('id',$request->subject_id)->delete(); //delete staff record
+        return response()->json(['status'=>true,'message'=>'Deleted Successfully!...']);
+    }
 
     /*----------------------------Onboarding Manual--------------------------------*/    
 

@@ -143,9 +143,6 @@ Route::group(['middleware' => 'auth.connect','prefix' => 'user'], function ($rou
     Route::post('/all_admin_list',[APIConfigurationsController::class,'all_admin_list']);
     Route::post('/all_management_list',[APIConfigurationsController::class,'all_management_list']);
     Route::post('/class_subjects_list',[APIConfigurationsController::class,'class_subjects_list']);
-    Route::get('/onboarding_staff_list',[APIConfigurationsController::class,'onboarding_staff_list']);
-    Route::post('/onboarding_fetch_single_staff',[APIConfigurationsController::class,'onboarding_fetch_single_staff']);
-    Route::post('/onboarding_edit_staff',[APIConfigurationsController::class,'onboarding_edit_staff']);
     Route::post('/onboarding_fetch_single_management',[APIConfigurationsController::class,'onboarding_fetch_single_management']);
     Route::post('/onboarding_edit_management',[APIConfigurationsController::class,'create_update_users']);
     Route::post('/onboarding_fetch_single_parent',[APIConfigurationsController::class,'onboarding_fetch_single_parent']);
@@ -154,7 +151,6 @@ Route::group(['middleware' => 'auth.connect','prefix' => 'user'], function ($rou
     Route::post('/check_admission_unique',[APIConfigurationsController::class,'check_admission_unique']);
     /*Delete Configuration*/
     
-    Route::post('/onboarding_delete_staff',[APIConfigurationsController::class,'onboarding_delete_staff']);
     Route::post('/onboarding_delete_management',[APIConfigurationsController::class,'onboarding_delete_management']);
      Route::post('/onboarding_delete_parent',[APIConfigurationsController::class,'onboarding_delete_parent']);
     /*Delete Configuration*/
@@ -176,6 +172,13 @@ Route::group(['middleware' => 'auth.connect','prefix' => 'user'], function ($rou
     Route::post('/mapsubjects',[APIConfigurationsController::class,'mapsubjects']);
     Route::post('/get_subjects',[APIConfigurationsController::class,'get_subjects']);
     Route::post('/delete_subject',[APIConfigurationsController::class,'delete_subject']);
+
+    Route::get('/onboarding_staff_list',[APIConfigurationsController::class,'onboarding_staff_list']);
+    Route::post('/onboarding_fetch_single_staff',[APIConfigurationsController::class,'onboarding_fetch_single_staff']);
+    Route::post('/onboarding_create_edit_staff',[APIConfigurationsController::class,'onboarding_create_edit_staff']);
+    Route::post('/onboarding_delete_staff',[APIConfigurationsController::class,'onboarding_delete_staff']);
+
+
     /*Onboarding - Manual*/
 
     Route::get('/activate_default_groups',[APIConfigurationsController::class,'activate_default_groups']);

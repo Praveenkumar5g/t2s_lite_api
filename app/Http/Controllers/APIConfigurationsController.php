@@ -626,14 +626,6 @@ class APIConfigurationsController extends Controller
 		return response()->json(compact('classes','sections'));
 	}
 
-	// get subjects for edit
-	public function get_edit_subjects(Request $request)
-	{
-		$subject_ids = AcademicSubjectsMapping::where('class_config',$request->class_config)->pluck('subject')->toArray();
-		$subjects = AcademicSubjects::select('id','subject_name')->where('division_id',$request->division_id)->whereIn('id',$subject_ids)->get()->toArray();
-		return response()->json($subjects);
-	}
-
 	// 
 	public function get_staff_details(Request $request)
 	{
@@ -652,24 +644,6 @@ class APIConfigurationsController extends Controller
 		}
 		return response()->json($staffs);
 	}
-
-	//Staffs Category
-	public function get_combine_class_section_list(Request $request)
-	{
-		$class_sections = [];
-		$class_sections_list = AcademicClassConfiguration::select('id','class_id','section_id')->where('division_id',$request->division_id)->get();
-		if(!empty($class_sections_list))
-		{
-			foreach ($class_sections_list as $key => $value) {
-				$class_sections[] = ([
-					'class_section'=>$value->classsectionName(),
-					'id'=>$value->id
-				]);
-			}
-		}
-		return response()->json($class_sections);
-	}
-
 
 	// All users list
 	public function all_staff_list(Request $request)
@@ -889,191 +863,6 @@ class APIConfigurationsController extends Controller
 	    return response()->json($class_section_review);
     }
 
-    // fetch all staff details for onboarding process
-    public function onboarding_staff_list()
-    {
-    	// Check authenticate user
-        $userdata = auth()->user();
-
-        $staff_list = UserStaffs::select('id','user_id','first_name','mobile_number','profile_image')->where('user_status',1)->get()->toArray(); //fetch all the staff for listing
-        return response()->json($staff_list);
-    }
-
-    // Get single user details(onboarding)
-    public function onboarding_fetch_single_staff(Request $request)
-    {
-    	// Check authenticate user
-        $userdata = auth()->user();
-
-        $check_class_teacher = AcademicClassConfiguration::where('class_teacher',$request->id)->first(); //check the user is a classteacher.
-		
-        $staff_list = UserStaffs::select('id','user_id','first_name','mobile_number','profile_image','specialized_in','user_category','email_id')->where('user_status',1)->where('id',$request->id)->first(); //fetch all the staff for listing
-        $staff_list->class_teacher = 'no'; //set default values
-        $staff_list->class_config = 0; 
-        $staff_list->specialized_in = (int)$staff_list->specialized_in;
-        if(!empty($staff_list) && isset($check_class_teacher->class_teacher)) //check not empty for class configuration details
-        {
-        	$staff_list->class_teacher = 'yes';
-        	$staff_list->class_config = $check_class_teacher->class_teacher; 
-
-        }
-        return response()->json($staff_list);
-        
-    }
-
-    // delete staff (onboarding)
-    public function onboarding_delete_staff(Request $request)
-    {
-    	// Check authenticate user
-        $userdata = auth()->user();
-        AcademicSubjectsMapping::where('staff',$request->id)->update(['staff'=>null]); //update assigned staff to null.
-        UserStaffs::where('id',$request->id)->delete(); //delete staff record
-        return response()->json('Deleted Successfully!...');
-    }
-
-    // edit staff details
-    public function onboarding_edit_staff(Request $request)
-    {
-    	// Check authenticate user
-        $user = auth()->user();
-
-        if($user->user_role == Config::get('app.Admin_role'))//check role and get current user id
-            $user_table_id = UserAdmin::where(['user_id'=>$user->user_id])->pluck('id')->first();
-
-        $userall_id = UserAll::where(['user_table_id'=>$user_table_id,'user_role'=>$user->user_role])->pluck('id')->first();
-        $profile_details = SchoolProfile::where(['id'=>$user->school_profile_id])->first();//Fetch school profile details 
-        $staffs_details = [];
-        if($request->id!='')// fetch selected staff details 
-        	$staffs_details = UserStaffs::where('id',$request->id)->first();
-
-        if(!empty($staffs_details))
-        {
-        	$image ='';
-        	if(!empty($request->photo))//check upload photo exist or not
-        	{
-        		$name = explode('.',$request->photo->getClientOriginalName())[0];
-	        	$image = $name.''.time().'.'.$request->photo->extension();
-	        	$value['photo']->move(public_path(env('SAMPLE_CONFIG_URL').'staffs'), $image);
-        	}
-	        //save staff details
-	        $staffs_details->first_name= $request->staff_name;
-	        $staffs_details->mobile_number=$request->mobile_number;
-	        if($image!='')
-	        	$staffs_details->profile_image = ($image!='')?public_path(env('SAMPLE_CONFIG_URL').'staffs/'.$image):'';
-	        $staffs_details->email_id=$request->email_address;
-	        $staffs_details->specialized_in=$request->specialized_in;
-	        $staffs_details->user_category=$request->teacher_category;
-	        $staffs_details->dob=$request->dob;
-	        $staffs_details->doj=$request->doj;
-	        $staffs_details->employee_no=$request->employee_no;
-	        $staffs_details->updated_by=$userall_id;
-	    	$staffs_details->updated_time=Carbon::now()->timezone('Asia/Kolkata');
-	        $staffs_details->save();
-
-
-	        $schoolusers = SchoolUsers::where('user_id',$staffs_details->user_id)->first(); //update email address in common login table
-
-            $schoolusers->user_email_id=$request->email_address;
-            $schoolusers->save();
-
-            if($request->class_teacher_class_config!='')
-            {
-            	AcademicClassConfiguration::where('id',$request->class_teacher_class_config)->update(['class_teacher'=>$request->id]); //assign class teacher to class.
-
-            	$class_techer_group = UserGroups::where('group_status',Config::get('app.Group_Active'))->where('class_config',$request->class_teacher_class_config)->pluck('id')->first();
-            	$check_exists = UserGroupsMapping::where(['group_id'=>$class_techer_group,'user_table_id'=>$request->id,'user_role'=>Config::get('app.Staff_role'),'user_status'=>1])->pluck('id')->first();
-             	if($check_exists=='')
-            		UserGroupsMapping::insert(['group_id'=>$class_techer_group,'user_table_id'=>$request->id,'user_role'=>Config::get('app.Staff_role'),'user_status'=>1,'group_access'=>1]);
-            }
-            
-            if(!empty($request->teacher_class_config))
-            {
-            	foreach ($request->teacher_class_config as $teacher_key => $teacher_value) {
-             		AcademicSubjectsMapping::where('class_config',$teacher_value)->update(['staff'=>$request->id]); //assign staff to class.
-             		$techer_group = UserGroups::where('group_status',Config::get('app.Group_Active'))->where('class_config',$teacher_value)->pluck('id')->first();
-             		$check_exists = UserGroupsMapping::where(['group_id'=>$techer_group,'user_table_id'=>$request->id,'user_role'=>Config::get('app.Staff_role'),'user_status'=>1])->pluck('id')->first();
-             		if($check_exists=='')
-            			UserGroupsMapping::insert(['group_id'=>$techer_group,'user_table_id'=>$request->id,'user_role'=>Config::get('app.Staff_role'),'user_status'=>1,'group_access'=>1]);
-            	}
-            }
-
-            return response()->json(['status'=>true,'messgae'=>'Staff details updated Successfully!...']);
-        }
-        else
-        {
-        	$image ='';
-        	if(!empty($request->photo))//check upload photo exist or not
-        	{
-
-        		$name = explode('.',$request->photo->getClientOriginalName())[0];
-	        	$image = $name.''.time().'.'.$request->photo->extension();
-	        	$request->photo->move(public_path(env('SAMPLE_CONFIG_URL').'staffs'), $image);
-        	}
-
-        	//save staff details
-            $staffs_details = new UserStaffs;
-            $staffs_details->first_name= $request->staff_name;
-            $staffs_details->mobile_number=$request->mobile_number;
-            if($image!='')
-            	$staffs_details->profile_image = ($image!='')?public_path(env('SAMPLE_CONFIG_URL').'staffs/'.$image):'';
-            $staffs_details->email_id=$request->email_address;
-	        $staffs_details->specialized_in=$request->specialized_in;
-	        $staffs_details->user_category=$request->teacher_category;
-	        $staffs_details->dob=$request->dob;
-	        $staffs_details->doj=$request->doj;
-	        $staffs_details->employee_no=$request->employee_no;
-            $staffs_details->created_by=$userall_id;
-        	$staffs_details->created_time=Carbon::now()->timezone('Asia/Kolkata');
-            $staffs_details->save();
-
-            $staff_id =$staffs_details->id; // staff id
-
-            // generate and update staff id in db 
-            $userstaff_id = $profile_details['school_code'].substr($profile_details['active_academic_year'], -2).'T'.sprintf("%04s", $staff_id);
-            $staffs_details->user_id = $userstaff_id;
-            $staffs_details->save();
-
-            $user_all = new UserAll;
-            $user_all->user_table_id=$staff_id;
-            $user_all->user_role=2;
-            $user_all->save();
-
-            $schoolusers = new SchoolUsers;
-            $schoolusers->school_profile_id=$user->school_profile_id;
-            $schoolusers->user_id=$userstaff_id;
-            $schoolusers->user_mobile_number=$request->mobile_number;
-            $schoolusers->user_password=bcrypt($request->mobile_number);
-            $schoolusers->user_role=Config::get('app.Staff_role');
-            $schoolusers->user_status=1;
-            $schoolusers->save();
-
-            if($request->class_teacher_class_config!='')
-            {
-            	AcademicClassConfiguration::where('id',$request->class_teacher_class_config)->update(['class_teacher'=>$staff_id]); //assign class teacher to class.
-
-            	$class_teacher_group = UserGroups::where('group_status',Config::get('app.Group_Active'))->where('class_config',$request->class_teacher_class_config)->pluck('id')->first();
-            	$check_exists = UserGroupsMapping::where(['group_id'=>$class_teacher_group,'user_table_id'=>$staff_id,'user_role'=>Config::get('app.Staff_role'),'user_status'=>1])->pluck('id')->first();
-             	if($check_exists=='')
-            		UserGroupsMapping::insert(['group_id'=>$class_teacher_group,'user_table_id'=>$staff_id,'user_role'=>Config::get('app.Staff_role'),'user_status'=>1,'group_access'=>1]);
-            }
-            
-            if(!empty($request->teacher_class_config))
-            {
-            	UserGroupsMapping::insert(['group_id'=>2,'user_table_id'=>$staff_id,'user_role'=>Config::get('app.Staff_role'),'user_status'=>1,'group_access'=>1]);
-            	foreach ($request->teacher_class_config as $teacher_key => $teacher_value) {
-             		AcademicSubjectsMapping::where('class_config',$teacher_value)->update(['staff'=>$staff_id]); //assign staff to class.
-             		$techer_group = UserGroups::where('group_status',Config::get('app.Group_Active'))->where('class_config',$teacher_value)->pluck('id')->first();
-             		$check_exists = UserGroupsMapping::where(['group_id'=>$teacher_group,'user_table_id'=>$staff_id,'user_role'=>Config::get('app.Staff_role'),'user_status'=>1])->pluck('id')->first();
-             		if($check_exists=='')
-            			UserGroupsMapping::insert(['group_id'=>$techer_group,'user_table_id'=>$staff_id,'user_role'=>Config::get('app.Staff_role'),'user_status'=>1,'group_access'=>1]);
-            	}
-            }
-        }
-
-        Configurations::where('school_profile_id',$user->school_profile_id)->update(['map_staffs'=>1]);
-        return response()->json(['status'=>true,'messgae'=>'Staff details inserted Successfully!...']);
-    }
-
     // Get single user details(onboarding)
     public function onboarding_fetch_single_management(Request $request)
     {
@@ -1173,12 +962,17 @@ class APIConfigurationsController extends Controller
 
         	$schoolcode = $school_profile = SchoolProfile::where(['id'=>$user['school_profile_id']])->first();//get school code from school profile
 
-	    	if(count($_FILES)>0) //upload image
+	    	if($request->photo!='')
 	        {
-	            if($request->hasfile('photo')) {
-	                $image = app('App\Http\Controllers\WelcomeController')->profile_file_upload($school_profile['school_code'],$request->file('photo'),$request->attachment_type,$target_file);
-	            }           
+	        	$image = app('App\Http\Controllers\WelcomeController')->profile_file_upload($school_profile['school_code'],$request->photo,$request->attachment_type,$target_file,$request->ext);
 	        }
+
+	    	// if(count($_FILES)>0) //upload image
+	        // {
+	        //     if($request->hasfile('photo')) {
+	        //         $image = app('App\Http\Controllers\WelcomeController')->profile_file_upload($school_profile['school_code'],$request->file('photo'),$request->attachment_type,$target_file);
+	        //     }           
+	        // }
 
 	        $individual_user_details->first_name= $request->name;
 	        $individual_user_details->mobile_number=$request->mobile_number;
@@ -2272,8 +2066,34 @@ class APIConfigurationsController extends Controller
     	Configurations::where('school_profile_id',$user_data->school_profile_id)->update(['subjects'=>1]);
 
     	return response()->json(['status'=>true,'message'=>'Subjects '.$status.' Successfully!...']);
+	}	
+
+	//Class config details
+	public function get_combine_class_section_list(Request $request)
+	{
+		$class_sections = [];
+		$class_sections_list = AcademicClassConfiguration::select('id','class_id','section_id')->where('division_id',$request->division_id)->get();
+		if(!empty($class_sections_list))
+		{
+			foreach ($class_sections_list as $key => $value) {
+				$class_sections[] = ([
+					'class_section'=>$value->classsectionName(),
+					'id'=>$value->id
+				]);
+			}
+		}
+		return response()->json($class_sections);
 	}
 
+
+	// get subjects for edit
+	public function get_edit_subjects(Request $request)
+	{
+		$subject_ids = AcademicSubjectsMapping::where('class_config',$request->class_config)->pluck('subject')->toArray();
+		$subjects = AcademicSubjects::select('id','subject_name')->where('division_id',$request->division_id)->whereIn('id',$subject_ids)->get()->toArray();
+		return response()->json($subjects);
+	}
+	
 	// Map subjects to classes
 	public function mapsubjects(Request $request)
 	{
@@ -2360,6 +2180,187 @@ class APIConfigurationsController extends Controller
         }
         AcademicSubjects::where('id',$request->subject_id)->delete(); //delete staff record
         return response()->json(['status'=>true,'message'=>'Deleted Successfully!...']);
+    }
+
+    // fetch all staff details for onboarding process
+    public function onboarding_staff_list()
+    {
+    	// Check authenticate user
+        $userdata = auth()->user();
+
+        $staff_list = UserStaffs::select('id','user_id','first_name','mobile_number','profile_image')->where('user_status',1)->get()->toArray(); //fetch all the staff for listing
+        return response()->json($staff_list);
+    }
+
+    // Get single user details(onboarding)
+    public function onboarding_fetch_single_staff(Request $request)
+    {
+    	// Check authenticate user
+        $userdata = auth()->user();
+
+        $check_class_teacher = AcademicClassConfiguration::where('class_teacher',$request->id)->first(); //check the user is a classteacher.
+		
+        $staff_list = UserStaffs::select('id','user_id','first_name','mobile_number','profile_image','specialized_in','user_category','email_id')->where('user_status',1)->where('id',$request->id)->first(); //fetch all the staff for listing
+        $staff_list->class_teacher = 'no'; //set default values
+        $staff_list->class_config = 0; 
+        $staff_list->specialized_in = (int)$staff_list->specialized_in;
+        if(!empty($staff_list) && isset($check_class_teacher->class_teacher)) //check not empty for class configuration details
+        {
+        	$staff_list->class_teacher = 'yes';
+        	$staff_list->class_config = $check_class_teacher->class_teacher; 
+
+        }
+        return response()->json($staff_list);   
+    }
+
+    // delete staff (onboarding)
+    public function onboarding_delete_staff(Request $request)
+    {
+    	// Check authenticate user
+        $userdata = auth()->user();
+        AcademicSubjectsMapping::where('staff',$request->id)->update(['staff'=>null]); //update assigned staff to null.
+        UserStaffs::where('id',$request->id)->delete(); //delete staff record
+        return response()->json('Deleted Successfully!...');
+    }
+
+    // edit staff details
+    public function onboarding_create_edit_staff(Request $request)
+    {
+    	// Check authenticate user
+        $user = auth()->user();
+
+        $user_details =  app('App\Http\Controllers\APILoginController')->get_user_table_id($user);
+
+        $userall_id = UserAll::where(['user_table_id'=>$user_details->id,'user_role'=>$user_data->user_role])->pluck('id')->first();//fetch id from user all table to store notification triggered user
+
+        $profile_details = SchoolProfile::where(['id'=>$user->school_profile_id])->first();//Fetch school profile details 
+        $staffs_details = [];
+        if($request->id!='')// fetch selected staff details 
+        	$staffs_details = UserStaffs::where('id',$request->id)->first();
+
+        $schoolcode = $school_profile = SchoolProfile::where(['id'=>$user['school_profile_id']])->first();//get school code from school profile
+    	$image ='';
+    	$target_file = '/staff/';
+
+        if(!empty($staffs_details))
+        {
+        	if($request->photo!='')
+	        {
+	        	$image = app('App\Http\Controllers\WelcomeController')->profile_file_upload($school_profile['school_code'],$request->photo,1,$target_file,$request->ext);
+	        }
+	        //save staff details
+	        $staffs_details->first_name= $request->staff_name;
+	        $staffs_details->mobile_number=$request->mobile_number;
+	        if($image!='')
+	        	$staffs_details->profile_image = ($image!='')$image:'';
+	        $staffs_details->email_id=$request->email_address;
+	        $staffs_details->specialized_in=$request->specialized_in;
+	        $staffs_details->user_category=$request->teacher_category;
+	        $staffs_details->dob=$request->dob;
+	        $staffs_details->doj=$request->doj;
+	        $staffs_details->employee_no=$request->employee_no;
+	        $staffs_details->updated_by=$userall_id;
+	    	$staffs_details->updated_time=Carbon::now()->timezone('Asia/Kolkata');
+	        $staffs_details->save();
+
+
+	        $schoolusers = SchoolUsers::where('user_id',$staffs_details->user_id)->first(); //update email address in common login table
+
+            $schoolusers->user_email_id=$request->email_address;
+            $schoolusers->save();
+
+            if($request->class_teacher_class_config!='')
+            {
+            	AcademicClassConfiguration::where('id',$request->class_teacher_class_config)->update(['class_teacher'=>$request->id]); //assign class teacher to class.
+
+            	$class_techer_group = UserGroups::where('group_status',Config::get('app.Group_Active'))->where('class_config',$request->class_teacher_class_config)->pluck('id')->first();
+            	$check_exists = UserGroupsMapping::where(['group_id'=>$class_techer_group,'user_table_id'=>$request->id,'user_role'=>Config::get('app.Staff_role'),'user_status'=>1])->pluck('id')->first();
+             	if($check_exists=='')
+            		UserGroupsMapping::insert(['group_id'=>$class_techer_group,'user_table_id'=>$request->id,'user_role'=>Config::get('app.Staff_role'),'user_status'=>1,'group_access'=>1]);
+            }
+            
+            if(!empty($request->teacher_class_config))
+            {
+            	foreach ($request->teacher_class_config as $teacher_key => $teacher_value) {
+             		AcademicSubjectsMapping::where('class_config',$teacher_value)->update(['staff'=>$request->id]); //assign staff to class.
+             		$techer_group = UserGroups::where('group_status',Config::get('app.Group_Active'))->where('class_config',$teacher_value)->pluck('id')->first();
+             		$check_exists = UserGroupsMapping::where(['group_id'=>$techer_group,'user_table_id'=>$request->id,'user_role'=>Config::get('app.Staff_role'),'user_status'=>1])->pluck('id')->first();
+             		if($check_exists=='')
+            			UserGroupsMapping::insert(['group_id'=>$techer_group,'user_table_id'=>$request->id,'user_role'=>Config::get('app.Staff_role'),'user_status'=>1,'group_access'=>1]);
+            	}
+            }
+
+            return response()->json(['status'=>true,'messgae'=>'Staff details updated Successfully!...']);
+        }
+        else
+        {
+        	if($request->photo!='')
+	        {
+	        	$image = app('App\Http\Controllers\WelcomeController')->profile_file_upload($school_profile['school_code'],$request->photo,1,$target_file,$request->ext);
+	        }
+
+        	//save staff details
+            $staffs_details = new UserStaffs;
+            $staffs_details->first_name= $request->staff_name;
+            $staffs_details->mobile_number=$request->mobile_number;
+            if($image!='')
+            	$staffs_details->profile_image = ($image!='')?$image:'';
+            $staffs_details->email_id=$request->email_address;
+	        $staffs_details->specialized_in=$request->specialized_in;
+	        $staffs_details->user_category=$request->teacher_category;
+	        $staffs_details->dob=$request->dob;
+	        $staffs_details->doj=$request->doj;
+	        $staffs_details->employee_no=$request->employee_no;
+            $staffs_details->created_by=$userall_id;
+        	$staffs_details->created_time=Carbon::now()->timezone('Asia/Kolkata');
+            $staffs_details->save();
+
+            $staff_id =$staffs_details->id; // staff id
+
+            // generate and update staff id in db 
+            $userstaff_id = $profile_details['school_code'].substr($profile_details['active_academic_year'], -2).'T'.sprintf("%04s", $staff_id);
+            $staffs_details->user_id = $userstaff_id;
+            $staffs_details->save();
+
+            $user_all = new UserAll;
+            $user_all->user_table_id=$staff_id;
+            $user_all->user_role=2;
+            $user_all->save();
+
+            $schoolusers = new SchoolUsers;
+            $schoolusers->school_profile_id=$user->school_profile_id;
+            $schoolusers->user_id=$userstaff_id;
+            $schoolusers->user_mobile_number=$request->mobile_number;
+            $schoolusers->user_password=bcrypt($request->mobile_number);
+            $schoolusers->user_role=Config::get('app.Staff_role');
+            $schoolusers->user_status=1;
+            $schoolusers->save();
+
+            if($request->class_teacher_class_config!='')
+            {
+            	AcademicClassConfiguration::where('id',$request->class_teacher_class_config)->update(['class_teacher'=>$staff_id]); //assign class teacher to class.
+
+            	$class_teacher_group = UserGroups::where('group_status',Config::get('app.Group_Active'))->where('class_config',$request->class_teacher_class_config)->pluck('id')->first();
+            	$check_exists = UserGroupsMapping::where(['group_id'=>$class_teacher_group,'user_table_id'=>$staff_id,'user_role'=>Config::get('app.Staff_role'),'user_status'=>1])->pluck('id')->first();
+             	if($check_exists=='')
+            		UserGroupsMapping::insert(['group_id'=>$class_teacher_group,'user_table_id'=>$staff_id,'user_role'=>Config::get('app.Staff_role'),'user_status'=>1,'group_access'=>1]);
+            }
+            
+            if(!empty($request->teacher_class_config))
+            {
+            	UserGroupsMapping::insert(['group_id'=>2,'user_table_id'=>$staff_id,'user_role'=>Config::get('app.Staff_role'),'user_status'=>1,'group_access'=>1]);
+            	foreach ($request->teacher_class_config as $teacher_key => $teacher_value) {
+             		AcademicSubjectsMapping::where('class_config',$teacher_value)->update(['staff'=>$staff_id]); //assign staff to class.
+             		$techer_group = UserGroups::where('group_status',Config::get('app.Group_Active'))->where('class_config',$teacher_value)->pluck('id')->first();
+             		$check_exists = UserGroupsMapping::where(['group_id'=>$teacher_group,'user_table_id'=>$staff_id,'user_role'=>Config::get('app.Staff_role'),'user_status'=>1])->pluck('id')->first();
+             		if($check_exists=='')
+            			UserGroupsMapping::insert(['group_id'=>$techer_group,'user_table_id'=>$staff_id,'user_role'=>Config::get('app.Staff_role'),'user_status'=>1,'group_access'=>1]);
+            	}
+            }
+        }
+
+        Configurations::where('school_profile_id',$user->school_profile_id)->update(['map_staffs'=>1]);
+        return response()->json(['status'=>true,'messgae'=>'Staff details inserted Successfully!...']);
     }
 
     /*----------------------------Onboarding Manual--------------------------------*/    
@@ -4140,12 +4141,17 @@ class APIConfigurationsController extends Controller
         {
         	// upload profile image
         	$target_file = '/parent/';
-        	if(count($_FILES)>0)
+	    	if($request->photo!='')
 	        {
-	            if($request->hasfile('photo')) {
-	                $image = app('App\Http\Controllers\WelcomeController')->profile_file_upload($school_profile['school_code'],$request->file('photo'),1,$target_file);
-	            }           
+	        	$image = app('App\Http\Controllers\WelcomeController')->profile_file_upload($school_profile['school_code'],$request->photo,1,$target_file,$request->ext);
 	        }
+
+        	// if(count($_FILES)>0)
+	        // {
+	        //     if($request->hasfile('photo')) {
+	        //         $image = app('App\Http\Controllers\WelcomeController')->profile_file_upload($school_profile['school_code'],$request->file('photo'),1,$target_file);
+	        //     }           
+	        // }
 
 	        // check mobile no already exist in table.
 	        $check_exists = UserParents::where('mobile_number',$request->mobile_number);

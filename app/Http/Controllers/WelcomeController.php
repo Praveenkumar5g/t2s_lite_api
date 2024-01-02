@@ -21,7 +21,7 @@ class WelcomeController extends Controller
         return view('login');
     }
 
-    public function file_upload($school_code,$files,$notification_id,$attachment_type)
+    public function file_upload($school_code,$files,$notification_id,$attachment_type,$ext)
     {
         $path = public_path('uploads/'.$school_code);//
 
@@ -34,19 +34,26 @@ class WelcomeController extends Controller
         {
             $attachment = new CommunicationAttachments;
             $attachment->communication_id = $notification_id;
-            $name = explode('.',$file->getClientOriginalName());
-            $filename = str_replace(["-",","," ","/"], '_', $name[0]);
-            $names = $filename.time().'.'.$name[1];
-            $file->move(public_path().'/uploads/'.$school_code, $names);
+
+            // $name = explode('.',$file->getClientOriginalName());
+            // $filename = str_replace(["-",","," ","/"], '_', $name[0]);
+            // $names = $filename.time().'.'.$name[1];
+            // $file->move(public_path().'/uploads/'.$school_code, $names);
+
+            $data = base64_decode($file);
+            $name = 'file'.''.time().'.'.$ext;
+            $file = public_path().'/'.$school_code.$target_file.$name;
+            file_put_contents($file, $data);
+
             $attachment->attachment_name = $names;
             $attachment->attachment_type =$attachment_type;  //1-image,2-audio,3-document
-            $attachment->attachment_location = url('/').'/uploads/'.$school_code.'/';
+            $attachment->attachment_location = url('/').env('SAMPLE_CONFIG_URL').$school_code.'/';
             $attachment->save();
         }
        
     }
 
-    public function newsevents_file_upload($school_code,$files,$newsevents_id,$attachment_type)
+    public function newsevents_file_upload($school_code,$files,$newsevents_id,$attachment_type,$ext)
     {
         $path = public_path('uploads/'.$school_code);//
 
@@ -66,13 +73,20 @@ class WelcomeController extends Controller
         {   
             $attachment = new NewsEventsAttachments;
             $attachment->news_events_id = $newsevents_id;
-            $name = explode('.',$file->getClientOriginalName());
-            $filename = str_replace(' ', '_', $name[0]);
-            $names = $filename.time().'.'.$name[1];
-            $file->move(public_path().'/uploads/'.$school_code, $names);  
+
+            // $name = explode('.',$file->getClientOriginalName());
+            // $filename = str_replace(' ', '_', $name[0]);
+            // $names = $filename.time().'.'.$name[1];
+            // $file->move(public_path().'/uploads/'.$school_code, $names);  
+
+            $data = base64_decode($file);
+            $name = 'news_events'.''.time().'.'.$ext;
+            $file = public_path().'/'.$school_code.$target_file.$name;
+            file_put_contents($file, $data);
+
             $attachment->attachment_name = $names;
             $attachment->attachment_type = $attachment_type;  //1-image
-            $attachment->attachment_location = url('/').'/uploads/'.$school_code;
+            $attachment->attachment_location = url('/').env('SAMPLE_CONFIG_URL').$school_code;
             $attachment->save();
             $attachment_id[]= $attachment->id;
         }
@@ -86,9 +100,15 @@ class WelcomeController extends Controller
         if(!File::isDirectory($path)){ //check path already exists
             File::makeDirectory($path, 0777, true, true);
         }
-        $name = explode('.',$files->getClientOriginalName())[0];
-        $image = $name.''.time().'.'.$files->extension();
-        $files->move(public_path().'/'.env('SAMPLE_CONFIG_URL').$school_code.$target_file, $image);
-        return url('/').'/'.env('SAMPLE_CONFIG_URL').$school_code.$target_file.$image;
+        // $name = explode('.',$files->getClientOriginalName())[0];
+        // $image = $name.''.time().'.'.$files->extension();
+        // $files->move(public_path().'/'.env('SAMPLE_CONFIG_URL').$school_code.$target_file, $image);
+        // return url('/').'/'.env('SAMPLE_CONFIG_URL').$school_code.$target_file.$image;
+
+        $data = base64_decode($files);
+        $name = 'profile_image'.''.time().'.'.$ext;
+        $file = public_path().'/'.env('SAMPLE_CONFIG_URL').$school_code.$target_file.$name;
+        file_put_contents($file, $data);
+        return $file;
     }
 }

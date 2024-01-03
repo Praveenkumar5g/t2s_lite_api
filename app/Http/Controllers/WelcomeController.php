@@ -42,7 +42,7 @@ class WelcomeController extends Controller
 
             $data = base64_decode($file);
             $name = 'file'.''.time().'.'.$ext;
-            $file = public_path().'/'.$school_code.$target_file.$name;
+            $file = public_path().'/'.env('SAMPLE_CONFIG_URL').$school_code.$target_file.$name;
             file_put_contents($file, $data);
 
             $attachment->attachment_name = $names;
@@ -81,7 +81,7 @@ class WelcomeController extends Controller
 
             $data = base64_decode($file);
             $name = 'news_events'.''.time().'.'.$ext;
-            $file = public_path().'/'.$school_code.$target_file.$name;
+            $file = public_path().'/'.env('SAMPLE_CONFIG_URL').$school_code.$target_file.$name;
             file_put_contents($file, $data);
 
             $attachment->attachment_name = $names;

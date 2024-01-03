@@ -111,8 +111,8 @@ class WelcomeController extends Controller
 
         $data = base64_decode($files);
         $name = 'profile_image'.''.time().'.'.$ext;
-        $file = url('/').'/'.env('SAMPLE_CONFIG_URL').$school_code.$target_file.$name;
+        $file = public_path().'/'.env('SAMPLE_CONFIG_URL').$school_code.$target_file.$name;
         file_put_contents($file, $data);
-        return $file;
+        return url('/').'/'.env('SAMPLE_CONFIG_URL').$school_code.$target_file.$name;
     }
 }

@@ -45,7 +45,7 @@ class WelcomeController extends Controller
             $file = public_path().'/'.env('SAMPLE_CONFIG_URL').$school_code.$target_file.$name;
             file_put_contents($file, $data);
 
-            $attachment->attachment_name = $names;
+            $attachment->attachment_name = $name;
             $attachment->attachment_type =$attachment_type;  //1-image,2-audio,3-document
             $attachment->attachment_location = url('/').env('SAMPLE_CONFIG_URL').$school_code.'/';
             $attachment->save();
@@ -84,7 +84,7 @@ class WelcomeController extends Controller
             $file = public_path().'/'.env('SAMPLE_CONFIG_URL').$school_code.$target_file.$name;
             file_put_contents($file, $data);
 
-            $attachment->attachment_name = $names;
+            $attachment->attachment_name = $name;
             $attachment->attachment_type = $attachment_type;  //1-image
             $attachment->attachment_location = url('/').env('SAMPLE_CONFIG_URL').$school_code;
             $attachment->save();

@@ -157,13 +157,11 @@ class APICommunicationController extends Controller
             $communications->caption_message=$request->caption_message; //Notification Message or video link
         $communications->save();
         $notification_id = $communications->id;
-        if(count($_FILES)>0)
+        if($request->photo!='')
         {
-            if($request->hasfile('attachment')) {
-                $schoolcode = $school_profile = SchoolProfile::where(['id'=>$user['school_profile_id']])->first();//get school code from school profile
+            $schoolcode = $school_profile = SchoolProfile::where(['id'=>$user['school_profile_id']])->first();//get school code from school profile
 
-                app('App\Http\Controllers\WelcomeController')->file_upload($school_profile['school_code'],$request->file('attachment'),$notification_id,$request->attachment_type,$request->ext);
-            }
+            app('App\Http\Controllers\WelcomeController')->file_upload($school_profile['school_code'],$request->file('attachment'),$notification_id,$request->attachment_type,$request->ext);
         }
 
         if($user->user_role != 3) //check user role and 3-parent goes under approval process if approval flow 'yes'

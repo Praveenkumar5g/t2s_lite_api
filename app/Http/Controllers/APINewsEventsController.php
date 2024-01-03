@@ -168,10 +168,11 @@ class APINewsEventsController extends Controller
             //     }
             // }
             // Insert attachment details in attachment table
-            if($request->hasfile('images')) {
+            if($request->photo!='')
+            {
                 $schoolcode = $school_profile = SchoolProfile::where(['id'=>$user['school_profile_id']])->get()->first();//get school code from school profile
 
-                $attachment_id =app('App\Http\Controllers\WelcomeController')->newsevents_file_upload($school_profile['school_code'],$request->file('images'),$newsevents_id,1); 
+                $attachment_id =app('App\Http\Controllers\WelcomeController')->newsevents_file_upload($school_profile['school_code'],$request->file('images'),$newsevents_id,1,$request->ext); 
             }
 
             if(!empty($attachment_id) || !empty($addon_attachment_id)) //check image exists or not

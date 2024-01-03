@@ -306,30 +306,29 @@ class APIHomeworkController extends Controller
         $communications->save();
         $notification_id = $communications->id;
 
-        if(count($_FILES)>0)
+        
+        // if($request->notification_id!='' && $request->hasfile('attachment'))
+        // {
+        //     $delete_attachment = CommunicationAttachments::where('communication_id',$request->notification_id)->get()->toArray();
+        //     if(!empty($delete_attachment))
+        //     {
+        //         foreach ($delete_attachment as $delete_key => $delete_value) {
+        //             if(File::exists(public_path().'/uploads/'.$delete_value['attachment_name'])){
+        //                 File::delete(public_path().'/uploads/'.$delete_value['attachment_name']);
+        //             }
+        //         }
+        //     }
+        //     CommunicationAttachments::where('communication_id',$request->notification_id)->delete();
+        // }
+        // Insert attachment details in attachment table
+        if($request->photo!='')
         {
-            // if($request->notification_id!='' && $request->hasfile('attachment'))
-            // {
-            //     $delete_attachment = CommunicationAttachments::where('communication_id',$request->notification_id)->get()->toArray();
-            //     if(!empty($delete_attachment))
-            //     {
-            //         foreach ($delete_attachment as $delete_key => $delete_value) {
-            //             if(File::exists(public_path().'/uploads/'.$delete_value['attachment_name'])){
-            //                 File::delete(public_path().'/uploads/'.$delete_value['attachment_name']);
-            //             }
-            //         }
-            //     }
-            //     CommunicationAttachments::where('communication_id',$request->notification_id)->delete();
-            // }
             // Insert attachment details in attachment table
-            if($request->hasfile('attachment')) {
-                // Insert attachment details in attachment table
-                $schoolcode = $school_profile = SchoolProfile::where(['id'=>$user['school_profile_id']])->get()->first();//get school code from school profile
+            $schoolcode = $school_profile = SchoolProfile::where(['id'=>$user['school_profile_id']])->get()->first();//get school code from school profile
 
-                app('App\Http\Controllers\WelcomeController')->file_upload($school_profile['school_code'],$request->file('attachment'),$notification_id,$request->attachment_type,$request->ext);
-            }
-
+            app('App\Http\Controllers\WelcomeController')->file_upload($school_profile['school_code'],$request->file('attachment'),$notification_id,$request->attachment_type,$request->ext);
         }
+
         // $user_list= $user_ids = [];
         // $user_ids =UserGroupsMapping::where('group_id',$group_id);
         // $user_ids = $user_ids->whereIn('user_role',([Config::get('app.Admin_role'),Config::get('app.Management_role')]));

@@ -30,6 +30,7 @@ class WelcomeController extends Controller
         }
 
         // Insert attachment details in attachment table
+        $index = 0;
         foreach($files as $file)
         {
             $attachment = new CommunicationAttachments;
@@ -41,7 +42,7 @@ class WelcomeController extends Controller
             // $file->move(public_path().'/uploads/'.$school_code, $names);
 
             $data = base64_decode($file);
-            $name = 'file'.''.time().'.'.$ext;
+            $name = 'file'.''.time().'.'.$ext[$index];
             $file = public_path().'/'.env('SAMPLE_CONFIG_URL').$school_code.$target_file.$name;
             file_put_contents($file, $data);
 
@@ -49,6 +50,7 @@ class WelcomeController extends Controller
             $attachment->attachment_type =$attachment_type;  //1-image,2-audio,3-document
             $attachment->attachment_location = url('/').'/'.env('SAMPLE_CONFIG_URL').$school_code.$target_file;
             $attachment->save();
+            $index++;
         }
        
     }
@@ -69,6 +71,7 @@ class WelcomeController extends Controller
                 $attachment_id = explode(',',$images_list);
             }
         }
+        $index = 0;
         foreach($files as $file) //loop to insert images
         {   
             $attachment = new NewsEventsAttachments;
@@ -80,7 +83,7 @@ class WelcomeController extends Controller
             // $file->move(public_path().'/uploads/'.$school_code, $names);  
 
             $data = base64_decode($file);
-            $name = 'news_events'.''.time().'.'.$ext;
+            $name = 'news_events'.''.time().'.'.$ext[$index];
             $file = public_path().'/'.env('SAMPLE_CONFIG_URL').$school_code.$target_file.$name;
             file_put_contents($file, $data);
 
@@ -89,6 +92,7 @@ class WelcomeController extends Controller
             $attachment->attachment_location = url('/').'/'.env('SAMPLE_CONFIG_URL').$school_code.$target_file;
             $attachment->save();
             $attachment_id[]= $attachment->id;
+            $index++;
         }
         return $attachment_id;
     }

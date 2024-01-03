@@ -23,7 +23,7 @@ class WelcomeController extends Controller
 
     public function file_upload($school_code,$files,$notification_id,$attachment_type,$target_file,$ext)
     {
-        $path = public_path('uploads/'.$school_code);//
+        $path = public_path('uploads/'.$school_code.$target_file);//
 
         if(!File::isDirectory($path)){ //check path already exists
             File::makeDirectory($path, 0777, true, true);
@@ -55,7 +55,7 @@ class WelcomeController extends Controller
 
     public function newsevents_file_upload($school_code,$files,$newsevents_id,$attachment_type,$target_file,$ext)
     {
-        $path = public_path('uploads/'.$school_code);//
+        $path = public_path('uploads/'.$school_code.$target_file);//
 
         if(!File::isDirectory($path)){ //check path already exists
             File::makeDirectory($path, 0777, true, true);

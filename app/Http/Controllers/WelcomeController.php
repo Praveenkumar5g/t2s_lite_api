@@ -97,7 +97,7 @@ class WelcomeController extends Controller
         return $attachment_id;
     }
 
-    public function profile_file_upload($school_code,$files,$attachment_type,$target_file)
+    public function profile_file_upload($school_code,$files,$attachment_type,$target_file,$ext)
     {
         $path = public_path('/'.env('SAMPLE_CONFIG_URL').$school_code.$target_file);//
 

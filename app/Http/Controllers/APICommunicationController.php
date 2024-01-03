@@ -147,7 +147,7 @@ class APICommunicationController extends Controller
         $communications->group_id=$request->group_id;
         $communications->communication_type=1;
         $communications->attachments='N'; // Default attachment no
-        if($request->attachments !='')
+        if($request->attachment[0]!='')
             $communications->attachments='Y'; 
 
         if($user->user_role != 3 && $user->user_role != 2)

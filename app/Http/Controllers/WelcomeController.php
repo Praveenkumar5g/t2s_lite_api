@@ -47,7 +47,7 @@ class WelcomeController extends Controller
 
             $attachment->attachment_name = $name;
             $attachment->attachment_type =$attachment_type;  //1-image,2-audio,3-document
-            $attachment->attachment_location = url('/').env('SAMPLE_CONFIG_URL').$school_code.'/';
+            $attachment->attachment_location = url('/').'/'.env('SAMPLE_CONFIG_URL').$school_code.$target_file;
             $attachment->save();
         }
        
@@ -86,7 +86,7 @@ class WelcomeController extends Controller
 
             $attachment->attachment_name = $name;
             $attachment->attachment_type = $attachment_type;  //1-image
-            $attachment->attachment_location = url('/').env('SAMPLE_CONFIG_URL').$school_code;
+            $attachment->attachment_location = url('/').'/'.env('SAMPLE_CONFIG_URL').$school_code.$target_file;
             $attachment->save();
             $attachment_id[]= $attachment->id;
         }

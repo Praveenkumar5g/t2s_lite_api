@@ -2252,7 +2252,7 @@ class APIConfigurationsController extends Controller
 	        $staffs_details->first_name= $request->staff_name;
 	        $staffs_details->mobile_number=$request->mobile_number;
 	        if($image!='')
-	        	$staffs_details->profile_image = ($image!='')$image:'';
+	        	$staffs_details->profile_image = ($image!='')?$image:'';
 	        $staffs_details->email_id=$request->email_address;
 	        $staffs_details->specialized_in=$request->specialized_in;
 	        $staffs_details->user_category=$request->teacher_category;

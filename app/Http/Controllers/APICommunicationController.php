@@ -157,7 +157,7 @@ class APICommunicationController extends Controller
             $communications->caption_message=$request->caption_message; //Notification Message or video link
         $communications->save();
         $notification_id = $communications->id;
-        $target_file = '/chat/'
+        $target_file = '/chat/';
         if($request->attachment[0]!='')
         {
             $schoolcode = $school_profile = SchoolProfile::where(['id'=>$user['school_profile_id']])->first();//get school code from school profile

@@ -21,7 +21,7 @@ class WelcomeController extends Controller
         return view('login');
     }
 
-    public function file_upload($school_code,$files,$notification_id,$attachment_type,$ext)
+    public function file_upload($school_code,$files,$notification_id,$attachment_type,$target_file,$ext)
     {
         $path = public_path('uploads/'.$school_code);//
 
@@ -53,7 +53,7 @@ class WelcomeController extends Controller
        
     }
 
-    public function newsevents_file_upload($school_code,$files,$newsevents_id,$attachment_type,$ext)
+    public function newsevents_file_upload($school_code,$files,$newsevents_id,$attachment_type,$target_file,$ext)
     {
         $path = public_path('uploads/'.$school_code);//
 

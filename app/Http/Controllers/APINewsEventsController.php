@@ -104,7 +104,7 @@ class APINewsEventsController extends Controller
             $newsevents['updated_time']=Carbon::now()->timezone('Asia/Kolkata');
             NewsEvents::where('id',$newsevents_id)->update($newsevents);//update news
         }
-
+        $target_file = '/newsevents/';
         /*Move images to upload folder and store it in attachment table*/
         $attachment_id = $addone_attachement_id = [];
         
@@ -171,7 +171,7 @@ class APINewsEventsController extends Controller
         {
             $schoolcode = $school_profile = SchoolProfile::where(['id'=>$user['school_profile_id']])->get()->first();//get school code from school profile
 
-            $attachment_id =app('App\Http\Controllers\WelcomeController')->newsevents_file_upload($school_profile['school_code'],$request->images,$newsevents_id,1,$request->ext); 
+            $attachment_id =app('App\Http\Controllers\WelcomeController')->newsevents_file_upload($school_profile['school_code'],$request->images,$newsevents_id,1,$target_file,$request->ext); 
         }
 
         if(!empty($attachment_id) || !empty($addon_attachment_id)) //check image exists or not

@@ -321,12 +321,13 @@ class APIHomeworkController extends Controller
         //     CommunicationAttachments::where('communication_id',$request->notification_id)->delete();
         // }
         // Insert attachment details in attachment table
+        $target_file ='/homework/';
         if($request->attachment!='')
         {
             // Insert attachment details in attachment table
             $schoolcode = $school_profile = SchoolProfile::where(['id'=>$user['school_profile_id']])->get()->first();//get school code from school profile
 
-            app('App\Http\Controllers\WelcomeController')->file_upload($school_profile['school_code'],$request->attachment,$notification_id,$request->attachment_type,$request->ext);
+            app('App\Http\Controllers\WelcomeController')->file_upload($school_profile['school_code'],$request->attachment,$notification_id,$request->attachment_type,$target_file,$request->ext);
         }
 
         // $user_list= $user_ids = [];

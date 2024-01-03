@@ -158,7 +158,7 @@ class APICommunicationController extends Controller
         $communications->save();
         $notification_id = $communications->id;
         $target_file = '/chat/'
-        if($request->attachment!='')
+        if($request->attachment[0]!='')
         {
             $schoolcode = $school_profile = SchoolProfile::where(['id'=>$user['school_profile_id']])->first();//get school code from school profile
 

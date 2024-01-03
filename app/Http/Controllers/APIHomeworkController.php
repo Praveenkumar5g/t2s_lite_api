@@ -294,7 +294,7 @@ class APIHomeworkController extends Controller
         $communications->group_id=$group_id;
         $communications->communication_type=2;
          // Default attachment no
-        if(count($_FILES)>0)
+        if($request->attachment!='')
             $communications->attachments='Y'; 
         else if($request->notification_id == '')
             $communications->attachments='N';

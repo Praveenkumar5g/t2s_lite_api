@@ -107,84 +107,82 @@ class APINewsEventsController extends Controller
 
         /*Move images to upload folder and store it in attachment table*/
         $attachment_id = $addone_attachement_id = [];
-        if(!empty($_FILES) && count($_FILES)>0)
-        {
-            // $schoolcode = $school_profile = SchoolProfile::where(['id'=>$user['school_profile_id']])->get()->first();//get school code from school profile
-            // $path = public_path('uploads/'.$school_profile['school_code']);//
+        
+        // $schoolcode = $school_profile = SchoolProfile::where(['id'=>$user['school_profile_id']])->get()->first();//get school code from school profile
+        // $path = public_path('uploads/'.$school_profile['school_code']);//
 
-            // if(!File::isDirectory($path)){ //check path already exists
-            //     File::makeDirectory($path, 0777, true, true);
-            // }
-            // // Insert attachment details in attachment table
-            // if($request->hasfile('images')) {
+        // if(!File::isDirectory($path)){ //check path already exists
+        //     File::makeDirectory($path, 0777, true, true);
+        // }
+        // // Insert attachment details in attachment table
+        // if($request->hasfile('images')) {
+            
+        //     if($newsevents_id!='')//get already existing images
+        //     {
+        //         $images_list = NewsEvents::where('id',$newsevents_id)->pluck('images')->first();
+        //         if($images_list!='')
+        //         {
+        //             $attachment_id = explode(',',$images_list);
+        //         }
+        //     }
+        //     foreach($request->file('images') as $file) //loop to insert images
+        //     {   
+        //         $attachment = new NewsEventsAttachments;
+        //         $attachment->news_events_id = $newsevents_id;
+        //         $name = explode('.',$file->getClientOriginalName());
+        //         $filename = str_replace(' ', '_', $name[0]);
+        //         $names = $filename.time().'.'.$name[1];
+        //         $file->move(public_path().'/uploads/'.$school_profile['school_code'], $names);  
+        //         $attachment->attachment_name = $names;
+        //         $attachment->attachment_type = 1;  //1-image
+        //         $attachment->attachment_location = url('/').'/uploads/'.$school_profile['school_code'];
+        //         $attachment->save();
+        //         $attachment_id[]= $attachment->id;
+        //     }
+        // }
+
+        // if(!empty($request->addon_images)) {
+                            
+        //     foreach($request->addon_images as $key=>$multiple_images) //loop to insert images
+        //     {   
+        //         foreach ($multiple_images as $file_key => $file) {
+        //             if($newsevents_id!='')//delete already existing images
+        //             {
+
+        //             }
+
+        //             $attachment = new NewsEventsAttachments;
+        //             $attachment->news_events_id = $newsevents_id;
+        //             $name = explode('.',$file->getClientOriginalName());
+        //             $filename = str_replace(' ', '_', $name[0]);
+        //             $names = $filename.time().'.'.$name[1];
+        //             $file->move(public_path().'/uploads/'.$school_profile['school_code'], $names);  
+        //             $attachment->attachment_name = $names;
+        //             $attachment->attachment_type = 1;  //1-image
+        //             $attachment->attachment_location = url('/').'/uploads/'.$school_profile['school_code'];
+        //             $attachment->save();
+        //             $addon_attachment_id[$key][]= $attachment->id;
+        //         }
                 
-            //     if($newsevents_id!='')//get already existing images
-            //     {
-            //         $images_list = NewsEvents::where('id',$newsevents_id)->pluck('images')->first();
-            //         if($images_list!='')
-            //         {
-            //             $attachment_id = explode(',',$images_list);
-            //         }
-            //     }
-            //     foreach($request->file('images') as $file) //loop to insert images
-            //     {   
-            //         $attachment = new NewsEventsAttachments;
-            //         $attachment->news_events_id = $newsevents_id;
-            //         $name = explode('.',$file->getClientOriginalName());
-            //         $filename = str_replace(' ', '_', $name[0]);
-            //         $names = $filename.time().'.'.$name[1];
-            //         $file->move(public_path().'/uploads/'.$school_profile['school_code'], $names);  
-            //         $attachment->attachment_name = $names;
-            //         $attachment->attachment_type = 1;  //1-image
-            //         $attachment->attachment_location = url('/').'/uploads/'.$school_profile['school_code'];
-            //         $attachment->save();
-            //         $attachment_id[]= $attachment->id;
-            //     }
-            // }
+        //     }
+        // }
+        // Insert attachment details in attachment table
+        if($request->images!='')
+        {
+            $schoolcode = $school_profile = SchoolProfile::where(['id'=>$user['school_profile_id']])->get()->first();//get school code from school profile
 
-            // if(!empty($request->addon_images)) {
-                                
-            //     foreach($request->addon_images as $key=>$multiple_images) //loop to insert images
-            //     {   
-            //         foreach ($multiple_images as $file_key => $file) {
-            //             if($newsevents_id!='')//delete already existing images
-            //             {
+            $attachment_id =app('App\Http\Controllers\WelcomeController')->newsevents_file_upload($school_profile['school_code'],$request->images,$newsevents_id,1,$request->ext); 
+        }
 
-            //             }
+        if(!empty($attachment_id) || !empty($addon_attachment_id)) //check image exists or not
+        {
+            $images_list = ([
+                'images'=>(!empty($attachment_id))?implode(',',$attachment_id):null,
+                'addon_images'=>(!empty($addon_attachment_id))?serialize($addon_attachment_id):null,
+                'attachments'=>'Y',
 
-            //             $attachment = new NewsEventsAttachments;
-            //             $attachment->news_events_id = $newsevents_id;
-            //             $name = explode('.',$file->getClientOriginalName());
-            //             $filename = str_replace(' ', '_', $name[0]);
-            //             $names = $filename.time().'.'.$name[1];
-            //             $file->move(public_path().'/uploads/'.$school_profile['school_code'], $names);  
-            //             $attachment->attachment_name = $names;
-            //             $attachment->attachment_type = 1;  //1-image
-            //             $attachment->attachment_location = url('/').'/uploads/'.$school_profile['school_code'];
-            //             $attachment->save();
-            //             $addon_attachment_id[$key][]= $attachment->id;
-            //         }
-                    
-            //     }
-            // }
-            // Insert attachment details in attachment table
-            if($request->images!='')
-            {
-                $schoolcode = $school_profile = SchoolProfile::where(['id'=>$user['school_profile_id']])->get()->first();//get school code from school profile
-
-                $attachment_id =app('App\Http\Controllers\WelcomeController')->newsevents_file_upload($school_profile['school_code'],$request->images,$newsevents_id,1,$request->ext); 
-            }
-
-            if(!empty($attachment_id) || !empty($addon_attachment_id)) //check image exists or not
-            {
-                $images_list = ([
-                    'images'=>(!empty($attachment_id))?implode(',',$attachment_id):null,
-                    'addon_images'=>(!empty($addon_attachment_id))?serialize($addon_attachment_id):null,
-                    'attachments'=>'Y',
-
-                ]);
-                NewsEvents::where('id',$newsevents_id)->update($images_list);//update newsandevents images
-            }
+            ]);
+            NewsEvents::where('id',$newsevents_id)->update($images_list);//update newsandevents images
         }
         
         if($newseventid_edit == '') //message triggered only for create 

@@ -171,7 +171,7 @@ Route::group(['middleware' => 'auth.connect','prefix' => 'user'], function ($rou
     Route::post('/all_management_list',[APIConfigurationsController::class,'all_management_list']);
     Route::get('/get_management_designation',[APIConfigurationsController::class,'get_management_designation']);
     Route::post('/onboarding_fetch_single_management',[APIConfigurationsController::class,'onboarding_fetch_single_management']);
-    oute::post('/onboarding_edit_management',[APIConfigurationsController::class,'onboarding_edit_management']);
+    Route::post('/onboarding_edit_management',[APIConfigurationsController::class,'onboarding_edit_management']);
     Route::post('/onboarding_delete_management',[APIConfigurationsController::class,'onboarding_delete_management']);
 
     Route::get('/onboarding_parent_list',[APIConfigurationsController::class,'onboarding_parent_list']);

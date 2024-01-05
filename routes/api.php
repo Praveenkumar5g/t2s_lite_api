@@ -122,7 +122,6 @@ Route::group(['middleware' => 'auth.connect','prefix' => 'user'], function ($rou
     
     Route::get('/get_classes_sections_subjects_list',[APIConfigurationsController::class,'get_classes_sections_subjects_list']);
     Route::get('/get_staff_category_class',[APIConfigurationsController::class,'get_staff_category_class']);
-    Route::get('/get_management_designation',[APIConfigurationsController::class,'get_management_designation']);
     Route::post('/get_classes_list',[APIConfigurationsController::class,'get_edit_classes_list']);
     Route::post('/get_edit_allsection_list',[APIConfigurationsController::class,'get_edit_allsection_list']);
     Route::get('/get_edit_staff_list',[APIConfigurationsController::class,'get_edit_staff_list']);
@@ -141,19 +140,7 @@ Route::group(['middleware' => 'auth.connect','prefix' => 'user'], function ($rou
     Route::post('/all_parent_list',[APIConfigurationsController::class,'all_parent_list']);
     Route::post('/all_student_list',[APIConfigurationsController::class,'all_student_list']);
     Route::post('/all_admin_list',[APIConfigurationsController::class,'all_admin_list']);
-    Route::post('/all_management_list',[APIConfigurationsController::class,'all_management_list']);
     Route::post('/class_subjects_list',[APIConfigurationsController::class,'class_subjects_list']);
-    Route::post('/onboarding_fetch_single_management',[APIConfigurationsController::class,'onboarding_fetch_single_management']);
-    Route::post('/onboarding_edit_management',[APIConfigurationsController::class,'create_update_users']);
-    Route::post('/onboarding_fetch_single_parent',[APIConfigurationsController::class,'onboarding_fetch_single_parent']);
-    Route::get('/onboarding_parent_list',[APIConfigurationsController::class,'onboarding_parent_list']);
-    Route::post('/onboarding_edit_parent',[APIConfigurationsController::class,'onboarding_edit_parent']);
-    Route::post('/check_admission_unique',[APIConfigurationsController::class,'check_admission_unique']);
-    /*Delete Configuration*/
-    
-    Route::post('/onboarding_delete_management',[APIConfigurationsController::class,'onboarding_delete_management']);
-     Route::post('/onboarding_delete_parent',[APIConfigurationsController::class,'onboarding_delete_parent']);
-    /*Delete Configuration*/
 
     /*Onboarding - manual*/
     Route::post('/create_update_division_manual',[APIConfigurationsController::class,'create_update_division_manual']);
@@ -173,10 +160,28 @@ Route::group(['middleware' => 'auth.connect','prefix' => 'user'], function ($rou
     Route::post('/get_subjects',[APIConfigurationsController::class,'get_subjects']);
     Route::post('/delete_subject',[APIConfigurationsController::class,'delete_subject']);
 
+    // create user for staff,management
+    Route::post('/onboarding_create_user',[APIConfigurationsController::class,'onboarding_create_user']);
+
     Route::get('/onboarding_staff_list',[APIConfigurationsController::class,'onboarding_staff_list']);
     Route::post('/onboarding_fetch_single_staff',[APIConfigurationsController::class,'onboarding_fetch_single_staff']);
-    Route::post('/onboarding_create_edit_staff',[APIConfigurationsController::class,'onboarding_create_edit_staff']);
+    Route::post('/onboarding_edit_staff',[APIConfigurationsController::class,'onboarding_edit_staff']);
     Route::post('/onboarding_delete_staff',[APIConfigurationsController::class,'onboarding_delete_staff']);
+
+    Route::post('/all_management_list',[APIConfigurationsController::class,'all_management_list']);
+    Route::get('/get_management_designation',[APIConfigurationsController::class,'get_management_designation']);
+    Route::post('/onboarding_fetch_single_management',[APIConfigurationsController::class,'onboarding_fetch_single_management']);
+    oute::post('/onboarding_edit_management',[APIConfigurationsController::class,'onboarding_edit_management']);
+    Route::post('/onboarding_delete_management',[APIConfigurationsController::class,'onboarding_delete_management']);
+
+    Route::get('/onboarding_parent_list',[APIConfigurationsController::class,'onboarding_parent_list']);
+    Route::post('/onboarding_fetch_single_parent',[APIConfigurationsController::class,'onboarding_fetch_single_parent']);
+    Route::post('/onboarding_edit_parent',[APIConfigurationsController::class,'onboarding_edit_parent']);
+    Route::post('/onboarding_delete_parent',[APIConfigurationsController::class,'onboarding_delete_parent']);
+    Route::post('/onboarding_create_students',[APIConfigurationsController::class,'onboarding_create_students']);
+    Route::get('get_parent_category',[APIConfigurationsController::class,'get_parent_category']);//user category
+
+    Route::post('/check_admission_unique',[APIConfigurationsController::class,'check_admission_unique']);
 
 
     /*Onboarding - Manual*/
@@ -190,11 +195,11 @@ Route::group(['middleware' => 'auth.connect','prefix' => 'user'], function ($rou
     Route::post('/user_role_change',[APIConfigurationsController::class,'user_role_change']);//User stattus change
     Route::post('/check_staff_classes',[APIConfigurationsController::class,'check_staff_classes']);//Check classes for staff 
     Route::get('check_user_role_changed',[APIConfigurationsController::class,'check_user_role_changed']);//user role change status
+    Route::post('/create_update_management  ',[APIConfigurationsController::class,'create_update_users']);
     Route::post('create_update_admin',[APIConfigurationsController::class,'create_update_users']);//create and update admin details
     Route::post('create_update_staff',[APIConfigurationsController::class,'create_update_users']);//create and update staff details
     Route::post('update_parent_details',[APIConfigurationsController::class,'update_parent_details']);//update parent details
     Route::post('checkMobileno',[APIConfigurationsController::class,'parentcheckMobileno']);//check mobile no already exists or not
-    Route::get('get_parent_category',[APIConfigurationsController::class,'get_parent_category']);//user category
     Route::post('checkEmployeeno',[APIConfigurationsController::class,'parentcheckEmployeeno']);//check mobile no already exists or not
     
     Route::post('/approval_process', [APICommunicationController::class, 'approval_process']); 

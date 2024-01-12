@@ -1440,9 +1440,9 @@ class APIConfigurationsController extends Controller
         	else
         		return response()->json(['status'=>false,'messgae'=>'Invalid Role!...']);
 
-        	if($request->photo!='')
+        	if($value['photo']!='')
 	        {
-	        	$image = app('App\Http\Controllers\WelcomeController')->profile_file_upload($school_profile['school_code'],$request->photo,1,$target_file,$request->ext);
+	        	$image = app('App\Http\Controllers\WelcomeController')->profile_file_upload($school_profile['school_code'],$value['photo'],1,$target_file,$value['ext']);
 	        }
 	        if(Config::get('app.Management_role') == $role)
         		$check_exists = UserManagements::where(['mobile_number'=>$value['mobile_number']])->first(); //To check given subject name is already exists in DB.
@@ -1461,6 +1461,15 @@ class APIConfigurationsController extends Controller
 	            $user_details->mobile_number=$value['mobile_number'];
 	            if($image!='')
 	            	$user_details->profile_image = ($image!='')?$image:'';
+	            if($value['dob']!='')
+	        		$user_details->dob = $value['dob'];
+	        	if($value['doj']!='')
+	        		$user_details->doj = $value['doj'];
+	        	if($value['employee_no']!='')
+	        		$user_details->employee_no = $value['employee_no'];
+	        	if($value['user_category']!='')
+	        		$user_details->user_category=$value['user_category'];
+
 	            $user_details->created_by=$userall_id;
 	        	$user_details->created_time=Carbon::now()->timezone('Asia/Kolkata');
 	            $user_details->save();
@@ -1468,7 +1477,11 @@ class APIConfigurationsController extends Controller
 	            $id =$user_details->id; // staff id
 
 	            // generate and update staff id in db 
-	            $user_id = $profile_details['school_code'].substr($profile_details['active_academic_year'], -2).'M'.sprintf("%04s", $id);
+	            if(Config::get('app.Management_role') == $role)
+        			$user_id = $profile_details['school_code'].substr($profile_details['active_academic_year'], -2).'T'.sprintf("%04s", $id);
+        		else if(Config::get('app.Staff_role') == $role)
+	            	$user_id = $profile_details['school_code'].substr($profile_details['active_academic_year'], -2).'M'.sprintf("%04s", $id);
+
 	            $user_details->user_id = $user_id;
 	            $user_details->save();
 
@@ -1479,12 +1492,34 @@ class APIConfigurationsController extends Controller
 
 	            $schoolusers = new SchoolUsers;
 	            $schoolusers->school_profile_id=$user_data->school_profile_id;
-	            $schoolusers->user_id=$usermgnt_id;
+	            $schoolusers->user_id=$user_id;
 	            $schoolusers->user_mobile_number=$value['mobile_number'];
 	            $schoolusers->user_password=bcrypt($value['mobile_number']);
 	            $schoolusers->user_role=$role;
 	            $schoolusers->user_status=1;
 	            $schoolusers->save();
+
+	            if($role == Config::get('app.Staff_role') && $value['class_teacher_class_config']!='')
+	            {
+	            	AcademicClassConfiguration::where('id',$value['class_teacher_class_config'])->update(['class_teacher'=>$id]); //assign class teacher to class.
+
+	            	$class_teacher_group = UserGroups::where('group_status',Config::get('app.Group_Active'))->where('class_config',$value['class_teacher_class_config'])->pluck('id')->first();
+	            	$check_exists = UserGroupsMapping::where(['group_id'=>$class_teacher_group,'user_table_id'=>$id,'user_role'=>Config::get('app.Staff_role'),'user_status'=>1])->pluck('id')->first();
+	             	if($check_exists=='')
+	            		UserGroupsMapping::insert(['group_id'=>$class_teacher_group,'user_table_id'=>$id,'user_role'=>Config::get('app.Staff_role'),'user_status'=>1,'group_access'=>1]);
+	            }
+	            
+	            if($role == Config::get('app.Staff_role') && !empty($value['teacher_class_config']))
+	            {
+	            	UserGroupsMapping::insert(['group_id'=>2,'user_table_id'=>$id,'user_role'=>Config::get('app.Staff_role'),'user_status'=>1,'group_access'=>1]);
+	            	foreach ($value['teacher_class_config'] as $teacher_key => $teacher_value) {
+	             		AcademicSubjectsMapping::where('class_config',$teacher_value)->update(['staff'=>$id]); //assign staff to class.
+	             		$techer_group = UserGroups::where('group_status',Config::get('app.Group_Active'))->where('class_config',$teacher_value)->pluck('id')->first();
+	             		$check_exists = UserGroupsMapping::where(['group_id'=>$teacher_group,'user_table_id'=>$id,'user_role'=>Config::get('app.Staff_role'),'user_status'=>1])->pluck('id')->first();
+	             		if($check_exists=='')
+	            			UserGroupsMapping::insert(['group_id'=>$techer_group,'user_table_id'=>$id,'user_role'=>Config::get('app.Staff_role'),'user_status'=>1,'group_access'=>1]);
+	            	}
+	            }
 	        }
         }
         if(Config::get('app.Management_role') == $role)

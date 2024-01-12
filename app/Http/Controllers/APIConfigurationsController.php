@@ -1734,7 +1734,7 @@ class APIConfigurationsController extends Controller
 	            $student_details->first_name= $row['student_name'];
 	            $student_details->admission_number=$row['admission_no'];
 	            if(isset($row['roll_no']))
-	            	$student_details->roll_number=isset($row['roll_no'])?$row['roll_no:'''];
+	            	$student_details->roll_number=$row['roll_no'];
 	            if($student_image!='')
 	            	$student_details->profile_image=$student_image;
 	            $student_details->gender=$gender;

@@ -1823,7 +1823,7 @@ class APIConfigurationsController extends Controller
             else
             {
             	if(!empty($student_details) && !empty($guardian_check_exists))
-            		$this->createstudentmapping($student_details->id,$guardian_check_exists->id,$userall_id)
+            		$this->createstudentmapping($student_details->id,$guardian_check_exists->id,$userall_id);
             }
         }   
 	}

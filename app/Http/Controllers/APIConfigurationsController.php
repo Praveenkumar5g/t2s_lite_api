@@ -1828,7 +1828,7 @@ class APIConfigurationsController extends Controller
         }   
 	}
 
-	public function createstudentmapping($id,$parent_id,$userall_id);
+	public function createstudentmapping($id,$parent_id,$userall_id)
 	{
 		// mapping the student and parent
         $student_map = new UserStudentsMapping;

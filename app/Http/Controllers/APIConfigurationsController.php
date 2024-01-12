@@ -1801,7 +1801,7 @@ class APIConfigurationsController extends Controller
             else
             {
             	if(!empty($student_details) && !empty($mother_check_exists))	
-            		$this->createstudentmapping($student_details->id,$mother_check_exists->id,$userall_id)
+            		$this->createstudentmapping($student_details->id,$mother_check_exists->id,$userall_id);
             }
 
             if(empty($guardian_check_exists) && !in_array($row['guardian_mobile_number'],$usermobile_numbers)) 

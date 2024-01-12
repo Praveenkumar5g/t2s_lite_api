@@ -1759,7 +1759,7 @@ class APIConfigurationsController extends Controller
 	            
 			}
 			
-            if(empty($father_check_exists) && !in_array($row['father_mobile_number'],$usermobile_numbers ) 
+            if(empty($father_check_exists) && !in_array($row['father_mobile_number'],$usermobile_numbers)) 
             {
             	array_push($usermobile_numbers, $row['father_mobile_number']);//check mobile number already exists in array
             	$father = [];
@@ -1782,7 +1782,7 @@ class APIConfigurationsController extends Controller
             }
 
 
-            if(empty($mother_check_exists) && !in_array($row['mother_mobile_number'],$usermobile_numbers ) 
+            if(empty($mother_check_exists) && !in_array($row['mother_mobile_number'],$usermobile_numbers)) 
             {
             	array_push($usermobile_numbers, $row['mother_mobile_number']);//check mobile number already exists in array
             	$mother = [];
@@ -1804,7 +1804,7 @@ class APIConfigurationsController extends Controller
             		$this->createstudentmapping($student_details->id,$mother_check_exists->id,$userall_id)
             }
 
-            if(empty($guardian_check_exists) && !in_array($row['guardian_mobile_number'],$usermobile_numbers ) 
+            if(empty($guardian_check_exists) && !in_array($row['guardian_mobile_number'],$usermobile_numbers)) 
             {
             	array_push($usermobile_numbers, $row['guardian_mobile_number']);//check mobile number already exists in array
             	$guardian = [];

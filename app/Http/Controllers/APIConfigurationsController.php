@@ -1214,6 +1214,17 @@ class APIConfigurationsController extends Controller
         	$staff_list->class_config = $check_class_teacher->class_teacher; 
 
         }
+        $subject_teacher =[];
+        $subject_teacher_list = AcademicSubjectsMapping::where('staff',$request->id)->get()->toArray();
+        if(!empty($subject_teacher_list))
+        {
+        	foreach($subject_teacher_list as $subj_key => $subj_value)
+        	{
+        		$subject_teacher[$subj_key]['class_config'] = $subj_value['class_config'];
+        		$subject_teacher[$subj_key]['subject'] = $subj_value['subject'];
+        	}
+        }
+        $staff_list->subject_teacher= $subject_teacher;
         return response()->json($staff_list);   
     }
 

@@ -1472,13 +1472,13 @@ class APIConfigurationsController extends Controller
 	            $user_details->mobile_number=$value['mobile_number'];
 	            if($image!='')
 	            	$user_details->profile_image = ($image!='')?$image:'';
-	            if($value['dob']!='')
+	            if(isset($value['dob']) && $value['dob']!='')
 	        		$user_details->dob = $value['dob'];
-	        	if($value['doj']!='')
+	        	if(isset($value['doj']) && $value['doj']!='')
 	        		$user_details->doj = $value['doj'];
-	        	if($value['employee_no']!='')
+	        	if(isset($value['employee_no']) && $value['employee_no']!='')
 	        		$user_details->employee_no = $value['employee_no'];
-	        	if($value['user_category']!='')
+	        	if(isset($value['user_category']) && $value['user_category']!='')
 	        		$user_details->user_category=$value['user_category'];
 
 	            $user_details->created_by=$userall_id;
@@ -1524,7 +1524,7 @@ class APIConfigurationsController extends Controller
 	            {
 	            	UserGroupsMapping::insert(['group_id'=>2,'user_table_id'=>$id,'user_role'=>Config::get('app.Staff_role'),'user_status'=>1,'group_access'=>1]);
 	            	foreach ($value['teacher_class_config'] as $teacher_key => $teacher_value) {
-	             		AcademicSubjectsMapping::where('class_config',$teacher_value['class_config'])->where('subject_id',$teacher_value['subject_id'])->update(['staff'=>$id]); //assign staff to class.
+	             		AcademicSubjectsMapping::where('class_config',$teacher_value['class_config'])->where('subject',$teacher_value['subject_id'])->update(['staff'=>$id]); //assign staff to class.
 	             		$techer_group = UserGroups::where('group_status',Config::get('app.Group_Active'))->where('class_config',$teacher_value['class_config'])->pluck('id')->first();
 	             		$check_exists = UserGroupsMapping::where(['group_id'=>$teacher_group,'user_table_id'=>$id,'user_role'=>Config::get('app.Staff_role'),'user_status'=>1])->pluck('id')->first();
 	             		if($check_exists=='')

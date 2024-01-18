@@ -1537,6 +1537,8 @@ class APIConfigurationsController extends Controller
 	        Configurations::where('school_profile_id',$user_data->school_profile_id)->update(['management'=>1]);
         else if(Config::get('app.Staff_role') == $role)
 			Configurations::where('school_profile_id',$user_data->school_profile_id)->update(['staffs'=>1]);
+
+		return response()->json(['status'=>true,'messgae'=>'Details inserted Successfully!...']);
 	}
 
     // edit staff details

@@ -1430,7 +1430,7 @@ class APIConfigurationsController extends Controller
 	{
 		$user_data = auth()->user();
 
-       	$user_details =  app('App\Http\Controllers\APILoginController')->get_user_table_id($user);
+       	$user_details =  app('App\Http\Controllers\APILoginController')->get_user_table_id($user_data);
 
         $userall_id = UserAll::where(['user_table_id'=>$user_details->id,'user_role'=>$user_data->user_role])->pluck('id')->first();//fetch id from user all table to store notification triggered user
 

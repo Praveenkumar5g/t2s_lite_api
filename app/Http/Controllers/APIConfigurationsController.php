@@ -1451,7 +1451,7 @@ class APIConfigurationsController extends Controller
         	else
         		return response()->json(['status'=>false,'messgae'=>'Invalid Role!...']);
 
-        	if($value['photo']!='')
+        	if(isset($value['photo']) && $value['photo']!='')
 	        {
 	        	$image = app('App\Http\Controllers\WelcomeController')->profile_file_upload($school_profile['school_code'],$value['photo'],1,$target_file,$value['ext']);
 	        }

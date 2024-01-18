@@ -1536,7 +1536,7 @@ class APIConfigurationsController extends Controller
         if(Config::get('app.Management_role') == $role)
 	        Configurations::where('school_profile_id',$user_data->school_profile_id)->update(['management'=>1]);
         else if(Config::get('app.Staff_role') == $role)
-			Configurations::where('school_profile_id',$user_data->school_profile_id)->update(['staff'=>1]);
+			Configurations::where('school_profile_id',$user_data->school_profile_id)->update(['staffs'=>1]);
 	}
 
     // edit staff details

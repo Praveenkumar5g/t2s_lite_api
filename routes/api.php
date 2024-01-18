@@ -125,7 +125,7 @@ Route::group(['middleware' => 'auth.connect','prefix' => 'user'], function ($rou
     Route::post('/get_classes_list',[APIConfigurationsController::class,'get_edit_classes_list']);
     Route::post('/get_edit_allsection_list',[APIConfigurationsController::class,'get_edit_allsection_list']);
     Route::get('/get_edit_staff_list',[APIConfigurationsController::class,'get_edit_staff_list']);
-    Route::get('/get_edit_management_list',[APIConfigurationsController::class,'get_edit_management_list']);
+    Route::get('/get_management_list',[APIConfigurationsController::class,'get_management_list']);
     Route::get('/get_edit_student_list',[APIConfigurationsController::class,'get_edit_student_list']);
     
 

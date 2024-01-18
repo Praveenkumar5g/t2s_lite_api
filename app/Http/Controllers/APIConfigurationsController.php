@@ -1466,7 +1466,7 @@ class APIConfigurationsController extends Controller
 	        	if(Config::get('app.Management_role') == $role)
 	            	$user_details = new UserManagements;
 	            else if(Config::get('app.Staff_role') == $role)
-	            	$user_details = new Staffs;
+	            	$user_details = new UserStaffs;
 
 	            $user_details->first_name= $value['name'];
 	            $user_details->mobile_number=$value['mobile_number'];

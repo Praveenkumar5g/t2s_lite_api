@@ -1642,7 +1642,7 @@ class APIConfigurationsController extends Controller
     	// Check authenticate user
         $userdata = auth()->user();
 
-        $parent_list = UserParents::select('id','user_id','first_name','mobile_number')->where('user_status',1)->get()->toArray(); //fetch all the staff for listing
+        $parent_list = UserParents::select('id','user_id','first_name','mobile_number','class_config','dob')->where('user_status',1)->get()->toArray(); //fetch all the staff for listing
         return response()->json($parent_list);
     }
 

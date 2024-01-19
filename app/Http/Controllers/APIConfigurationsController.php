@@ -1265,6 +1265,7 @@ class APIConfigurationsController extends Controller
 	        }
 	        //save staff details
 	        $staffs_details->first_name= $request->staff_name;
+	        $staffs_details->division_id=$request->division_id;
 	        $staffs_details->mobile_number=$request->mobile_number;
 	        if($image!='')
 	        	$staffs_details->profile_image = ($image!='')?$image:'';
@@ -1642,7 +1643,9 @@ class APIConfigurationsController extends Controller
     	// Check authenticate user
         $userdata = auth()->user();
 
-        $parent_list = UserParents::select('id','user_id','first_name','mobile_number','class_config','dob')->where('user_status',1)->get()->toArray(); //fetch all the staff for listing
+        $parent_list = UserParents::select('id','user_id','first_name','mobile_number')->where('user_status',1)->get()->toArray(); //fetch all the staff for listing
+
+        foreach()
         return response()->json($parent_list);
     }
 

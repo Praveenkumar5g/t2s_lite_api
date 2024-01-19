@@ -1645,7 +1645,6 @@ class APIConfigurationsController extends Controller
 
         $parent_list = UserParents::select('id','user_id','first_name','mobile_number')->where('user_status',1)->get()->toArray(); //fetch all the staff for listing
 
-        foreach()
         return response()->json($parent_list);
     }
 

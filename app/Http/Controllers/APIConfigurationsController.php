@@ -1644,17 +1644,20 @@ class APIConfigurationsController extends Controller
         $userdata = auth()->user();
 
         $parent_list = UserParents::select('id','user_id','first_name','mobile_number')->where('user_status',1)->get()->toArray(); //fetch all the staff for listing
+        $index = 0;
         foreach($parent_list as $key => $value)
         {
-        	$list = $value;
-        	$list[$key]['class_config'] = '';
+        	$list[$index] = $value;
+        	$list[$index]['class_config'] = '';
+        	$list[$index]['division_id'] = '';        	
         	$studentid = UserStudentsMapping::where('parent',$value['id'])->pluck('student')->first();
         	if($studentid!='')
         	{
         		$student_details = UserStudents::where('id',$studentid)->first();
-        		$list[$key]['class_config'] = $student_details->class_config;
-        		$list[$key]['division_id'] = $student_details->division_id;
+        		$list[$index]['class_config'] = $student_details->class_config;
+        		$list[$index]['division_id'] = $student_details->division_id;
         	}
+        	$index++;
         }
         return response()->json($list);
     }

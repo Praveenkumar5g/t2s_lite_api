@@ -1246,7 +1246,7 @@ class APIConfigurationsController extends Controller
 
         $user_details =  app('App\Http\Controllers\APILoginController')->get_user_table_id($user);
 
-        $userall_id = UserAll::where(['user_table_id'=>$user_details->id,'user_role'=>$user_data->user_role])->pluck('id')->first();//fetch id from user all table to store notification triggered user
+        $userall_id = UserAll::where(['user_table_id'=>$user_details->id,'user_role'=>$user->user_role])->pluck('id')->first();//fetch id from user all table to store notification triggered user
 
         $profile_details = SchoolProfile::where(['id'=>$user->school_profile_id])->first();//Fetch school profile details 
         $staffs_details = [];
@@ -1297,7 +1297,7 @@ class APIConfigurationsController extends Controller
             if(!empty($request->teacher_class_config))
             {
             	foreach ($request->teacher_class_config as $teacher_key => $teacher_value) {
-             		AcademicSubjectsMapping::where('class_config',$teacher_value['class_config'])->where('subject_id',$teacher_value['subject_id'])->update(['staff'=>$request->id]); //assign staff to class.
+             		AcademicSubjectsMapping::where('class_config',$teacher_value['class_config'])->where('subject',$teacher_value['subject_id'])->update(['staff'=>$request->id]); //assign staff to class.
              		$techer_group = UserGroups::where('group_status',Config::get('app.Group_Active'))->where('class_config',$teacher_value['class_config'])->pluck('id')->first();
              		$check_exists = UserGroupsMapping::where(['group_id'=>$techer_group,'user_table_id'=>$request->id,'user_role'=>Config::get('app.Staff_role'),'user_status'=>1])->pluck('id')->first();
              		if($check_exists=='')
@@ -1365,7 +1365,7 @@ class APIConfigurationsController extends Controller
             {
             	UserGroupsMapping::insert(['group_id'=>2,'user_table_id'=>$staff_id,'user_role'=>Config::get('app.Staff_role'),'user_status'=>1,'group_access'=>1]);
             	foreach ($request->teacher_class_config as $teacher_key => $teacher_value) {
-             		AcademicSubjectsMapping::where('class_config',$teacher_value['class_config'])->where('subject_id',$teacher_value['subject_id'])->update(['staff'=>$staff_id]); //assign staff to class.
+             		AcademicSubjectsMapping::where('class_config',$teacher_value['class_config'])->where('subject',$teacher_value['subject_id'])->update(['staff'=>$staff_id]); //assign staff to class.
              		$techer_group = UserGroups::where('group_status',Config::get('app.Group_Active'))->where('class_config',$teacher_value['class_config'])->pluck('id')->first();
              		$check_exists = UserGroupsMapping::where(['group_id'=>$teacher_group,'user_table_id'=>$staff_id,'user_role'=>Config::get('app.Staff_role'),'user_status'=>1])->pluck('id')->first();
              		if($check_exists=='')

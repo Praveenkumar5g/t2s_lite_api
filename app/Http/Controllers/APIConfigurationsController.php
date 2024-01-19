@@ -1656,7 +1656,7 @@ class APIConfigurationsController extends Controller
         		$list[$key]['division_id'] = $student_details->division_id;
         	}
         }
-        return response()->json($parent_list);
+        return response()->json($list);
     }
 
     // Onboarding for individual parent view

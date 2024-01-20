@@ -1648,8 +1648,8 @@ class APIConfigurationsController extends Controller
         foreach($parent_list as $key => $value)
         {
         	$list[$index] = $value;
-        	$list[$index]['class_config'] = '';
-        	$list[$index]['division_id'] = '';        	
+        	$list[$index]['class_config'] = 0;
+        	$list[$index]['division_id'] = 0;        	
         	$studentid = UserStudentsMapping::where('parent',$value['id'])->pluck('student')->first();
         	if($studentid!='')
         	{

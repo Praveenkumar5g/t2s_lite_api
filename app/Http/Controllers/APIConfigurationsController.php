@@ -1879,6 +1879,8 @@ class APIConfigurationsController extends Controller
             		$this->createstudentmapping($student_details->id,$guardian_check_exists->id,$userall_id);
             }
         }   
+        Configurations::where('school_profile_id',$user->school_profile_id)->update(['students'=>1]);
+	   	return response()->json(['status'=>true,'message'=>'Student and parents details inserted Successfully!...']);
 	}
 
 	public function createstudentmapping($id,$parent_id,$userall_id)
@@ -1901,7 +1903,7 @@ class APIConfigurationsController extends Controller
         $user = auth()->user();
 		$user_details =  app('App\Http\Controllers\APILoginController')->get_user_table_id($user);
 
-        $userall_id = UserAll::where(['user_table_id'=>$user_details->id,'user_role'=>$user_data->user_role])->pluck('id')->first();//fetch id from user all table to store notification triggered user
+        $userall_id = UserAll::where(['user_table_id'=>$user_details->id,'user_role'=>$user->user_role])->pluck('id')->first();//fetch id from user all table to store notification triggered user
 
         $profile_details = SchoolProfile::where(['id'=>$user->school_profile_id])->first();//Fetch school profile details 
         $parent_details = $mother_details = $guardian_details = $student_details = [];
@@ -2071,7 +2073,7 @@ class APIConfigurationsController extends Controller
 				$password = bcrypt(date('dmY',strtotime($request->dob)));
 
             // insert father details
-            if($request->father_mobile_number!='' && $request->father_name!='')
+            if($request->father_mobile_number!='' && $request->father_name!='' && $request->father_mobile_number > 0)
         	{
         		$father_id = UserParents::where('mobile_number',$request->father_mobile_number)->pluck('id')->first();
         		if($father_id == '')
@@ -2107,7 +2109,7 @@ class APIConfigurationsController extends Controller
         		}
 	        }
 	        // insert mother details
-	        if($request->mother_mobile_number!='' && $request->mother_name!='')
+	        if($request->mother_mobile_number!='' && $request->mother_name!='' && $request->mother_mobile_number > 0)
         	{
         		$mother_id = UserParents::where('mobile_number',$request->mother_mobile_number)->pluck('id')->first();
         		if($mother_id == '')
@@ -2145,7 +2147,7 @@ class APIConfigurationsController extends Controller
 	        }
 
 	        // insert guardian details
-	        if($request->guardian_mobile_number!='' && $request->guardian_name!='')
+	        if($request->guardian_mobile_number!='' && $request->guardian_name!='' && $request->guardian_mobile_number > 0)
         	{
         		$guardian_id = UserParents::where('mobile_number',$request->guardian_mobile_number)->pluck('id')->first();
         		if($guardian_id == '')

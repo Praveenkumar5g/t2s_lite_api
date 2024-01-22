@@ -1781,7 +1781,7 @@ class APIConfigurationsController extends Controller
 		        }
 		    }
 		    if($row['admission_no']!='')
-
+		    {
 	        	$student_details = new UserStudents;
 
 	            $student_details->first_name= $row['student_name'];

@@ -2197,7 +2197,7 @@ class APIConfigurationsController extends Controller
         $profile_image_path ='';
 
    		$target_file = '/students/';
-    	if($request->student_photo!='')
+    	if(isset($request->student_photo) && $request->student_photo!='')
         {
         	$profile_image_path = app('App\Http\Controllers\WelcomeController')->profile_file_upload($school_profile['school_code'],$request->student_photo,1,$target_file,$request->ext);
         }

@@ -1822,7 +1822,7 @@ class APIConfigurationsController extends Controller
 	        	$father['email_address'] = $row['father_email_address'];
 	        	$father['ext'] = isset($row['father_ext'])?$row['father_ext']:'';
 	        	$father['user_category'] = 1;
-	        	echo '<pre>';print_r($father);exit;
+
 	        	if($profile_details->default_password_type == 'mobile_number' || $password == '')
 					$password = bcrypt($row['father_mobile_number']);
 				
@@ -2271,7 +2271,6 @@ class APIConfigurationsController extends Controller
     // create parent details dependency function -onboarding
     public function insert_parent_details($data,$id,$userall_id,$group_id,$password)
     {
-    	echo '<pre>';print_r($data);exit;
     	$user_data = auth()->user();
     	$profile_details = SchoolProfile::where(['id'=>$user_data->school_profile_id])->first();//Fetch school profile details 
   		$profile_image_path ='';

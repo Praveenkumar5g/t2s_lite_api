@@ -1760,14 +1760,17 @@ class APIConfigurationsController extends Controller
         foreach ($data as $row) {
         	$student_image = $group_id = $password ='';
         	$student_details = $father_check_exists = $mother_check_exists = $guardian_check_exists= [];
-        	if(isset($row['father_mobile_number']))
+        	if(isset($row['father_mobile_number']) && $row['father_mobile_number']!='')
             	$father_check_exists = UserParents::where('mobile_number',$row['father_mobile_number'])->first(); //To check given mobile no is already exists in DB.
 
-            if(isset($row['mother_mobile_number']))
+            if(isset($row['mother_mobile_number']) && $row['mother_mobile_number']!='')
             	$mother_check_exists = UserParents::where('mobile_number',$row['mother_mobile_number'])->first(); //To check given mobile no is already exists in DB.
 
-            if(isset($row['guardian_mobile_number']))
+            if(isset($row['guardian_mobile_number']) && $row['guardian_mobile_number']!='')
             	$guardian_check_exists = UserParents::where('mobile_number',$row['guardian_mobile_number'])->first(); //To check given mobile no is already exists in DB.
+
+            if(isset($request->gender))
+        		$gender = (isset($request->gender) && strtolower($request->gender) == 'male')?1:((isset($request->gender) && strtolower($request->gender) == 'female')?2:3);
 
         	if($row['student_name']!='' && $row['admission_number']!='')
             {

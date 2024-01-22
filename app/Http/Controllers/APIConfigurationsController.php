@@ -1820,7 +1820,7 @@ class APIConfigurationsController extends Controller
 	        	$father['first_name'] = $row['father_name'];
 	        	$father['mobile_number'] = $row['father_mobile_number'];
 	        	$father['email_address'] = $row['father_email_address'];
-	        	$father['ext'] = $row['father_ext'];
+	        	$father['ext'] = isset($row['father_ext'])?$row['father_ext']:'';
 	        	$father['user_category'] = 1;
 
 	        	if($profile_details->default_password_type == 'mobile_number' || $password == '')
@@ -1843,7 +1843,7 @@ class APIConfigurationsController extends Controller
 	        	$mother['first_name'] = $row['mother_name'];
 	        	$mother['mobile_number'] = $row['mother_mobile_number'];
 	        	$mother['email_address'] = $row['mother_email_address'];
-	        	$mother['ext'] = $row['mother_ext'];
+	        	$mother['ext'] = isset($row['mother_ext'])?$row['mother_ext']:'';
 	        	$mother['user_category'] = 2;
 
 	        	if($profile_details->default_password_type == 'mobile_number' || $password == '')
@@ -1865,7 +1865,7 @@ class APIConfigurationsController extends Controller
 	        	$guardian['first_name'] = $row['guardian_name'];
 	        	$guardian['mobile_number'] = $row['guardian_mobile_number'];
 	        	$guardian['email_address'] = $row['guardian_email_address'];
-	        	$guardian['ext'] = $row['guardian_ext'];
+	        	$guardian['ext'] = isset($row['guardian_ext'])?$row['guardian_ext']:'';
 	        	$guardian['user_category'] = 9;
 
 	        	if($profile_details->default_password_type == 'mobile_number' || $password == '')

@@ -1749,7 +1749,7 @@ class APIConfigurationsController extends Controller
 		$user_data = auth()->user();
 		$profile_details = SchoolProfile::where(['id'=>$user_data->school_profile_id])->first();//Fetch school profile details 
 
-		$user_details =  app('App\Http\Controllers\APILoginController')->get_user_table_id($user);
+		$user_details =  app('App\Http\Controllers\APILoginController')->get_user_table_id($user_data);
 
         $userall_id = UserAll::where(['user_table_id'=>$user_details->id,'user_role'=>$user_data->user_role])->pluck('id')->first();//fetch id from user all table to store notification triggered user
 

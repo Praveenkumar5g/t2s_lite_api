@@ -1816,7 +1816,7 @@ class APIConfigurationsController extends Controller
             {
             	array_push($usermobile_numbers, $row['father_mobile_number']);//check mobile number already exists in array
             	$father = [];
-	        	$father['student_photo'] = $row['father_photo'];
+	        	$father['student_photo'] = isset($row['father_photo'])?$row['father_photo']:'';
 	        	$father['first_name'] = $row['father_name'];
 	        	$father['mobile_number'] = $row['father_mobile_number'];
 	        	$father['email_address'] = $row['father_email_address'];
@@ -1839,7 +1839,7 @@ class APIConfigurationsController extends Controller
             {
             	array_push($usermobile_numbers, $row['mother_mobile_number']);//check mobile number already exists in array
             	$mother = [];
-	        	$mother['student_photo'] = $row['mother_photo'];
+	        	$mother['student_photo'] = isset($row['mother_photo'])?$row['mother_photo']:'';
 	        	$mother['first_name'] = $row['mother_name'];
 	        	$mother['mobile_number'] = $row['mother_mobile_number'];
 	        	$mother['email_address'] = $row['mother_email_address'];
@@ -1861,7 +1861,7 @@ class APIConfigurationsController extends Controller
             {
             	array_push($usermobile_numbers, $row['guardian_mobile_number']);//check mobile number already exists in array
             	$guardian = [];
-	        	$guardian['student_photo'] = $row['guardian_photo'];
+	        	$guardian['student_photo'] = isset($row['guardian_photo'])?$row['guardian_photo']:'';
 	        	$guardian['first_name'] = $row['guardian_name'];
 	        	$guardian['mobile_number'] = $row['guardian_mobile_number'];
 	        	$guardian['email_address'] = $row['guardian_email_address'];

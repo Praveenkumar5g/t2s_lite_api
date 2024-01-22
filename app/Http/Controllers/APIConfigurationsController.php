@@ -1772,7 +1772,7 @@ class APIConfigurationsController extends Controller
             if(isset($request->gender))
         		$gender = (isset($request->gender) && strtolower($request->gender) == 'male')?1:((isset($request->gender) && strtolower($request->gender) == 'female')?2:3);
 
-        	if(isset($row['student_name']) && $row['student_name']!='')
+        	if(isset($row['student_photo']) && $row['student_photo']!='')
             {
 	        	$target_file = '/students/';
 	        	if($row['student_photo']!='')

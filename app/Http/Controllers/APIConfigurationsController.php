@@ -1263,6 +1263,20 @@ class APIConfigurationsController extends Controller
 	        {
 	        	$image = app('App\Http\Controllers\WelcomeController')->profile_file_upload($school_profile['school_code'],$request->photo,1,$target_file,$request->ext);
 	        }
+
+	        if(isset($request->employee_no) && $request->employee_no!='') //check employee no already exists or not
+	        {
+	        	$check_exists = $this->checkEmployeeno($staffs_details->id,Config::get('app.Staff_role'),$request->employee_no);
+	        	if($check_exists)
+	        		 return response()->json(['status'=>false,'message'=>'Given Employee no already exists!...']);
+	        }
+	        if(isset($request->mobile_number) && $request->mobile_number!='') //check mobile no already exists or not
+	        {
+	        	$check_exists = $this->checkmobileno($staffs_details->id,Config::get('app.Staff_role'),$request->mobile_number);
+	        	if($check_exists)
+	        		 return response()->json(['status'=>false,'message'=>'Given Mobile no already exists!...']);
+	        }
+
 	        //save staff details
 	        $staffs_details->first_name= $request->staff_name;
 	        $staffs_details->division_id=$request->division_id;

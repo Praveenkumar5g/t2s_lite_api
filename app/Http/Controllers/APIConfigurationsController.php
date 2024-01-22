@@ -1744,7 +1744,7 @@ class APIConfigurationsController extends Controller
     }
 
     // Add students in DB along with parents and guardian details
-	public static function onboarding_create_students(Request $request)
+	public function onboarding_create_students(Request $request)
 	{
 		$user_data = auth()->user();
 		$profile_details = SchoolProfile::where(['id'=>$user_data->school_profile_id])->first();//Fetch school profile details 
@@ -1881,7 +1881,7 @@ class APIConfigurationsController extends Controller
         }   
 	}
 
-	function createstudentmapping($id,$parent_id,$userall_id)
+	public function createstudentmapping($id,$parent_id,$userall_id)
 	{
 		// mapping the student and parent
         $student_map = new UserStudentsMapping;

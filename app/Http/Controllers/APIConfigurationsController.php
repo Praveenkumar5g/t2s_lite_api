@@ -1772,13 +1772,15 @@ class APIConfigurationsController extends Controller
             if(isset($request->gender))
         		$gender = (isset($request->gender) && strtolower($request->gender) == 'male')?1:((isset($request->gender) && strtolower($request->gender) == 'female')?2:3);
 
-        	if($row['student_name']!='' && $row['admission_no']!='')
+        	if(isset($row['student_name']) && $row['student_name']!='')
             {
 	        	$target_file = '/students/';
 	        	if($row['student_photo']!='')
 		        {
 		        	$student_image = app('App\Http\Controllers\WelcomeController')->profile_file_upload($school_profile['school_code'],$row['student_photo'],1,$target_file,$row['student_ext']);
 		        }
+		    }
+		    if($row['admission_no']!='')
 
 	        	$student_details = new UserStudents;
 
@@ -2274,7 +2276,7 @@ class APIConfigurationsController extends Controller
   		$profile_image_path ='';
 
    		$target_file = '/parent/';
-    	if($data['student_photo']!='')
+    	if(isset($data['student_photo']) && $data['student_photo']!='')
         {
         	$profile_image_path = app('App\Http\Controllers\WelcomeController')->profile_file_upload($school_profile['school_code'],$data['student_photo'],1,$target_file,$data['ext']);
         }

@@ -1812,7 +1812,7 @@ class APIConfigurationsController extends Controller
 	            
 			}
 			
-            if(empty($father_check_exists) && !in_array($row['father_mobile_number'],$usermobile_numbers)) 
+            if(empty($father_check_exists) && !in_array($row['father_mobile_number'],$usermobile_numbers) && $row['father_mobile_number']!='') 
             {
             	array_push($usermobile_numbers, $row['father_mobile_number']);//check mobile number already exists in array
             	$father = [];
@@ -1830,12 +1830,12 @@ class APIConfigurationsController extends Controller
             }
             else
             {
-            	if(!empty($student_details) && !empty($father_check_exists))
+            	if(!empty($student_details) && !empty($father_check_exists) && $row['father_mobile_number']!='')
             		$this->createstudentmapping($student_details->id,$father_check_exists->id,$userall_id);
             }
 
 
-            if(empty($mother_check_exists) && !in_array($row['mother_mobile_number'],$usermobile_numbers)) 
+            if(empty($mother_check_exists) && !in_array($row['mother_mobile_number'],$usermobile_numbers) && $row['mother_mobile_number']!='') 
             {
             	array_push($usermobile_numbers, $row['mother_mobile_number']);//check mobile number already exists in array
             	$mother = [];
@@ -1853,11 +1853,11 @@ class APIConfigurationsController extends Controller
             }
             else
             {
-            	if(!empty($student_details) && !empty($mother_check_exists))	
+            	if(!empty($student_details) && !empty($mother_check_exists) && $row['mother_mobile_number']!='')	
             		$this->createstudentmapping($student_details->id,$mother_check_exists->id,$userall_id);
             }
 
-            if(empty($guardian_check_exists) && !in_array($row['guardian_mobile_number'],$usermobile_numbers)) 
+            if(empty($guardian_check_exists) && !in_array($row['guardian_mobile_number'],$usermobile_numbers) && $row['guardian_mobile_number']!='') 
             {
             	array_push($usermobile_numbers, $row['guardian_mobile_number']);//check mobile number already exists in array
             	$guardian = [];
@@ -1875,7 +1875,7 @@ class APIConfigurationsController extends Controller
             }
             else
             {
-            	if(!empty($student_details) && !empty($guardian_check_exists))
+            	if(!empty($student_details) && !empty($guardian_check_exists) && $row['guardian_mobile_number']!='')
             		$this->createstudentmapping($student_details->id,$guardian_check_exists->id,$userall_id);
             }
         }   
@@ -2271,7 +2271,6 @@ class APIConfigurationsController extends Controller
     // create parent details dependency function -onboarding
     public function insert_parent_details($data,$id,$userall_id,$group_id,$password)
     {
-    	echo '<pre>';print_r($data);exit;
     	$user_data = auth()->user();
     	$profile_details = SchoolProfile::where(['id'=>$user_data->school_profile_id])->first();//Fetch school profile details 
   		$profile_image_path ='';

@@ -1822,7 +1822,7 @@ class APIConfigurationsController extends Controller
 	        	$father['email_address'] = $row['father_email_address'];
 	        	$father['ext'] = isset($row['father_ext'])?$row['father_ext']:'';
 	        	$father['user_category'] = 1;
-
+	        	echo '<pre>';print_r($father);exit;
 	        	if($profile_details->default_password_type == 'mobile_number' || $password == '')
 					$password = bcrypt($row['father_mobile_number']);
 				

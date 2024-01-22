@@ -2271,6 +2271,7 @@ class APIConfigurationsController extends Controller
     // create parent details dependency function -onboarding
     public function insert_parent_details($data,$id,$userall_id,$group_id,$password)
     {
+    	echo '<pre>';print_r($data);exit;
     	$user_data = auth()->user();
     	$profile_details = SchoolProfile::where(['id'=>$user_data->school_profile_id])->first();//Fetch school profile details 
   		$profile_image_path ='';

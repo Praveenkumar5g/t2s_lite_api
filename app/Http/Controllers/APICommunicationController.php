@@ -147,7 +147,7 @@ class APICommunicationController extends Controller
         $communications->group_id=$request->group_id;
         $communications->communication_type=1;
         $communications->attachments='N'; // Default attachment no
-        if($request->attachment[0]!='')
+        if(isset($request->attachment[0]) && $request->attachment[0]!='')
             $communications->attachments='Y'; 
 
         if($user->user_role != 3 && $user->user_role != 2)
@@ -158,7 +158,7 @@ class APICommunicationController extends Controller
         $communications->save();
         $notification_id = $communications->id;
         $target_file = '/chat/';
-        if($request->attachment[0]!='')
+        if(isset($request->attachment[0]) && $request->attachment[0]!='')
         {
             $schoolcode = $school_profile = SchoolProfile::where(['id'=>$user['school_profile_id']])->first();//get school code from school profile
 

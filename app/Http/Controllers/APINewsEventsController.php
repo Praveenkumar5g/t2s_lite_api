@@ -166,7 +166,7 @@ class APINewsEventsController extends Controller
         //     }
         // }
         // Insert attachment details in attachment table
-        if($request->images!='')
+        if(isset($request->images) && $request->images!='')
         {
             $schoolcode = $school_profile = SchoolProfile::where(['id'=>$user['school_profile_id']])->get()->first();//get school code from school profile
 

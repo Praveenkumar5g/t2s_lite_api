@@ -294,7 +294,7 @@ class APIHomeworkController extends Controller
         $communications->group_id=$group_id;
         $communications->communication_type=2;
          // Default attachment no
-        if($request->attachment[0]!='')
+        if(isset($request->attachment[0]) && $request->attachment[0]!='')
             $communications->attachments='Y'; 
         else if($request->notification_id == '')
             $communications->attachments='N';
@@ -322,7 +322,7 @@ class APIHomeworkController extends Controller
         // }
         // Insert attachment details in attachment table
         $target_file ='/homework/';
-        if($request->attachment[0]!='')
+        if(isset($request->attachment[0]) && $request->attachment[0]!='')
         {
             // Insert attachment details in attachment table
             $schoolcode = $school_profile = SchoolProfile::where(['id'=>$user['school_profile_id']])->get()->first();//get school code from school profile

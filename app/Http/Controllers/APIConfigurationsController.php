@@ -887,7 +887,6 @@ class APIConfigurationsController extends Controller
         	$image ='';
         	if(!empty($value['photo']))//check upload photo exist or not
         	{
-
         		$name = explode('.',$value['photo']->getClientOriginalName())[0];
 	        	$image = $name.''.time().'.'.$value['photo']->extension();
 	        	$value['photo']->move(public_path(env('SAMPLE_CONFIG_URL').'staffs'), $image);

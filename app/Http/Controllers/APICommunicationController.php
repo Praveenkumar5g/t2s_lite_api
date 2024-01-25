@@ -1398,7 +1398,7 @@ class APICommunicationController extends Controller
         $user = auth()->user();
         $user->last_login = Carbon::now()->timezone('Asia/Kolkata');
         $user->save();
-        $profile_image='';
+        $profile_image=''; 
         if($request->hasfile('profile_image')) {
 
             $schoolcode = $school_profile = SchoolProfile::where(['id'=>$user['school_profile_id']])->first();//get school code from school profile

@@ -147,7 +147,7 @@ class APICommunicationController extends Controller
         $communications->group_id=$request->group_id;
         $communications->communication_type=1;
         $communications->attachments='N'; // Default attachment no
-        if(count($_FILES)>0)
+        if(isset($request->attachment[0]) && $request->attachment[0]!='')
             $communications->attachments='Y'; 
 
         if($user->user_role != 3 && $user->user_role != 2)
@@ -157,13 +157,12 @@ class APICommunicationController extends Controller
             $communications->caption_message=$request->caption_message; //Notification Message or video link
         $communications->save();
         $notification_id = $communications->id;
-        if(count($_FILES)>0)
+        $target_file = '/chat/';
+        if(isset($request->attachment[0]) && $request->attachment[0]!='')
         {
-            if($request->hasfile('attachment')) {
-                $schoolcode = $school_profile = SchoolProfile::where(['id'=>$user['school_profile_id']])->first();//get school code from school profile
+            $schoolcode = $school_profile = SchoolProfile::where(['id'=>$user['school_profile_id']])->first();//get school code from school profile
 
-                app('App\Http\Controllers\WelcomeController')->file_upload($school_profile['school_code'],$request->file('attachment'),$notification_id,$request->attachment_type);
-            }
+            app('App\Http\Controllers\WelcomeController')->file_upload($school_profile['school_code'],$request->attachment,$notification_id,$request->attachment_type,$target_file,$request->ext);
         }
 
         if($user->user_role != 3) //check user role and 3-parent goes under approval process if approval flow 'yes'
@@ -1399,25 +1398,38 @@ class APICommunicationController extends Controller
         $user->last_login = Carbon::now()->timezone('Asia/Kolkata');
         $user->save();
         $profile_image='';
-        if($request->hasfile('profile_image')) {
+        if($request->profile_image!='') {
 
             $schoolcode = $school_profile = SchoolProfile::where(['id'=>$user['school_profile_id']])->first();//get school code from school profile
-            $path = public_path('uploads/'.$school_profile['school_code'].'/profile_images');//
+            if($user->user_role == Config::get('app.Admin_role'))
+                $target_file = '/admin/';
+            if($user->user_role == Config::get('app.Staff_role'))
+                $target_file = '/staff/';
+            if($user->user_role == Config::get('app.Management_role'))
+                $target_file = '/management/';
+            else
+                $target_file = '/parent/';
 
-            if(!File::isDirectory($path)){ //check path already exists
-                File::makeDirectory($path, 0777, true, true);
-            }
+            $profile_image = app('App\Http\Controllers\WelcomeController')->profile_file_upload($school_profile['school_code'],$request->profile_image,1,$target_file,$request->ext);
 
-            $name = explode('.',$request->file('profile_image')->getClientOriginalName());
-            $names = $name[0].time().'.'.$name[1];
-            $request->file('profile_image')->move(public_path().'/uploads/'.$school_profile['school_code'].'/profile_images/', $names);  
-            $profile_image= url('/').'/uploads/'.$school_profile['school_code'].'/profile_images/'.$names;
+            // $path = public_path('uploads/'.$school_profile['school_code'].'');//
+
+            // if(!File::isDirectory($path)){ //check path already exists
+            //     File::makeDirectory($path, 0777, true, true);
+            // }
+
+            // $name = explode('.',$request->file('profile_image')->getClientOriginalName());
+            // $names = $name[0].time().'.'.$name[1];
+            // $request->file('profile_image')->move(public_path().'/uploads/'.$school_profile['school_code'].'/profile_images/', $names);  
+            // $profile_image= url('/').'/uploads/'.$school_profile['school_code'].'/profile_images/'.$names;
         }
 
-        $user_details = ([
-            'first_name'=>$request->first_name,
-            'profile_image'=>$profile_image,
-        ]);
+        $user_details = [];
+        if($request->first_name!='')
+            $user_details['first_name'] = $request->first_name;
+        if($request->profile_image!='')
+            $user_details['profile_image'] = $profile_image;
+        
         if($user->user_role == Config::get('app.Management_role'))
             UserManagements::where('user_id',$user->user_id)->update($user_details);
         else if($user->user_role == Config::get('app.Admin_role'))//check role and get current user id

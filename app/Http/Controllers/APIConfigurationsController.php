@@ -76,372 +76,733 @@ use DB;
 
 class APIConfigurationsController extends Controller
 {
-	// import school details in db(classes,sections,subject,map subjects,staffs,map staffs,management,student)
-	public function import_configuration(Request $request) //(on-boarding)
+	// Fetch classes ,sections,subjects list
+	public function get_classes_sections_subjects_list()
 	{
-		$user_data = auth()->user();
-		$school_profile = SchoolProfile::where(['id'=>$user_data->school_profile_id])->first();
-
-		// $path = public_path('uploads/'.$school_profile->school_code);
-
-	 //    if(!File::isDirectory($path))
-	 //        File::makeDirectory($path, 0777, true, true);
-		    
-		if(strtolower($request->update_type) == 'manual')
-		{
-
-	        if($user_data->user_role == 1)
-	            $user_admin = UserAdmin::where(['user_id'=>$user_data->user_id])->pluck('id')->first();
-
-	        $userall_id = UserAll::where(['user_table_id'=>$user_admin,'user_role'=>$user_data->user_role])->pluck('id')->first(); //fetch id from user all table to store setting triggered user
-	    }
-	    if($request->configuration_type == 'division'){ //upload division details in DB
-	    	$status='insert';
-			if(strtolower($request->update_type) == 'manual')
-			{
-				// create sub-division 
-				$divisions = $request->data;
-				$this->divisions($divisions,$userall_id,'manual');				
-			}
-			else if(strtolower($request->update_type) == 'excel') //excel upload for sub-division
-				Excel::import(new SubDivisionImport,request()->file('import_file'));
-
-			// Excel::store(new ClassesExport,'Classes.xlsx');//creating dynamic excels
-   // 			File::copy(storage_path('app/Classes.xlsx'), public_path(env('SAMPLE_CONFIG_URL').$school_profile->school_code.'/'.'Classes.xlsx'));
-
-   // 			Excel::store(new SubjectsExport,'Subjects.xlsx');//creating dynamic excels
-   // 			File::copy(storage_path('app/Subjects.xlsx'), public_path(env('SAMPLE_CONFIG_URL').$school_profile->school_code.'/'.'Subjects.xlsx'));
-
-   // 			Excel::store(new SectionsExport,'Classes.xlsx');//creating dynamic excels
-   // 			File::copy(storage_path('app/Sections.xlsx'), public_path(env('SAMPLE_CONFIG_URL').$school_profile->school_code.'/'.'Sections.xlsx'));
-
-
-			return response()->json(['message'=>'Inserted Successfully!...']);
-	    }
-		if($request->configuration_type == 'classes')// Import classes data into DB
-		{
-		    $status='insert';
-			if(strtolower($request->update_type) == 'excel')
-				Excel::import(new ClassesImport,request()->file('import_file')); //import excel sheet in db
-			else
-			{
-		        $classes = $request->data;
-		        $division_id = $request->division_id;
-		        foreach ($classes as $key => $value) {
-		        	$class_id ='';
-		        	if(!isset($value['class_id']))
-		        		$class_id = AcademicClasses::where(['class_name'=>$value['class_name'],'division_id'=>$division_id])->pluck('id')->first(); //check given class name is already exists or not
-		        	if(isset($value['class_id']) && $value['class_id']!='' && $class_id=='')
-		        	{
-		        		// updated classes along with sub-division
-		        		$class_details = AcademicClasses::where(['id'=>$value['class_id'],'division_id'=>$division_id])->first();
-		        		$class_details->class_name = $value['class_name'];
-		        		$class_details->division_id= $division_id;
-	                    $class_details->updated_by = $userall_id;
-	                    $class_details->updated_time = Carbon::now()->timezone('Asia/Kolkata');
-	                    $class_details->save();
-	                    $class_id = $value['class_id'];
-		        	}
-		        	else
-		        	{
-		                if($class_id=='')
-		                {
-		                	// insert classes along with sub-division details
-		                    $academicclasses = new AcademicClasses;
-		                    $academicclasses->class_name = $value['class_name'];
-		                    $academicclasses->division_id= $division_id;
-		                    $academicclasses->created_by = $userall_id;
-		                    $academicclasses->created_time = Carbon::now()->timezone('Asia/Kolkata');
-		                    $academicclasses->save();
-
-		                    $class_id = $academicclasses->id;
-
-		                    $status = $this->map_classes_sections($userall_id); //Map classes and sections
-		                }
-		            }
-                    if(isset($value['class_id']) && $value['class_id']!='')
-                    	$status = 'edit';
-		        }
-		        Configurations::where('school_profile_id',$user_data->school_profile_id)->update(['classes'=>1]);
-
-		     //    Excel::store(new StudentsExport,'Students.xlsx');//creating dynamic excels
-   				// File::copy(storage_path('app/Students.xlsx'), public_path(env('SAMPLE_CONFIG_URL').$school_profile->school_code.'/'.'Students.xlsx'));
-
-		        Configurations::where('school_profile_id',$user_data->school_profile_id)->update(['map_classes_sections'=>1]); //update completion status in configuration table
-		        return response()->json(['message'=>'Inserted Successfully!...']);exit();
-			}
-			if($status == 'edit')
-                    return response()->json(['message'=>'Updated Successfully!...']);
-                else
-                    return response()->json(['message'=>'Inserted Successfully!...']);
-		}
-		else if($request->configuration_type == 'sections')// Import sections data into DB
-		{
-			$status='insert';
-			if(strtolower($request->update_type) == 'excel')
-				Excel::import(new SectionsImport,request()->file('import_file'));
-			else
-			{
-				$sections = $request->data;
-				$division_id = $request->division_id;
-				foreach ($sections as $key => $value) {
-					$section_id = AcademicSections::where(['section_name'=>$value['section_name'],'division_id'=>$division_id])->pluck('id')->first(); //check given section name is already exists or not
-		            if(!isset($value['section_id']) && $section_id=='')
-		            {
-		            	// updated sections along with sub-division
-		                $academicsections = new AcademicSections;
-		                $academicsections->section_name = $value['section_name'];
-		                $academicsections->division_id = $division_id;
-		                $academicsections->created_by = $userall_id;
-		                $academicsections->created_time = Carbon::now()->timezone('Asia/Kolkata');
-		                $academicsections->save();
-
-		                $section_id = $academicsections->id;
-		            }
-		            else
-		            {
-		            	if($section_id=='')
-		            	{
-		            		// insert sections along with sub-division details
-		                	$section_details = AcademicSections::where(['id'=>$value['section_id'],'division_id'=>$division_id])->first();
-			        		$section_details->section_name = $value['section_name'];
-			        		$section_details->division_id = $division_id;
-		                    $section_details->updated_by = $userall_id;
-		                    $section_details->updated_time = Carbon::now()->timezone('Asia/Kolkata');
-		                    $section_details->save();
-		                }
-		        	}
-		        	if(isset($value['section_id']) && $value['section_id']!='')
-	                   	$status = 'edit';
-		        }
-			    	
-			    Configurations::where('school_profile_id',$user_data->school_profile_id)->update(['sections'=>1]);
-	   		}
-
-	   		// Excel::store(new MapClassesSectionsExport,'MapClassesSections.xlsx');//creating dynamic excels
-   			// File::copy(storage_path('app/MapClassesSections.xlsx'), public_path(env('SAMPLE_CONFIG_URL').$school_profile->school_code.'/'.'MapClassesSections.xlsx'));
-		    
-			if($status == 'edit')
-                    return response()->json(['message'=>'Updated Successfully!...']);
-                else
-                    return response()->json(['message'=>'Inserted Successfully!...']);
-		}
-		else if($request->configuration_type == 'mapclassessections')// Import map classes and sections data into DB
-		{
-			$status='insert';
-			// if(strtolower($request->update_type) == 'excel')
-			// 	Excel::import(new MapClassesSectionsImport,request()->file('import_file'));
-			// Excel::store(new StudentsExport,'Students.xlsx');
-   // 			File::copy(storage_path('app/Students.xlsx'), public_path(env('SAMPLE_CONFIG_URL').$school_profile->school_code.'/'.'Students.xlsx'));
-			if($status == 'edit')
-                    return response()->json(['message'=>'Updated Successfully!...']);
-                else
-                    return response()->json(['message'=>'Inserted Successfully!...']);
-		}
-		else if($request->configuration_type == 'subjects')// Import Subject data into DB
-		{
-			if(strtolower($request->update_type) == 'excel')
-				Excel::import(new SubjectsImport,request()->file('import_file'));
-			else
-			{
-				$subjects = $request->data;
-				$division_id = $request->division_id;
-				$this->subjects($subjects,$division_id,$userall_id,'manual');
-			}
-			// Excel::store(new MapSubjectsExport,'MapSubjects.xlsx');
-   // 			File::copy(storage_path('app/MapSubjects.xlsx'), public_path(env('SAMPLE_CONFIG_URL').$school_profile->school_code.'/'.'MapSubjects.xlsx'));
-
-   // 			Excel::store(new StaffsExport,'Staffs.xlsx');
-   // 			File::copy(storage_path('app/Staffs.xlsx'), public_path(env('SAMPLE_CONFIG_URL').$school_profile->school_code.'/'.'Staffs.xlsx'));
-
-   			return response()->json(['message'=>'Inserted Successfully!...']);
-		}
-		else if($request->configuration_type == 'mapsubjects')// Import class and classteacher data into DB
-		{
-			if(strtolower($request->update_type) == 'excel')
-				Excel::import(new MapSubjectsImport,request()->file('import_file'));
-			else
-			{
-				$data = $request->data;//get all inputs
-				if(!empty($data))//check array is empty or not
-				{
-					foreach ($data as $key => $value) { //process the input in loop
-						$subjects = AcademicSubjectsMapping::select('id')->where(['class_config'=> $request->class_config,'subject'=>$value['subject_id']])->get()->toArray(); //fetch all data for corresponding class and subject
-						if(!empty($subjects) && $value['is_checked'] == 'false') //check not empty and not checked 
-						{
-							$group_id = UserGroups::where('class_config',$request->class_config)->pluck('id')->first();//fetch group id to remove message dropped for that unselected subject.
-					        Communications::where('group_id',$group_id)->where('subject_id',$value['subject_id'])->where('communication_type',2)->delete();//delete subject related message from homework
-					        AcademicSubjectsMapping::where('id',$subjects['id'])->delete(); //delete subject mapping record
-					    }
-					    else if($value['is_checked'] == 'true' && empty($subjects)) //check its a new entry
-					    {
-					    	$subject_config = new AcademicSubjectsMapping;
-		                    $subject_config->subject = $value['subject_id'];
-		                    $subject_config->class_config = $request->class_config;
-		                    $subject_config->created_by=$userall_id;
-		                    $subject_config->created_time=Carbon::now()->timezone('Asia/Kolkata');
-		                    $subject_config->save();//insert new record if not exist already
-					    }
-					}
-	        		Configurations::where('school_profile_id',$user_data->school_profile_id)->update(['map_subjects'=>1]);
-
-	    			return response()->json(['message'=>'Submitted Successfully!...']);
-				}
-				return response()->json(['message'=>"Some inputs can't be empty!..."]);
-			}
-			return response()->json(['message'=>'Inserted Successfully!...']);
-		}
-		else if($request->configuration_type == 'staffs')// Import Staff data into DB
-		{
-			if(strtolower($request->update_type) == 'excel'){
-				Excel::import(new StaffsImport,request()->file('import_file'));
-			}
-
-			else
-			{
-				$staffs = $request->data;
-				$this->staff($staffs);
-			}
-			return response()->json(['message'=>'Inserted Successfully!...']);
-		}
-		else if($request->configuration_type == 'mapstaffs')// Import class and classteacher data into DB
-		{
-			if(strtolower($request->update_type) == 'manual')
-			{
-				$user_data = auth()->user();
-				$data = $request->data;
-				if(!empty($data))
-				{
-					if($user_data->user_role == 1)
-			            $user_admin = UserAdmin::where(['user_id'=>$user_data->user_id])->pluck('id')->first();
-
-			        $userall_id = UserAll::where(['user_table_id'=>$user_admin,'user_role'=>$user_data->user_role])->pluck('id')->first(); //fetch id from user all table to store setting triggered user
-
-					$classconfig = $request->class_config;
-					foreach ($data as $key => $value) {
-						if($classconfig!='' && $value['is_checked'] == 'false' && $value['subject_id']!='' && $value['staff_id']!='')
-							AcademicSubjectsMapping::where('staff',$value['staff_id'])->where('subject',$value['subject_id'])->where('class_config',$classconfig)->update(['staff'=>null,'updated_by'=>$userall_id]);
-					    else if($value['is_checked'] == 'true' && $classconfig!='' && $value['subject_id']!='' && $value['staff_id']!='') 
-					    	AcademicSubjectsMapping::where('class_config',$classconfig)->where('subject',$value['subject_id'])->update(['staff'=>$value['staff_id'],'updated_by'=>$userall_id,'updated_time'=>Carbon::now()->timezone('Asia/Kolkata')]);
-					}
-			        
-				}
-			    return response()->json(['message'=>'Submitted Successfully!...']);
-			}
-			return response()->json(['message'=>'Inserted Successfully!...']);
-		}
-		else if($request->configuration_type == 'managements')// Import class and classteacher data into DB
-		{
-			if(strtolower($request->update_type) == 'excel')
-				Excel::import(new ManagementsImport,request()->file('import_file'));
-			else
-			{
-				// fetch academic year
-		        $academicyear = SchoolAcademicYears::where(['school_profile_id'=>$user_data->school_profile_id])->pluck('academic_year')->first();
-
-		        $profile_details = SchoolProfile::where(['id'=>$user_data->school_profile_id])->first();//Fetch school profile details 
-
-		        $usermobile_numbers=[];
-		        foreach ($request->data as $key => $value) {
-		        	$image ='';
-		        	if(!empty($value['photo']))
-		        	{
-		        		$name = explode('.',$value['photo']->getClientOriginalName())[0];
-			        	$image = $name.''.time().'.'.$value['photo']->extension();
-			        	$value['photo']->move(public_path(env('SAMPLE_CONFIG_URL').'managements'), $image);
-		        	}
-		        	if(isset($value['management_id']) && $value['management_id']!='')
-		        		$check_exists = UserManagements::where(['id'=>$value['management_id']])->first(); //To check given subject name is already exists in DB.
-		        	else
-		        		$check_exists = UserManagements::where(['mobile_number'=>$value['mobile_number']])->first(); //To check given subject name is already exists in DB.
-
-		            if(empty($check_exists) && !in_array($value['mobile_number'],$usermobile_numbers) && (!isset($value['management_id']))) //if no then insert 
-		            {
-			        	//save management details
-			            $UserManagements = new UserManagements;
-			            $UserManagements->first_name= $value['management_person_name'];
-			            $UserManagements->mobile_number=$value['mobile_number'];
-			            $UserManagements->profile_image = ($image!='')?public_path(env('SAMPLE_CONFIG_URL').'managements/'.$image):'';
-			            $UserManagements->created_by=$userall_id;
-			        	$UserManagements->created_time=Carbon::now()->timezone('Asia/Kolkata');
-			            $UserManagements->save();
-
-			            $management_id =$UserManagements->id; // staff id
-
-			            // generate and update staff id in db 
-			            $usermanagement_id = $profile_details['school_code'].substr($profile_details['active_academic_year'], -2).'M'.sprintf("%04s", $management_id);
-			            $UserManagements->user_id = $usermanagement_id;
-			            $UserManagements->save();
-
-			            $user_all = new UserAll;
-			            $user_all->user_table_id=$management_id;
-			            $user_all->user_role=5;
-			            $user_all->save();
-
-			            $schoolusers = new SchoolUsers;
-			            $schoolusers->school_profile_id=$user_data->school_profile_id;
-			            $schoolusers->user_id=$usermanagement_id;
-			            $schoolusers->user_mobile_number=$value['mobile_number'];
-			            $schoolusers->user_password=bcrypt($value['mobile_number']);
-			            $schoolusers->user_role=5;
-			            $schoolusers->user_status=1;
-			            $schoolusers->save();
-			        }
-		        }
-			}
-			return response()->json(['message'=>'Inserted Successfully!...']);
-		}
-
-		else if($request->configuration_type == 'students')
-		{
-			if(strtolower($request->update_type) == 'excel')
-				Excel::import(new StudentsImport,request()->file('import_file'));
-			else
-		        $this->students($request->data,$userall_id,'manual',$request->class_config);
-		    return response()->json(['message'=>'Inserted Successfully!...']);
-		}
-		else
-			return response()->json(['message'=>'Invalid Inputs!...']);exit(); 
-             
-        return response()->json(['message'=>'Inserted Successfully!...']);
+		$classes = AcademicClasses::select('id','class_name')->get()->toArray();
+		$sections = AcademicSections::select('id','section_name')->get()->toArray();
+		$subjects = AcademicSubjects::select('id','subject_name')->get()->toArray();
+		return response()->json(compact('classes','sections','subjects'));
 	}
 
-	public static function divisions($data,$userall_id,$upload_type) //upload sub-division in DB (on-boarding)
+	// Fetch classes list
+	public function get_edit_classes_list(Request $request)
 	{
-		$user_data = auth()->user();
-		$inserted_records=0;
-        $status = 'insert';
-		foreach ($data as $key => $value) {
-			$check_exists = AcademicDivisions::where(['division_name'=>$value['division_name']])->pluck('id')->first(); //check whether the given sub-division name already exists ro not
-			if(isset($value['division_id']) && $value['division_id']!='' && $check_exists=='')
+		$classes = AcademicClasses::select('id','class_name')->where('division_id',$request->division_id)->get()->toArray();
+		return response()->json(compact('classes'));
+	}
+
+	// Fetch classes list
+	public function get_edit_allsection_list(Request $request)//get all the sections with the pne single sub-division for edit in on-boarding
+	{
+		$sections = AcademicSections::select('id','section_name')->where('division_id',$request->division_id)->get()->toArray();
+		return response()->json(compact('sections'));
+	}
+
+	// Fetch student list
+	public function get_edit_student_list() //get all the student for edit in on-boarding
+	{
+		$student_list = [];//empty array declaration
+		$parents = UserParents::select('id','first_name','mobile_number')->where('user_category',1)->get()->toArray();//get student list
+		return response()->json($parents); //return student details 
+	}
+
+	//Staffs Category
+	public function get_staff_category()
+	{
+		$categories = UserCategories::select('id','category_name')->where('user_role',2)->get()->toArray();
+		return response()->json(compact('categories'));
+	}
+
+	//Staffs Category
+	public function get_staff_category_class()
+	{
+		$categories = UserCategories::select('id','category_name')->where('user_role',2)->get()->toArray();
+		$subjects = AcademicSubjects::select('id','subject_name')->get()->toArray();
+		$classes = AcademicClasses::select('id','class_name')->get()->toArray();
+		$sections = AcademicSections::select('id','section_name')->get()->toArray();
+		return response()->json(compact('categories','subjects','classes','sections'));
+	}
+
+	//Staffs Category
+	public function get_allsubjects_list(Request $request)
+	{
+		$subjects = AcademicSubjects::select('id','subject_name')->where('division_id',$request->division_id)->get()->toArray();
+		return response()->json(compact('subjects'));
+	}
+
+	// get classes and sections for edit
+	public function get_edit_classes_sections()
+	{
+		$classes = AcademicClasses::select('id','class_name')->get()->toArray();
+		$sections = AcademicSections::select('id','section_name')->get()->toArray();
+		return response()->json(compact('classes','sections'));
+	}
+
+	// 
+	public function get_staff_details(Request $request)
+	{
+		$subjects = AcademicSubjectsMapping::where('subject',$request->subject_id)->where('class_config',$request->class_config)->pluck('staff')->toArray();
+		$all_staffs = UserStaffs::where('specialized_in',$request->subject_id)->get()->toArray();
+		$staffs = [];
+		if(!empty($all_staffs))
+		{
+			foreach ($all_staffs as $key => $value) {
+				$staffs[] = ([
+					'staff_name'=>$value['first_name'],
+					'staff_id'=>$value['id'],
+					'is_checked'=>(!empty($subjects) && in_array($value['id'],$subjects))?true:false
+				]);
+			}
+		}
+		return response()->json($staffs);
+	}
+
+	// All users list
+	public function all_staff_list(Request $request)
+	{
+		// Save last login in DB
+        $user = auth()->user();
+        $member_staff_list = [];
+        $staff_list = UserStaffs::select('id','first_name','mobile_number','user_category','user_status','dob','doj','employee_no','department','profile_image','user_id','email_id');
+        if(isset($request->search) && $request->search!='')
+        {
+        	$category = (strpos('teaching staff',strtolower($request->search)))?Config::get('app.Teaching_staff'):((strpos('non teaching staff',strtolower($request->search)))?Config::get('app.Non-Teaching_staff'):'');
+        	$staff_list = $staff_list->where('first_name', 'like', '%' . $request->search . '%')->orWhere('mobile_number', 'like', '%' . $request->search . '%')->orWhere('dob', 'like', '%' . $request->search . '%')->orWhere('doj', 'like', '%' . $request->search . '%')->orWhere('employee_no', 'like', '%' . $request->search . '%')->orWhere('department', 'like', '%' . $request->search . '%');
+        	if($category!='')
+        		$staff_list = $staff_list->orWhere('user_category', 'like', '%' . $category . '%');
+        }
+        $staff_list = $staff_list->get()->toArray();
+
+        // $currentPage = LengthAwarePaginator::resolveCurrentPage(); // Get current page form url e.x. &page=1
+        $currentPage = $request->page;
+        $itemCollection = new Collection($staff_list); // Create a new Laravel collection from the array data
+        $perPage = 10;
+        // Slice the collection to get the items to display in current page
+        $sortedCollection = $itemCollection->sortBy('user_category');
+        $currentPageItems = $sortedCollection->values()->slice(($currentPage * $perPage) - $perPage, $perPage)->all();
+        // Create our paginator and pass it to the view
+        $paginatedItems= new LengthAwarePaginator($currentPageItems , count($itemCollection), $perPage);
+
+        $paginatedItems->setPath($request->url()); // set url path for generted links
+        $paginatedItems->appends($request->page);
+
+        $tempdata = $paginatedItems->toArray();
+        $member_staff_list['total'] = $tempdata['total'];
+        $member_staff_list['per_page'] = $tempdata['per_page'];
+        $member_staff_list['current_page'] = $tempdata['current_page'];
+        $member_staff_list['last_page'] = $tempdata['last_page'];
+        $member_staff_list['next_page_url'] = $tempdata['next_page_url'];
+        $member_staff_list['prev_page_url'] = $tempdata['prev_page_url'];
+        $member_staff_list['from'] = $tempdata['from'];
+        $member_staff_list['to'] = $tempdata['to'];
+        $list = ($currentPage <= 0)?$staff_list:$tempdata['data'];
+        	
+        foreach ($list as $key => $value) {
+        	$check_access = SchoolUsers::where('user_id',$value['user_id'])->where('user_role',Config::get('app.Staff_role'))->where('user_status',2)->pluck('id')->first(); //2- full deactivate
+
+        	if($check_access == '')
+        		$check_access = UserGroupsMapping::where('user_table_id',$value['id'])->where('user_role',Config::get('app.Staff_role'))->where('user_status',1)->pluck('id')->first();
+
+    	 	$classessections = AcademicClassConfiguration::select('id','class_id','section_id','division_id','class_teacher')->where('class_teacher',$value['id'])->first();
+
+    	 	$member_staff_list['data'][]=([ 
+    	 		'id' => $value['id'],
+        		'first_name' => $value['first_name'],
+	        	'mobile_number' => $value['mobile_number'],
+	        	'user_id' => $value['user_id'],
+	        	'email_id' => $value['email_id'],
+	        	'user_category' => ($value['user_category'] ==Config::get('app.Teaching_staff'))?'Teaching_staff':'Non_teaching_staff',
+	        	'dob' => $value['dob'],
+	            'doj' => $value['doj'],
+	            'employee_no' => $value['employee_no'],
+	            'department' => $value['department'],
+	            'user_status' => ($check_access == '')?3:$value['user_status'], // 1- active,2-full deactive, 3-partical deactive;
+	            'class' => (!empty($classessections))?$classessections->classsectionName():'',
+	            'designation' => $value['user_category'],
+	            'profile_image' => (isset($value['profile_image']))?$value['profile_image']:'',
+	        ]);
+        }
+        // if($currentPage <= 0)
+        // 	$member_staff_list = $member_staff_list['data'];
+
+	    return response()->json($member_staff_list);
+	}
+
+	// All users list
+	public function all_parent_list(Request $request)
+	{
+		// Save last login in DB
+        $user = auth()->user();
+        $member_parent_list = [];
+        $parent_list = UserStudents::select('user_students.first_name as student_name','p.id','p.user_category','p.mobile_number','p.user_status','p.profile_image as parent_profile_image','user_students.profile_image as student_profile_image','user_students.id as student_id','user_students.dob as dob','user_students.admission_number as admission_number','user_students.class_config as class_config','p.first_name','p.email_id')->join('user_students_mapping as sm','sm.student','=','user_students.id')->join('user_parents as p','p.id','=','sm.parent');
+        if(isset($request->search) && $request->search!='')
+            $parent_list = $parent_list->where('p.first_name', 'like', '%' . $request->search . '%')->orWhere('p.mobile_number', 'like', '%' . $request->search . '%');
+        	
+        $parent_list =$parent_list->get()->toArray();
+
+        // $currentPage = LengthAwarePaginator::resolveCurrentPage(); // Get current page form url e.x. &page=1
+        $currentPage = $request->page;
+        $itemCollection = new Collection($parent_list); // Create a new Laravel collection from the array data
+        $perPage = 10;
+        // Slice the collection to get the items to display in current page
+        $sortedCollection = $itemCollection->sortBy('class_config');
+        $currentPageItems = $sortedCollection->values()->slice(($currentPage * $perPage) - $perPage, $perPage)->all();
+        // Create our paginator and pass it to the view
+        $paginatedItems= new LengthAwarePaginator($currentPageItems , count($itemCollection), $perPage);
+
+        $paginatedItems->setPath($request->url()); // set url path for generted links
+        $paginatedItems->appends($request->page);
+		
+		$tempdata = $paginatedItems->toArray();
+        $member_parent_list['total'] = $tempdata['total'];
+        $member_parent_list['per_page'] = $tempdata['per_page'];
+        $member_parent_list['current_page'] = $tempdata['current_page'];
+        $member_parent_list['last_page'] = $tempdata['last_page'];
+        $member_parent_list['next_page_url'] = $tempdata['next_page_url'];
+        $member_parent_list['prev_page_url'] = $tempdata['prev_page_url'];
+        $member_parent_list['from'] = $tempdata['from'];
+        $member_parent_list['to'] = $tempdata['to'];
+
+        $index = 0;
+        $list = ($currentPage <= 0)?$parent_list:$tempdata['data'];
+        	
+        foreach ($list as $key => $value) {
+        	// $student_id = UserStudentsMapping::where('parent',$value['id'])->pluck('student')->toArray();
+            // $student_details = UserStudents::whereIn('id',$student_id)->first();
+            // echo '<pre>';print_r($student_details);
+            $parent_list_data[$index] = $value;
+        	$user_category = (strtolower($value['user_category']) == 1)?'F/O':'M/O';
+        	$parent_list_data[$index]['student_name'] = ($user_category.' '.((isset($value['student_name']))?$value['student_name']:''));
+        	$classessections =[];
+        	if(isset($value['class_config']))
+        		$classessections = AcademicClassConfiguration::select('id','class_id','section_id','division_id','class_teacher')->where('id',$value['class_config'])->first();
+        	$parent_list_data[$index]['class'] = (!empty($classessections))?$classessections->classsectionName():'';
+        	$parent_list_data[$index]['class_teacher'] = (!empty($classessections))?UserStaffs::where('id',$classessections->class_teacher)->pluck('first_name')->first():'';
+        	$index++;
+        }
+	    // if($currentPage <= 0)
+        // 	$member_parent_list = $parent_list_data;
+        // else
+        // {
+        	$key_values = array_column($parent_list_data, 'class_config'); 
+            array_multisort($key_values, SORT_ASC, $parent_list_data);
+            $member_parent_list['data'] = $parent_list_data;
+        // }
+        return response()->json($member_parent_list);
+	}
+
+	// Store Onesignal device details in DB
+    public function onesignal_store_device_details(Request $request)
+    {
+        // Get authorizated user details
+        $user = auth()->user();
+
+        if($request->player_id !='' && $request->external_user_id!='')
+        {
+
+            if($user->user_role == Config::get('app.Admin_role'))//check role and get current user id
+                $user_table_id = UserAdmin::where(['user_id'=>$user->user_id])->pluck('id')->first();
+            else if($user->user_role == Config::get('app.Management_role'))
+                $user_table_id = UserManagements::where(['user_id'=>$user->user_id])->pluck('id')->first();
+            else if($user->user_role == Config::get('app.Staff_role'))
+                $user_table_id = UserStaffs::where(['user_id'=>$user->user_id])->pluck('id')->first();
+            else if($user->user_role == Config::get('app.Parent_role'))
+                $user_table_id = UserParents::where(['user_id'=>$user->user_id])->pluck('id')->first();//fetch id from user all table to store notification triggered user
+            $userall_id = UserAll::where(['user_table_id'=>$user_table_id,'user_role'=>$user->user_role])->pluck('id')->first();
+
+            $check_exists = Appusers::where('loginid',$userall_id)->get()->toArray();
+            if(empty($check_exists))
+            {
+	            $data = ([
+	                'loginid'=>$userall_id,
+	                'player_id'=>($request->player_id!='')?$request->player_id:'',
+	                'external_user_id'=>($request->external_user_id)?$request->external_user_id:'',
+	                'device_type'=>($request->device_type)?$request->device_type:'',
+	                'device_name'=>($request->device_name)?$request->device_name:'',
+	                'device_version'=>($request->device_version)?$request->device_version:'',
+	                'app_version'=>($request->app_version)?$request->app_version:'',
+	                'login_date'=>Carbon::now()->timezone('Asia/Kolkata'),
+	               	'created_on'=>Carbon::now()->timezone('Asia/Kolkata'),
+	            ]);
+            	Appusers::insert($data);
+	        }
+	        else
+	        {
+	        	Appusers::where(['loginid'=>$userall_id])->update(['player_id'=>($request->player_id!='')?$request->player_id:'','external_user_id'=>$request->external_user_id,'device_type'=>$request->device_type,'device_name'=>$request->device_name,'device_version'=>$request->device_version,'app_version'=>$request->app_version,'login_date'=>Carbon::now()->timezone('Asia/Kolkata'),'created_on'=>Carbon::now()->timezone('Asia/Kolkata')]);
+	        }
+            return response()->json('Device details registered Successfully');
+        }
+        else
+            return response()->json('Player ID is required');
+    }
+
+    // List the subjects for class 
+    public function class_subjects_list(Request $request)
+    {
+    	// Save last login in DB
+        $userdata = auth()->user();
+        $division_id = $request->division_id; //get division id input
+        $class_subjects_review=[];
+        $classessections = AcademicClassConfiguration::select('id','class_id','section_id','division_id')->where('division_id',$division_id)->get(); //fetch class and sections list for input division
+
+        if(!empty($classessections)) //check whether configuration empty or not
+        {
+	        foreach ($classessections as $key => $value) { 
+	        	// arrange necesary details in array
+	        	$classsection_data[$value->id]=([
+	        		'class_section_id'=>$value->id,
+	        		'class_section_name'=>$value->classsectionName(),
+	        		'division_id'=>$value->division_id,
+	        	]);
+	        	// fetch subjects for corresponding config class 
+	        	$subjects_list = AcademicSubjectsMapping::where('class_config',$value->id)->get();
+
+				foreach ($subjects_list as $subject_key => $subject_value) {
+			        $subjects[$value->id][]= ([
+		        		'subject_id'=>$subject_value->id,
+		        		'subject_name'=>$subject_value->subjectName()
+		        	]);
+				}
+	        }
+	        $index = 0;
+	        foreach ($classsection_data as $class_key => $class_value) {//merge class and subject related details
+	        	$class_section_review[$index] = isset($classsection_data[$class_value['class_section_id']])?$classsection_data[$class_value['class_section_id']]:[];
+	        	$class_section_review[$index]['subjects'] = isset($subjects[$class_value['class_section_id']])?$subjects[$class_value['class_section_id']]:[];
+	        	$index++;
+	        }
+	       
+	    }
+	    return response()->json($class_section_review);
+    }
+
+    // Create and update users
+    public function create_update_users(Request $request)
+    {
+    	// Check authenticate user
+        $user = auth()->user();
+
+        // get user details from table
+        $user_details =  app('App\Http\Controllers\APILoginController')->get_user_table_id($user);
+
+        $user_table_id = $user_details->id; //fetch particular id
+
+        $userall_id = $loginid = $user_id = $image = ''; //declaration
+
+        $userall_id = UserAll::where(['user_table_id'=>$user_table_id,'user_role'=>$user->user_role])->pluck('id')->first(); //fetch common id
+
+        $role = $request->user_role;
+
+        if($userall_id!='') //check common id is exists
+        {
+        	//select and Store user details based on user role
+        	if($role == Config::get('app.Admin_role')) 
         	{
-        		//if already exists update the details
-        		$academic_division = AcademicDivisions::where(['id'=>$value['division_id']])->first();
-        		$academic_division->division_name = $value['division_name'];
-                $academic_division->updated_by = $userall_id;
-                $academic_division->updated_time = Carbon::now()->timezone('Asia/Kolkata');
-                $academic_division->save();
+        		if($request->id!='')
+        			$individual_user_details = UserAdmin::where('id',$request->id)->first();
+        		else
+        			$individual_user_details = new UserAdmin();
+
+        		$target_file = '/admin/';
+        	}
+        	else if($role == Config::get('app.Management_role')) 
+        	{
+        		if($request->id!='')
+        			$individual_user_details = UserManagements::where('id',$request->id)->first();
+        		else
+        			$individual_user_details = new UserManagements();
+
+        		$target_file = '/management/';
+        	}
+        	else if($role == Config::get('app.Staff_role')) 
+        	{
+        		if($request->id!='')
+        			$individual_user_details = UserStaffs::where('id',$request->id)->first();
+        		else
+        			$individual_user_details = new UserStaffs();
+
+        		$target_file = '/staff/';
+        		$user_category = ($request->id!='')?$individual_user_details->user_category:'';
         	}
         	else
-        	{
-                if($check_exists=='')
-                {
-               	 	//insert record if new sub-division 
-                    $academic_division = new AcademicDivisions;
-                    $academic_division->division_name = $value['division_name'];
-                    $academic_division->created_by = $userall_id;
-                    $academic_division->created_time = Carbon::now()->timezone('Asia/Kolkata');
-                    $academic_division->save();
+        		return response()->json(['status'=>false,'message'=>"You don't have a permission to create user!..."]);
 
-                    $division_id = $academic_division->id;
-                }
-            }
-            if(isset($value['division_id']) && $value['division_id']!='')
+        	if($request->id!='')// fetch selected management user details 
+        	{
+	    		$loginid = $individual_user_details->id;
+				$user_id = $individual_user_details->user_id;
+			}
+
+			if(isset($request->employee_no) && $request->employee_no!='') //check employee no already exists or not
+	        {
+	        	$check_exists = $this->checkEmployeeno($loginid,$role,$request->employee_no);
+	        	if($check_exists)
+	        		 return response()->json(['status'=>false,'message'=>'Given Employee no already exists!...']);
+	        }
+	        if(isset($request->mobile_number) && $request->mobile_number!='') //check mobile no already exists or not
+	        {
+	        	$check_exists = $this->checkmobileno($loginid,$role,$request->mobile_number);
+	        	if($check_exists)
+	        		 return response()->json(['status'=>false,'message'=>'Given Mobile no already exists!...']);
+	        }
+
+			$individual_user_details->updated_by=$userall_id;
+    		$individual_user_details->updated_time=Carbon::now()->timezone('Asia/Kolkata');
+    		$individual_user_details->created_by=$userall_id;
+        	$individual_user_details->created_time=Carbon::now()->timezone('Asia/Kolkata');
+
+        	$schoolcode = $school_profile = SchoolProfile::where(['id'=>$user['school_profile_id']])->first();//get school code from school profile
+
+	    	if($request->photo!='')
+	        {
+	        	$image = app('App\Http\Controllers\WelcomeController')->profile_file_upload($school_profile['school_code'],$request->photo,$request->attachment_type,$target_file,$request->ext);
+	        }
+
+	    	// if(count($_FILES)>0) //upload image
+	        // {
+	        //     if($request->hasfile('photo')) {
+	        //         $image = app('App\Http\Controllers\WelcomeController')->profile_file_upload($school_profile['school_code'],$request->file('photo'),$request->attachment_type,$target_file);
+	        //     }           
+	        // }
+
+	        $individual_user_details->first_name= $request->name;
+	        $individual_user_details->mobile_number=$request->mobile_number;
+	        if($image!='')
+	        	$individual_user_details->profile_image = $image;
+	        $individual_user_details->email_id=$request->email_address;
+	        if($request->employee_no!='' && $request->employee_no!= null)
+	       		$individual_user_details->employee_no=$request->employee_no;
+	       	if($request->user_category!='' && $request->user_category!= null)
+	       		$individual_user_details->user_category=$request->user_category;
+	        $individual_user_details->dob=date('Y-m-d',strtotime($request->dob));
+	        if($request->doj!='' && $request->doj!= null)
+	        	$individual_user_details->doj=date('Y-m-d',strtotime($request->doj));
+
+	        if($role == Config::get('app.Staff_role'))
+	        {
+	        	// Remove the subject and department related details for non-teaching staffs.
+				if($request->user_category == 4) //4- non teaching
+				{
+					$individual_user_details->specialized_in = null;
+					$individual_user_details->department = null;
+				}
+				
+	        }
+	        $individual_user_details->save();
+
+	        $loginid = $individual_user_details->id;
+
+	        if($request->id=='') //if new user, update user id and insert record in user common table
+        	{
+        		$role_code = ($role == Config::get('app.Admin_role'))?'A':(($role == Config::get('app.Management_role'))?'M':'T');
+	        	// generate and update staff id in db 
+	            $user_id = $school_profile->school_code.substr($school_profile->active_academic_year, -2).$role_code.sprintf("%04s", $loginid);
+
+	            $individual_user_details->user_id = $user_id;
+	            $individual_user_details->save();
+
+	            $user_all = new UserAll;
+	            $user_all->user_table_id=$loginid;
+	            $user_all->user_role=$role;
+	            $user_all->save();
+        	}
+
+        	$schoolusers = SchoolUsers::where('user_id',$user_id)->first(); //update email address in common login table
+
+	        if($request->id=='')
+	        {
+	        	// given access to the groups based on the role  
+	        	$all_group_ids = [];
+	        	if($role == Config::get('app.Admin_role')) 
+	        	{
+	            	$all_group_ids = UserGroups::where('id','!=',1)->pluck('id')->toArray();
+	            	$group_access = Config::get('app.Group_Active');
+	        	}
+	        	else if($role == Config::get('app.Management_role'))
+	        	{
+	        		$all_group_ids = UserGroups::pluck('id')->toArray();
+	        		$group_access = Config::get('app.Group_Active');
+	        	}
+	        	else if($role == Config::get('app.Staff_role'))
+	        	{
+	        		$all_group_ids = ([2,3]);
+	        		$group_access = Config::get('app.Group_Active');
+	        	}
+
+		        foreach($all_group_ids as $group_key => $group_id)
+		        {
+		        	UserGroupsMapping::insert(['group_id'=>$group_id,'user_table_id'=>$loginid,'user_role'=>$role,'group_access'=>$group_access,'user_status'=>Config::get('app.Group_Active')]);
+		        }
+
+		        // update user details in config DB.
+	            $schoolusers = new SchoolUsers;
+	            $schoolusers->school_profile_id=$user->school_profile_id;
+	            $schoolusers->user_id=$user_id;
+	            $schoolusers->user_password=bcrypt($request->mobile_number);
+	        	$schoolusers->user_role=$role;
+	        	$schoolusers->user_status=Config::get('app.Group_Active');
+	        }
+
+	        $schoolusers->user_mobile_number=$request->mobile_number;
+	        $schoolusers->user_email_id=$request->email_address;
+	        $schoolusers->save();
+
+	        if($role == Config::get('app.Staff_role'))
+	        {
+		        if($request->user_category == 3 && $user_category != $request->user_category)
+		        {             
+		        	// remove the "Non-teaching group if user changed their role to teaching staff." 
+		            UserGroupsMapping::where('user_role',Config::get('app.Staff_role'))->where('group_id',5)->where('user_table_id',$individual_user_details->id)->delete();
+		            // checking teaching staff group alreay mapped with the user.
+		            $check_exists_nonteaching = UserGroupsMapping::where('user_role',Config::get('app.Staff_role'))->where('group_id',4)->where('user_table_id',$individual_user_details->id)->first();
+		            if(empty($check_exists_nonteaching)) //if not given access to user
+		                UserGroupsMapping::insert(['user_role'=>Config::get('app.Staff_role'),'group_id'=>4,'user_table_id'=>$individual_user_details->id,'group_access'=>2]);
+		        }
+		        else if($request->user_category == 4 && $user_category != $request->user_category)
+		        {
+		        	// remove the " teaching staff group if user changed their role to Non-teaching." 
+		            UserGroupsMapping::where('user_role',Config::get('app.Staff_role'))->where('group_id',4)->where('user_table_id',$loginid)->delete();
+		            // checking Non-teaching staff group alreay mapped with the user.
+		            $check_exists_nonteaching = UserGroupsMapping::where('user_role',Config::get('app.Staff_role'))->where('group_id',5)->where('user_table_id',$individual_user_details->id)->first();
+		            if(empty($check_exists_nonteaching))//if not given access to user
+		                UserGroupsMapping::insert(['user_role'=>Config::get('app.Staff_role'),'group_id'=>5,'user_table_id'=>$individual_user_details->id,'group_access'=>2]);
+
+		            // remove access from the subject teacher
+		            AcademicSubjectsMapping::where('staff',$individual_user_details->id)->update(['staff'=>null]);
+		            // remove access from the class teacher
+		            AcademicClassConfiguration::where('class_teacher',$individual_user_details->id)->update(['class_teacher'=>null]);
+
+		            // check user have whole group access
+		            $staff_group_list = UserGroups::where('group_type',2)->where('group_status',Config::get('app.Group_Active'))->pluck('id')->toArray();
+
+		            UserGroupsMapping::where('user_role',Config::get('app.Staff_role'))->whereIn('group_id',$staff_group_list)->where('user_table_id',$individual_user_details->id)->delete();
+		        }
+	        }
+			
+			$rolename = (Config::get('app.Admin_role') == $role)?'Admin':((Config::get('app.Management_role') == $role)?'Management':'Staff');
+			if($request->id=='')
+	            return response()->json(['status'=>true,'message'=>$rolename.' user added Successfully!...']);
+	       	else
+	            return response()->json(['status'=>true,'message'=>$rolename.' details updated Successfully!...']);
+        }
+        else
+        	return response()->json(['status'=>false,'message'=>'Invalid Credentails!...']);
+    }
+
+    // Check employee no
+    public function checkEmployeeno($id,$user_role,$employee_no)
+    {
+    	if($user_role == Config::get('app.Admin_role'))
+        	$check_exists = UserAdmin::where('employee_no',$employee_no);
+        else if($user_role == Config::get('app.Staff_role'))
+        	$check_exists = UserStaffs::where('employee_no',$employee_no);
+        else if($user_role == Config::get('app.Management_role'))
+        	$check_exists = UserManagements::where('employee_no',$employee_no);
+        else 
+        	return false;
+
+        if($id!='')
+            $check_exists = $check_exists->where('id','!=',$id);
+
+        $check_exists = $check_exists->first();
+
+        if(!empty($check_exists))
+            return true;
+        else
+            return false;
+    }
+    // Check employee no
+    public function checkmobileno($id,$user_role,$employee_no)
+    {
+    	if($user_role == Config::get('app.Admin_role'))
+        	$check_exists = UserAdmin::where('mobile_number',$employee_no);
+        else if($user_role == Config::get('app.Staff_role'))
+        	$check_exists = UserStaffs::where('mobile_number',$employee_no);
+        else if($user_role == Config::get('app.Management_role'))
+        	$check_exists = UserManagements::where('mobile_number',$employee_no);
+        else 
+        	return false;
+        
+        if($id!='')
+            $check_exists = $check_exists->where('id','!=',$id);
+
+        $check_exists = $check_exists->first();
+
+        if(!empty($check_exists))
+            return true;
+        else
+            return false;
+    }
+
+    /*------------------------------Onboarding Manual-----------------------------*/
+
+    // create and update division
+    public function create_update_division_manual(Request $request)
+    {
+    	$user_data = auth()->user();
+    	 // get user details from table
+        $user_details =  app('App\Http\Controllers\APILoginController')->get_user_table_id($user_data);
+
+        $userall_id = UserAll::where(['user_table_id'=>$user_details->id,'user_role'=>$user_data->user_role])->pluck('id')->first();//fetch id from user all table to store notification triggered user
+
+		$inserted_records=0;
+        $status = 'insert';
+		foreach ($request->divisions as $key => $value) {
+			$check_exists = AcademicDivisions::where(['division_name'=>$value['division_name']])->pluck('id')->first(); //check whether the given sub-division name already exists ro not
+
+			if(isset($value['division_id']) && $value['division_id']!='' && $check_exists=='')        
+			{
+				$academic_division = AcademicDivisions::where(['id'=>$value['division_id']])->first();//if already exists update the details
+	            $academic_division->updated_by = $userall_id;
+	            $academic_division->updated_time = Carbon::now()->timezone('Asia/Kolkata');
+			}		
+        	else
+                $academic_division = new AcademicDivisions;//insert record if new sub-division 
+            
+    		$academic_division->division_name = $value['division_name'];
+            $academic_division->created_time = Carbon::now()->timezone('Asia/Kolkata');
+            $academic_division->created_by = $userall_id;
+            $academic_division->save();
+
+           	if((isset($value['division_id']) && $value['division_id']!='') || $check_exists!='')
             	$status = 'edit';
 		}
 
     	Configurations::where('school_profile_id',$user_data->school_profile_id)->update(['division'=>1]);
+
+    	return response()->json(['status'=>true,'message'=>'Division '.$status.' Successfully!...']);
+    }
+
+    // get division list
+	public function get_divisions()
+	{
+		$divisions = AcademicDivisions::select('id','division_name')->get()->toArray();
+		return response()->json(compact('divisions'));
 	}
+
+    // Delete division
+	public function delete_division(Request $request)
+	{
+		if(isset($request->division_id) && $request->division_id!='') //check input exist
+		{
+			// Delete records 
+	        AcademicSubjects::where('division_id',$request->division_id)->delete();
+	        AcademicSections::where('division_id',$request->division_id)->delete();
+	       	AcademicClasses::where('division_id',$request->division_id)->delete();
+	        AcademicClassConfiguration::where('division_id',$request->division_id)->delete();
+	        AcademicDivisions::where('id',$request->division_id)->delete();
+		}
+		return response()->json(['status'=>true,'message'=>'Deleted Successfully!...']);
+	}
+
+	//create and update section
+	public function create_update_section_manual(Request $request)
+	{
+		$user_data = auth()->user();
+    	 // get user details from table
+        $user_details =  app('App\Http\Controllers\APILoginController')->get_user_table_id($user_data);
+
+        $userall_id = UserAll::where(['user_table_id'=>$user_details->id,'user_role'=>$user_data->user_role])->pluck('id')->first();//fetch id from user all table to store notification triggered user
+
+		$sections = $request->sections;
+		$division_id = $request->division_id;
+		foreach ($sections as $key => $value) {
+			$section_id = AcademicSections::where(['section_name'=>$value['section_name'],'division_id'=>$division_id])->pluck('id')->first(); //check given section name is already exists or not
+
+            if(!isset($value['section_id']) && $section_id=='')
+                $academicsections = new AcademicSections;// updated sections along with sub-division
+            else
+            {
+                $academicsections = AcademicSections::where(['id'=>$value['section_id'],'division_id'=>$division_id])->first();// insert sections along with sub-division details
+	            $academicsections->updated_by = $userall_id;
+	            $academicsections->updated_time = Carbon::now()->timezone('Asia/Kolkata');
+            }
+
+            $academicsections->section_name = $value['section_name'];
+            $academicsections->division_id = $division_id;
+            $academicsections->created_by = $userall_id;
+            $academicsections->created_time = Carbon::now()->timezone('Asia/Kolkata');
+            $academicsections->save();
+            
+            $section_id = $academicsections->id;
+        	if(isset($value['section_id']) && $value['section_id']!='')
+               	$status = 'edit';
+        }
+	    	
+	    Configurations::where('school_profile_id',$user_data->school_profile_id)->update(['sections'=>1]);
+
+	    return response()->json(['status'=>true,'message'=>'Section '.$status.' Successfully!...']);
+	}
+
+	// Fetch Sections list
+	public function get_sections(Request $request)
+	{
+		$sections = AcademicSections::select('id','section_name')->where('division_id',$request->division_id)->get()->toArray();
+		foreach ($sections as $key => $value) {
+			$sections[$key]=$value;
+			$sections[$key]['isclicked']=false;
+		}
+		return response()->json(compact('sections'));
+	}
+
+	// Delete section
+	public function delete_section(Request $request)
+	{
+		if(isset($request->division_id) && $request->division_id!='' && isset($request->section_id) && $request->section_id!='')
+		{
+			$classconfig = AcademicClassConfiguration::select('id')->where(['section_id'=> $request->section_id,'division_id'=>$request->division_id])->get()->toArray();
+
+	       	AcademicSubjectsMapping::whereIn('class_config',$classconfig)->delete();
+	        CommunicationDistribution::whereIn('class_config_id',$classconfig)->delete();
+			UserStudents::whereIn('class_config',$classconfig)->delete();
+	        AcademicClassConfiguration::whereIn('id',$classconfig)->delete();
+	        AcademicSections::where('id',$request->section_id)->delete();
+		}
+		return response()->json(['status'=>true,'message'=>'Deleted Successfully!...']);
+	}
+
+	// create and update classes
+	public function create_update_class_manual(Request $request)
+	{
+		$user_data = auth()->user();
+    	 // get user details from table
+        $user_details =  app('App\Http\Controllers\APILoginController')->get_user_table_id($user_data);
+
+        $userall_id = UserAll::where(['user_table_id'=>$user_details->id,'user_role'=>$user_data->user_role])->pluck('id')->first();//fetch id from user all table to store notification triggered user
+        $status = 'insert';
+		$classes = $request->classes;
+        $division_id = $request->division_id;
+        foreach ($classes as $key => $value) {
+        	$class_id ='';
+        	if(!isset($value['class_id']))
+        		$class_id = AcademicClasses::where(['class_name'=>$value['class_name'],'division_id'=>$division_id])->pluck('id')->first(); //check given class name is already exists or not
+        	if(isset($value['class_id']) && $value['class_id']!='' && $class_id=='')
+        	{
+        		$class_details = AcademicClasses::where(['id'=>$value['class_id'],'division_id'=>$division_id])->first();// updated classes along with sub-division
+	            $class_details->updated_by = $userall_id;
+	            $class_details->updated_time = Carbon::now()->timezone('Asia/Kolkata');
+        	}
+        	else
+                $class_details = new AcademicClasses;// insert classes along with sub-division details
+
+    		$class_details->class_name = $value['class_name'];
+    		$class_details->division_id= $division_id;
+            $academicclasses->created_by = $userall_id;
+            $academicclasses->created_time = Carbon::now()->timezone('Asia/Kolkata');
+            $class_details->save();
+
+            if(!isset($value['class_id']) && $class_id !='')
+            	$status = $this->map_classes_sections($userall_id); //Map classes and sections
+            if(isset($value['class_id']) && $value['class_id']!='')
+            	$status = 'edit';
+        }
+        Configurations::where('school_profile_id',$user_data->school_profile_id)->update(['classes'=>1]);
+
+
+        // Configurations::where('school_profile_id',$user_data->school_profile_id)->update(['map_classes_sections'=>1]); //update completion status in configuration table
+        return response()->json(['status'=>true,'message'=>'Classes '.$status.' Successfully!...']);
+	}
+
 	public function map_classes_sections($userall_id) //map classes and section - on-boarding
 	{
 		$user_data = auth()->user(); //check authentication
@@ -473,7 +834,7 @@ class APIConfigurationsController extends Controller
 	    }	
 	}
 
-	public function class_review() //check inserted classes review (on-boarding)
+	public function get_classes() //check inserted classes review (on-boarding)
 	{
 		// Save last login in DB
         $userdata = auth()->user();
@@ -489,7 +850,7 @@ class APIConfigurationsController extends Controller
         return response()->json($class_review);
 	}
 
-	public function class_section_review(Request $request) //check inserted classes and sections review (on-boarding)
+	public function get_class_section(Request $request) //check inserted classes and sections review (on-boarding)
 	{
 		// Save last login in DB
         $userdata = auth()->user();
@@ -525,7 +886,7 @@ class APIConfigurationsController extends Controller
 	    return response()->json($class_section_review);
 	}
 
-	public function get_class_section(Request $request) //list all classes and sections for mapping(on-boarding)
+	public function get_selected_class_section(Request $request) //list all classes and sections for mapping(on-boarding)
 	{
 		$sections_list = $selected_section= [];
 		$classconfig = AcademicClassConfiguration::select('section_id')->where(['class_id'=> $request->class_id,'division_id'=>$request->division_id])->get()->toArray();
@@ -547,6 +908,22 @@ class APIConfigurationsController extends Controller
 		return response()->json($sections_list);
 	}
 
+	// Delete class
+	public function delete_class(Request $request)
+	{
+		if(isset($request->division_id) && $request->division_id!='' && isset($request->class_id) && $request->class_id!='')
+		{
+			$classconfig = AcademicClassConfiguration::select('id')->where(['class_id'=> $request->class_id,'division_id'=>$request->division_id])->get()->toArray();
+
+	       	AcademicSubjectsMapping::whereIn('class_config',$classconfig)->delete();
+	        CommunicationDistribution::whereIn('class_config_id',$classconfig)->delete();
+			UserStudents::whereIn('class_config',$classconfig)->delete();
+	        AcademicClassConfiguration::whereIn('id',$classconfig)->delete();
+	        AcademicClasses::where('id',$request->class_id)->delete();
+		}
+		return response()->json(['message'=>'Deleted Successfully!...']);
+	}
+	
 	public function delete_class_section(Request $request) //delete unchecked mapping (on-boarding)
 	{
 		$data = $request->data;
@@ -588,6 +965,118 @@ class APIConfigurationsController extends Controller
 	    return response()->json(['message'=>'Submitted Successfully!...']);
 	}
 
+	public function subjects(Request $request)
+	{
+		$user_data = auth()->user();
+
+		$subjects = $request->subjects;
+		$division_id = $request->division_id;
+		 // get user details from table
+        $user_details =  app('App\Http\Controllers\APILoginController')->get_user_table_id($user_data);
+
+        $userall_id = UserAll::where(['user_table_id'=>$user_details->id,'user_role'=>$user_data->user_role])->pluck('id')->first();//fetch id from user all table to store notification triggered user
+        foreach ($subjects as $row=>$value) {
+
+        	if($value['subject_name']!='')
+        	{
+        		if(isset($value['subject_id']) && $value['subject_id']!='')
+        		{
+        			$status = 'edit';
+
+        			$subject_data = AcademicSubjects::where(['id'=>$value['subject_id'],'division_id'=>$division_id])->first(); //To check given subject name is already exists in DB.
+        			$subject_data->updated_by=$userall_id;
+            		$subject_data->updated_time=Carbon::now()->timezone('Asia/Kolkata');
+        			
+        		}
+        		else
+        		{
+        			$status = 'insert';
+        			if(isset($value['division_name']) && $value['division_name'] !='')
+        				$division_id = AcademicDivisions::where(['division_name'=>$value['division_name']])->pluck('id')->first();
+		        	$check_exists = AcademicSubjects::where(DB::raw('lower(subject_name)'), strtolower($value['subject_name']))->where('division_id',$division_id)->pluck('id')->first(); //To check given subject name is already exists in DB.
+		            if($check_exists == '' && !in_array($value['subject_name'],$subject_list)) //if no then insert 
+		            {
+		                array_push($subject_list, $value['subject_name']);//check mobile number already exists in array
+
+		                $subject_data = new AcademicSubjects;
+		                $subject_data->created_by=$userall_id;
+            			$subject_data->created_time=Carbon::now()->timezone('Asia/Kolkata');
+		            }
+		        }
+		        // Prepare subjects array
+                $subject_data->subject_name = $value['subject_name'];
+                $subject_data->short_name = isset($value['short_name'])?$value['short_name']:'';
+                $subject_data->division_id = $division_id;
+            	$subject_data->save();
+	        }
+        }
+       
+    	Configurations::where('school_profile_id',$user_data->school_profile_id)->update(['subjects'=>1]);
+
+    	return response()->json(['status'=>true,'message'=>'Subjects '.$status.' Successfully!...']);
+	}	
+
+	//Class config details
+	public function get_combine_class_section_list(Request $request)
+	{
+		$class_sections = [];
+		$class_sections_list = AcademicClassConfiguration::select('id','class_id','section_id')->where('division_id',$request->division_id)->get();
+		if(!empty($class_sections_list))
+		{
+			foreach ($class_sections_list as $key => $value) {
+				$class_sections[] = ([
+					'class_section'=>$value->classsectionName(),
+					'id'=>$value->id
+				]);
+			}
+		}
+		return response()->json($class_sections);
+	}
+
+	// get subjects for edit
+	public function get_edit_subjects(Request $request)
+	{
+		$subject_ids = AcademicSubjectsMapping::where('class_config',$request->class_config)->pluck('subject')->toArray();
+		$subjects = AcademicSubjects::select('id','subject_name')->where('division_id',$request->division_id)->whereIn('id',$subject_ids)->get()->toArray();
+		return response()->json($subjects);
+	}
+	
+	// Map subjects to classes
+	public function mapsubjects(Request $request)
+	{
+		$mapsubjects = $request->mapsubjects;//get all inputs
+		 // get user details from table
+        $user_details =  app('App\Http\Controllers\APILoginController')->get_user_table_id($user_data);
+
+        $userall_id = UserAll::where(['user_table_id'=>$user_details->id,'user_role'=>$user_data->user_role])->pluck('id')->first();//fetch id from user all table to store notification triggered user
+		if(!empty($mapsubjects))//check array is empty or not
+		{
+			foreach ($mapsubjects as $key => $value) { //process the input in loop
+				$subjects = AcademicSubjectsMapping::select('id')->where(['class_config'=> $request->class_config,'subject'=>$value['subject_id']])->get()->toArray(); //fetch all data for corresponding class and subject
+				if(!empty($subjects) && $value['is_checked'] == 'false') //check not empty and not checked 
+				{
+					$group_id = UserGroups::where('class_config',$request->class_config)->pluck('id')->first();//fetch group id to remove message dropped for that unselected subject.
+			        Communications::where('group_id',$group_id)->where('subject_id',$value['subject_id'])->where('communication_type',2)->delete();//delete subject related message from homework
+			        AcademicSubjectsMapping::where('id',$subjects['id'])->delete(); //delete subject mapping record
+			    }
+			    else if($value['is_checked'] == 'true' && empty($subjects)) //check its a new entry
+			    {
+			    	$subject_config = new AcademicSubjectsMapping;
+                    $subject_config->subject = $value['subject_id'];
+                    $subject_config->class_config = $request->class_config;
+                    $subject_config->created_by=$userall_id;
+                    $subject_config->created_time=Carbon::now()->timezone('Asia/Kolkata');
+                    $subject_config->save();//insert new record if not exist already
+			    }
+			}
+    		Configurations::where('school_profile_id',$user_data->school_profile_id)->update(['map_subjects'=>1]);
+
+
+    		return response()->json(['status'=>true,'message'=>'MapSubjects updated Successfully!...']);
+		}
+		return response()->json(['message'=>"Some inputs can't be empty!..."]);
+	}
+
 	// Get Subjects list 
 	public function get_subjects(Request $request) //get all subjects list (on-boarding)
 	{
@@ -613,88 +1102,242 @@ class APIConfigurationsController extends Controller
 		return response()->json($subjectslist);
 	}
 
-	// Configuration page list
-	public function configuration_list()
-	{
-		// Save last login in DB
+	// delete subject (onboarding)
+    public function delete_subject(Request $request)
+    {
+    	// Check authenticate user
+        $userdata = auth()->user();
+        // reset to null with selected subject staffs
+        UserStaffs::where('specialized_in',$request->subject_id)->update(['specialized_in'=>null]);
+		// Delete the class mapping to the subject record
+        AcademicSubjectsMapping::where('subject',$request->subject_id)->delete();
+        // fetch subject related communication from table
+        $communication_ids = Communications::where('subject_id',$request->subject_id)->get()->toArray();
+        if(!empty($communication_ids))
+        {
+        	// get id from fetched details
+        	$ids_list = array_column($communication_ids,'id');
+        	//delete subject related records from communication recipients table
+        	CommunicationRecipients::whereIn('communication_id',$ids_list)->delete();
+        	CommunicationAttachments::whereIn('communication_id',$ids_list)->delete();
+        	CommunicationDistribution::whereIn('communication_id',$ids_list)->delete();
+        	HomeworkParentStatus::whereIn('notification_id',$ids_list)->delete();
+        	// delete subject related records from communication table
+        	Communications::where('subject_id',$request->subject_id)->delete();
+        }
+        AcademicSubjects::where('id',$request->subject_id)->delete(); //delete staff record
+        return response()->json(['status'=>true,'message'=>'Deleted Successfully!...']);
+    }
+
+    // fetch all staff details for onboarding process
+    public function onboarding_staff_list()
+    {
+    	// Check authenticate user
         $userdata = auth()->user();
 
-        // Fetch configuration details from DB for corresponding school
-        $configurations = Configurations::where('school_profile_id',$userdata->school_profile_id)->first();
-        
-        // configuration details
-        $configuration = ([
-            'classes'=>[
-            	'config'=>($configurations->classes==1)?true:false,
-            	'excel'=>(file_exists(public_path(env('SAMPLE_CONFIG_URL').'Classes.xlsx'))?env('APP_URL').env('SAMPLE_CONFIG_URL').'Classes.xlsx':'')
-            ],
-            'sections'=>[
-            	'config'=>($configurations->sections==1)?true:false,
-            	'excel'=>(file_exists(public_path(env('SAMPLE_CONFIG_URL').'Sections.xlsx'))?env('APP_URL').env('SAMPLE_CONFIG_URL').'Sections.xlsx':'')
-            ],
-            'map_classes_sections'=>[
-            	'config'=>($configurations->map_classes_sections==1)?true:false,
-            	'excel'=>(file_exists(public_path(env('SAMPLE_CONFIG_URL').'MapClassesSections.xlsx'))?env('APP_URL').env('SAMPLE_CONFIG_URL').'MapClassesSections.xlsx':'')
-            ],
-            'subjects'=>[
-            	'config'=>($configurations->subjects==1)?true:false,
-            	'excel'=>(file_exists(public_path(env('SAMPLE_CONFIG_URL').'Subjects.xlsx'))?env('APP_URL').env('SAMPLE_CONFIG_URL').'Subjects.xlsx':''),
-            ],
-            'map_subjects'=>[
-            	'config'=>($configurations->map_subjects==1)?true:false,
-            	'excel'=>(file_exists(public_path(env('SAMPLE_CONFIG_URL').'MapSubjects.xlsx'))?env('APP_URL').env('SAMPLE_CONFIG_URL').'MapSubjects.xlsx':''),
-            ],
-            'staffs'=>[
-            	'config'=>($configurations->staffs==1)?true:false,
-            	'excel'=>(file_exists(public_path(env('SAMPLE_CONFIG_URL').'Staffs.xlsx'))?env('APP_URL').env('SAMPLE_CONFIG_URL').'Staffs.xlsx':''),
-            ],
-            // 'map_staffs'=>[
-            // 	'config'=>($configurations->map_staffs==1)?true:false,
-            // 	'excel'=>(file_exists(public_path('uploads/M.xlsx'))?env('APP_URL').'uploads/classes_sections.xlsx':''),
-            // ],
-            'management'=>[
-            	'config'=>($configurations->management==1)?true:false,
-            	'excel'=>(file_exists(public_path(env('SAMPLE_CONFIG_URL').'Management.xlsx'))?env('APP_URL').env('SAMPLE_CONFIG_URL').'Management.xlsx':''),
-            ],
-            'students'=>[
-            	'config'=>($configurations->students==1)?true:false,
-            	'excel'=>(file_exists(public_path(env('SAMPLE_CONFIG_URL').'Students.xlsx'))?env('APP_URL').env('SAMPLE_CONFIG_URL').'Students.xlsx':''),
-            ],
-            // 'map_students'=>[
-            // 	'config'=>($configurations->map_students==1)?true:false,
-            // 	'excel'=>(file_exists(public_path('uploads/classes_sections.xlsx'))?env('APP_URL').'uploads/classes_sections.xlsx':''),
-            // ]
-        ]);
+        $staff_list = UserStaffs::select('id','user_id','first_name','mobile_number','profile_image')->where('user_status',1)->get()->toArray(); //fetch all the staff for listing
+        return response()->json($staff_list);
+    }
 
-        // return token 
-        return response()->json(compact('configuration'));
-	}
+    // Get single user details(onboarding)
+    public function onboarding_fetch_single_staff(Request $request)
+    {
+    	// Check authenticate user
+        $userdata = auth()->user();
 
-	// Fetch classes ,sections,subjects list
-	public function get_classes_sections_subjects_list()
-	{
-		$classes = AcademicClasses::select('id','class_name')->get()->toArray();
-		$sections = AcademicSections::select('id','section_name')->get()->toArray();
-		$subjects = AcademicSubjects::select('id','subject_name')->get()->toArray();
-		return response()->json(compact('classes','sections','subjects'));
-	}
+        $check_class_teacher = AcademicClassConfiguration::where('class_teacher',$request->id)->first(); //check the user is a classteacher.
+		
+        $staff_list = UserStaffs::select('id','user_id','first_name','mobile_number','profile_image','specialized_in','user_category','email_id','dob','doj','employee_no')->where('user_status',1)->where('id',$request->id)->first(); //fetch all the staff for listing
+        $staff_list->class_teacher = 'no'; //set default values
+        $staff_list->class_config = 0; 
+        $staff_list->specialized_in = (int)$staff_list->specialized_in;
+        if(!empty($staff_list) && isset($check_class_teacher->class_teacher)) //check not empty for class configuration details
+        {
+        	$staff_list->class_teacher = 'yes';
+        	$staff_list->class_config = $check_class_teacher->class_teacher; 
 
-	// Fetch classes list
-	public function get_edit_classes_list(Request $request)
-	{
-		$classes = AcademicClasses::select('id','class_name')->where('division_id',$request->division_id)->get()->toArray();
-		return response()->json(compact('classes'));
-	}
+        }
+        $subject_teacher =[];
+        $subject_teacher_list = AcademicSubjectsMapping::where('staff',$request->id)->get()->toArray();
+        if(!empty($subject_teacher_list))
+        {
+        	foreach($subject_teacher_list as $subj_key => $subj_value)
+        	{
+        		$subject_teacher[$subj_key]['class_config'] = $subj_value['class_config'];
+        		$subject_teacher[$subj_key]['subject'] = $subj_value['subject'];
+        	}
+        }
+        $staff_list->subject_teacher= $subject_teacher;
+        return response()->json($staff_list);   
+    }
 
-	// Fetch classes list
-	public function get_edit_allsection_list(Request $request)//get all the sections with the pne single sub-division for edit in on-boarding
-	{
-		$sections = AcademicSections::select('id','section_name')->where('division_id',$request->division_id)->get()->toArray();
-		return response()->json(compact('sections'));
-	}
+    // delete staff (onboarding)
+    public function onboarding_delete_staff(Request $request)
+    {
+    	// Check authenticate user
+        $userdata = auth()->user();
+        AcademicSubjectsMapping::where('staff',$request->id)->update(['staff'=>null]); //update assigned staff to null.
+        UserStaffs::where('id',$request->id)->delete(); //delete staff record
+        return response()->json(['status'=>true,'message'=>'Deleted Successfully!...']);
+    }
 
-	// Fetch management list
-	public function get_edit_management_list() //get all the management for edit in on-boarding
+    // edit staff details
+    public function onboarding_edit_staff(Request $request)
+    {
+    	// Check authenticate user
+        $user = auth()->user();
+
+        $user_details =  app('App\Http\Controllers\APILoginController')->get_user_table_id($user);
+
+        $userall_id = UserAll::where(['user_table_id'=>$user_details->id,'user_role'=>$user->user_role])->pluck('id')->first();//fetch id from user all table to store notification triggered user
+
+        $profile_details = SchoolProfile::where(['id'=>$user->school_profile_id])->first();//Fetch school profile details 
+        $staffs_details = [];
+        if($request->id!='')// fetch selected staff details 
+        	$staffs_details = UserStaffs::where('id',$request->id)->first();
+
+        $schoolcode = $school_profile = SchoolProfile::where(['id'=>$user['school_profile_id']])->first();//get school code from school profile
+    	$image ='';
+    	$target_file = '/staff/';
+
+        if(!empty($staffs_details))
+        {
+        	if($request->photo!='')
+	        {
+	        	$image = app('App\Http\Controllers\WelcomeController')->profile_file_upload($school_profile['school_code'],$request->photo,1,$target_file,$request->ext);
+	        }
+
+	        if(isset($request->employee_no) && $request->employee_no!='') //check employee no already exists or not
+	        {
+	        	$check_exists = $this->checkEmployeeno($staffs_details->id,Config::get('app.Staff_role'),$request->employee_no);
+	        	if($check_exists)
+	        		 return response()->json(['status'=>false,'message'=>'Given Employee no already exists!...']);
+	        }
+	        if(isset($request->mobile_number) && $request->mobile_number!='') //check mobile no already exists or not
+	        {
+	        	$check_exists = $this->checkmobileno($staffs_details->id,Config::get('app.Staff_role'),$request->mobile_number);
+	        	if($check_exists)
+	        		 return response()->json(['status'=>false,'message'=>'Given Mobile no already exists!...']);
+	        }
+
+	        //save staff details
+	        $staffs_details->first_name= $request->staff_name;
+	        $staffs_details->division_id=$request->division_id;
+	        $staffs_details->mobile_number=$request->mobile_number;
+	        if($image!='')
+	        	$staffs_details->profile_image = ($image!='')?$image:'';
+	        $staffs_details->email_id=$request->email_address;
+	        $staffs_details->specialized_in=$request->specialized_in;
+	        $staffs_details->user_category=$request->teacher_category;
+	        $staffs_details->dob=$request->dob;
+	        $staffs_details->doj=$request->doj;
+	        $staffs_details->employee_no=$request->employee_no;
+	        $staffs_details->updated_by=$userall_id;
+	    	$staffs_details->updated_time=Carbon::now()->timezone('Asia/Kolkata');
+	        $staffs_details->save();
+
+
+	        $schoolusers = SchoolUsers::where('user_id',$staffs_details->user_id)->first(); //update email address in common login table
+
+            $schoolusers->user_email_id=$request->email_address;
+            $schoolusers->save();
+
+            if($request->class_teacher_class_config!='')
+            {
+            	AcademicClassConfiguration::where('id',$request->class_teacher_class_config)->update(['class_teacher'=>$request->id]); //assign class teacher to class.
+
+            	$class_teacher_group = UserGroups::where('group_status',Config::get('app.Group_Active'))->where('class_config',$request->class_teacher_class_config)->pluck('id')->first();
+            	$check_exists = UserGroupsMapping::where(['group_id'=>$class_teacher_group,'user_table_id'=>$request->id,'user_role'=>Config::get('app.Staff_role'),'user_status'=>1])->pluck('id')->first();
+             	if($check_exists=='' && $teacher_group!='')
+            		UserGroupsMapping::insert(['group_id'=>$class_teacher_group,'user_table_id'=>$request->id,'user_role'=>Config::get('app.Staff_role'),'user_status'=>1,'group_access'=>1]);
+            }
+            
+            if(!empty($request->teacher_class_config))
+            {
+            	foreach ($request->teacher_class_config as $teacher_key => $teacher_value) {
+             		AcademicSubjectsMapping::where('class_config',$teacher_value['class_config'])->where('subject',$teacher_value['subject_id'])->update(['staff'=>$request->id]); //assign staff to class.
+             		$teacher_group = UserGroups::where('group_status',Config::get('app.Group_Active'))->where('class_config',$teacher_value['class_config'])->pluck('id')->first();
+             		$check_exists = UserGroupsMapping::where(['group_id'=>$teacher_group,'user_table_id'=>$request->id,'user_role'=>Config::get('app.Staff_role'),'user_status'=>1])->pluck('id')->first();
+             		if($check_exists=='' && $teacher_group!='')
+            			UserGroupsMapping::insert(['group_id'=>$teacher_group,'user_table_id'=>$request->id,'user_role'=>Config::get('app.Staff_role'),'user_status'=>1,'group_access'=>1]);
+            	}
+            }
+
+            return response()->json(['status'=>true,'messgae'=>'Staff details updated Successfully!...']);
+        }
+        else
+        {
+        	if($request->photo!='')
+	        {
+	        	$image = app('App\Http\Controllers\WelcomeController')->profile_file_upload($school_profile['school_code'],$request->photo,1,$target_file,$request->ext);
+	        }
+
+        	//save staff details
+            $staffs_details = new UserStaffs;
+            $staffs_details->first_name= $request->staff_name;
+            $staffs_details->mobile_number=$request->mobile_number;
+            if($image!='')
+            	$staffs_details->profile_image = ($image!='')?$image:'';
+            $staffs_details->email_id=$request->email_address;
+	        $staffs_details->specialized_in=$request->specialized_in;
+	        $staffs_details->user_category=$request->teacher_category;
+	        $staffs_details->dob=$request->dob;
+	        $staffs_details->doj=$request->doj;
+	        $staffs_details->employee_no=$request->employee_no;
+            $staffs_details->created_by=$userall_id;
+        	$staffs_details->created_time=Carbon::now()->timezone('Asia/Kolkata');
+            $staffs_details->save();
+
+            $staff_id =$staffs_details->id; // staff id
+
+            // generate and update staff id in db 
+            $userstaff_id = $profile_details['school_code'].substr($profile_details['active_academic_year'], -2).'T'.sprintf("%04s", $staff_id);
+            $staffs_details->user_id = $userstaff_id;
+            $staffs_details->save();
+
+            $user_all = new UserAll;
+            $user_all->user_table_id=$staff_id;
+            $user_all->user_role=Config::get('app.Staff_role');
+            $user_all->save();
+
+            $schoolusers = new SchoolUsers;
+            $schoolusers->school_profile_id=$user->school_profile_id;
+            $schoolusers->user_id=$userstaff_id;
+            $schoolusers->user_mobile_number=$request->mobile_number;
+            $schoolusers->user_password=bcrypt($request->mobile_number);
+            $schoolusers->user_role=Config::get('app.Staff_role');
+            $schoolusers->user_status=1;
+            $schoolusers->save();
+
+            if($request->class_teacher_class_config!='')
+            {
+            	AcademicClassConfiguration::where('id',$request->class_teacher_class_config)->update(['class_teacher'=>$staff_id]); //assign class teacher to class.
+
+            	$class_teacher_group = UserGroups::where('group_status',Config::get('app.Group_Active'))->where('class_config',$request->class_teacher_class_config)->pluck('id')->first();
+            	$check_exists = UserGroupsMapping::where(['group_id'=>$class_teacher_group,'user_table_id'=>$staff_id,'user_role'=>Config::get('app.Staff_role'),'user_status'=>1])->pluck('id')->first();
+             	if($check_exists=='' && $teacher_group!='')
+            		UserGroupsMapping::insert(['group_id'=>$class_teacher_group,'user_table_id'=>$staff_id,'user_role'=>Config::get('app.Staff_role'),'user_status'=>1,'group_access'=>1]);
+            }
+            
+            if(!empty($request->teacher_class_config))
+            {
+            	UserGroupsMapping::insert(['group_id'=>2,'user_table_id'=>$staff_id,'user_role'=>Config::get('app.Staff_role'),'user_status'=>1,'group_access'=>1]);
+            	foreach ($request->teacher_class_config as $teacher_key => $teacher_value) {
+             		AcademicSubjectsMapping::where('class_config',$teacher_value['class_config'])->where('subject',$teacher_value['subject_id'])->update(['staff'=>$staff_id]); //assign staff to class.
+             		$teacher_group = UserGroups::where('group_status',Config::get('app.Group_Active'))->where('class_config',$teacher_value['class_config'])->pluck('id')->first();
+             		$check_exists = UserGroupsMapping::where(['group_id'=>$teacher_group,'user_table_id'=>$staff_id,'user_role'=>Config::get('app.Staff_role'),'user_status'=>1])->pluck('id')->first();
+             		if($check_exists=='' && $teacher_group!='')
+            			UserGroupsMapping::insert(['group_id'=>$teacher_group,'user_table_id'=>$staff_id,'user_role'=>Config::get('app.Staff_role'),'user_status'=>1,'group_access'=>1]);
+            	}
+            }
+        }
+
+        Configurations::where('school_profile_id',$user->school_profile_id)->update(['map_staffs'=>1]);
+        return response()->json(['status'=>true,'messgae'=>'Staff details inserted Successfully!...']);
+    }
+
+    // Fetch management list
+	public function get_management_list() //get all the management for edit in on-boarding
 	{
 		$management_list = [];//empty array declaration
 		$managements = UserManagements::select('*')->get()->toArray();//get management list
@@ -713,232 +1356,987 @@ class APIConfigurationsController extends Controller
 		return response()->json($management_list); //return management details 
 	}
 
-	// Fetch student list
-	public function get_edit_student_list() //get all the student for edit in on-boarding
+    // Add managment person in DB.
+	public function get_management_designation()
 	{
-		$student_list = [];//empty array declaration
-		$parents = UserParents::select('id','first_name','mobile_number')->where('user_category',1)->get()->toArray();//get student list
-		return response()->json($parents); //return student details 
+		$categories = UserCategories::select('id','category_name')->where('user_role',5)->get()->toArray();
+		return response()->json($categories);
 	}
 
-	// Fetch Sections list
-	public function get_edit_sections_list()
-	{
-		$sections = AcademicSections::select('id','section_name')->get()->toArray();
-		foreach ($sections as $key => $value) {
-			$sections[$key]=$value;
-			$sections[$key]['isclicked']=false;
-		}
-		return response()->json(compact('sections'));
-	}
+    // Get single user details(onboarding)
+    public function onboarding_fetch_single_management(Request $request)
+    {
+    	// Check authenticate user
+        $userdata = auth()->user();
 
-	public static function subjects($data,$division_id,$userall_id,$upload_type)
-	{
-		$user_data = auth()->user();
-		$subject_list =$subject_data=[];
-		$inserted_records=0;
-        $status = 'insert';
-        foreach ($data as $row=>$value) {
+        $management_list = UserManagements::select('id','user_id','first_name','mobile_number','profile_image','user_category','email_id','dob','doj','employee_no')->where('user_status',1)->where('id',$request->id)->first(); //fetch all the management for listing
+        return response()->json($management_list);
+        
+    }
 
-        	if($value['subject_name']!='')
-        	{
-        		if(isset($value['subject_id']) && $value['subject_id']!='')
-        		{
-        			$status = 'edit';
+    // delete managment (onboarding)
+    public function onboarding_delete_management(Request $request)
+    {
+    	// Check authenticate user
+        $userdata = auth()->user();
+        UserManagements::where('id',$request->id)->delete(); //delete staff record
+        return response()->json(['status'=>true,'message'=>'Deleted Successfully!...']);
+    }
 
-        			$subject_data = AcademicSubjects::where(['id'=>$value['subject_id'],'division_id'=>$division_id])->first(); //To check given subject name is already exists in DB.
-        			// Prepare subjects array
-	                $subject_data->subject_name = $value['subject_name'];
-	                $subject_data->short_name = isset($value['short_name'])?$value['short_name']:'';
-	                $subject_data->division_id = $division_id;
-	                $subject_data->updated_by=$userall_id;
-	            	$subject_data->updated_time=Carbon::now()->timezone('Asia/Kolkata');
-	            	$subject_data->save();
-        		}
-        		else
-        		{
-        			$status = 'insert';
-        			if(isset($value['division_name']) && $value['division_name'] !='')
-        				$division_id = AcademicDivisions::where(['division_name'=>$value['division_name']])->pluck('id')->first();
-		        	$check_exists = AcademicSubjects::where(DB::raw('lower(subject_name)'), strtolower($value['subject_name']))->where('division_id',$division_id)->pluck('id')->first(); //To check given subject name is already exists in DB.
-		            if($check_exists == '' && !in_array($value['subject_name'],$subject_list)) //if no then insert 
-		            {
-		                array_push($subject_list, $value['subject_name']);//check mobile number already exists in array
-
-		                // Prepare subjects array
-		                $subject_data[]=([
-		                    'subject_name' => $value['subject_name'],
-		                    'short_name' => isset($value['short_name'])?$value['short_name']:'',
-		                    'division_id' => $division_id,
-		                    'created_by'=>$userall_id,
-		            		'created_time'=>Carbon::now()->timezone('Asia/Kolkata')
-		                ]);
-		            }
-		        }
-	        }
-        }
-        if($status == 'insert')
-        	AcademicSubjects::insert($subject_data); // Insert subjects data into DB
-    	Configurations::where('school_profile_id',$user_data->school_profile_id)->update(['subjects'=>1]);
-	}
-
-	// Map subjects
-	public static function mapsubjects($collection,$userall_id,$academicyear,$upload_type)
-	{
-		$user_data = auth()->user();
-		$inserted_records = 0;
-		//Process each and every row ,insert all data in db
-        foreach ($collection as $row) {
-            if($row['class_name']!='' && $row['section_name']!='' && $row['subject_name']!='')
-            {         
-            	if($upload_type == 'import')
-            	{          
-	                $class_id = AcademicClasses::where(DB::raw('lower(class_name)'), strtolower($row['class_name']))->pluck('id')->first(); //To check given class name is already exists in DB.
-
-	                $section_id = AcademicSections::where(DB::raw('lower(section_name)'), strtolower($row['section_name']))->pluck('id')->first(); //To check given section name is already exists in DB.
-
-	                $subject_id = AcademicSubjects::where(DB::raw('lower(subject_name)'), strtolower($row['subject_name']))->pluck('id')->first(); //To check given subject name is already exists in DB.
-
-	                $division_id = AcademicDivisions::where(DB::raw('lower(division_name)'), strtolower($row['division_name']))->pluck('id')->first(); //To check given subject name is already exists in DB.
-	            }
-	            else
-	            {
-	            	$class_id = $row['class_name'];
-	            	$section_id = $row['section_name'];
-	            	$subject_id = $row['subject_name'];
-	            	$division_id = $row['division_name'];
-
-	            }
-
-                if($class_id != '' && $section_id!='' && $subject_id!='')
-                {
-                    $class_config_id = AcademicClassConfiguration::where(['class_id'=>$class_id,'section_id'=>$section_id,'division_id'=>$division_id])->pluck('id')->first(); //To check given config details is already exists in DB.
-
-                    if($class_config_id == '')
-                    {
-                        $class_config = new AcademicClassConfiguration;
-                        $class_config->academic_year = $academicyear;
-                        $class_config->class_id = $class_id;
-                        $class_config->section_id = $section_id;
-                        $class_config->division_id = $division_id;
-                        $class_config->created_by=$userall_id;
-                        $class_config->created_time=Carbon::now()->timezone('Asia/Kolkata');
-                        $class_config->save();
-                        $class_config_id = $class_config->id;
-                    }
-                    if($class_config_id!='')
-                    {
-                        $subject_config_id = AcademicSubjectsMapping::where(['class_config'=>$class_config_id ,'subject'=>$subject_id])->pluck('id')->first(); //To check given subject mapping is already exists in DB.
-                        if($subject_config_id == '')
-                        {
-                            // Insert mapping in table
-                            $subject_config = new AcademicSubjectsMapping;
-                            $subject_config->subject = $subject_id;
-                            $subject_config->class_config = $class_config_id;
-                            $subject_config->created_by=$userall_id;
-                            $subject_config->created_time=Carbon::now()->timezone('Asia/Kolkata');
-                            $subject_config->save();
-                            $inserted_records++;
-                        }
-                    }
-                }
-
-            }
-        }
-
-        if($inserted_records>0)
-            Configurations::where('school_profile_id',$user_data->school_profile_id)->update(['map_subjects'=>1]);
-	}
-
-	//Staffs Category
-	public function get_staff_category()
-	{
-		$categories = UserCategories::select('id','category_name')->where('user_role',2)->get()->toArray();
-		return response()->json(compact('categories'));
-	}
-
-	//Staffs Category
-	public function get_staff_category_class()
-	{
-		$categories = UserCategories::select('id','category_name')->where('user_role',2)->get()->toArray();
-		$subjects = AcademicSubjects::select('id','subject_name')->get()->toArray();
-		$classes = AcademicClasses::select('id','class_name')->get()->toArray();
-		$sections = AcademicSections::select('id','section_name')->get()->toArray();
-		return response()->json(compact('categories','subjects','classes','sections'));
-	}
-
-	// Store Staff details(on-boarding)
-	public function staff($data)
+    // Store Staff/ Management details(on-boarding)
+	public function onboarding_create_user(Request $request)
 	{
 		$user_data = auth()->user();
 
-        if($user_data->user_role == 1)//check role and get current user id
-            $user_admin = UserAdmin::where(['user_id'=>$user_data->user_id])->pluck('id')->first();
+       	$user_details =  app('App\Http\Controllers\APILoginController')->get_user_table_id($user_data);
 
-        $userall_id = UserAll::where(['user_table_id'=>$user_admin,'user_role'=>$user_data->user_role])->pluck('id')->first(); //fetch id from user all table to store setting triggered user
+        $userall_id = UserAll::where(['user_table_id'=>$user_details->id,'user_role'=>$user_data->user_role])->pluck('id')->first();//fetch id from user all table to store notification triggered user
 
         // fetch academic year
         $academicyear = SchoolAcademicYears::where(['school_profile_id'=>$user_data->school_profile_id])->pluck('academic_year')->first();
 
         $profile_details = SchoolProfile::where(['id'=>$user_data->school_profile_id])->first();//Fetch school profile details 
+        $data = $request->data;
+        $role = $request->role;
 
         $usermobile_numbers=[];
         foreach ($data as $key => $value) {
         	$image ='';
-        	if(!empty($value['photo']))//check upload photo exist or not
-        	{
+        	if(Config::get('app.Management_role') == $role)
+        		$target_file = '/management/';
+        	else if(Config::get('app.Staff_role') == $role)
+        		$target_file = '/staff/';
+        	else
+        		return response()->json(['status'=>false,'messgae'=>'Invalid Role!...']);
 
-        		$name = explode('.',$value['photo']->getClientOriginalName())[0];
-	        	$image = $name.''.time().'.'.$value['photo']->extension();
-	        	$value['photo']->move(public_path(env('SAMPLE_CONFIG_URL').'staffs'), $image);
-        	}
-        	$check_exists = UserStaffs::where(['mobile_number'=>$value['mobile_number']])->first(); //To check given subject name is already exists in DB.
+        	if(isset($value['photo']) && $value['photo']!='')
+	        {
+	        	$image = app('App\Http\Controllers\WelcomeController')->profile_file_upload($school_profile['school_code'],$value['photo'],1,$target_file,$value['ext']);
+	        }
+	        if(Config::get('app.Management_role') == $role)
+        		$check_exists = UserManagements::where(['mobile_number'=>$value['mobile_number']])->first(); //To check given subject name is already exists in DB.
+        	else if(Config::get('app.Staff_role') == $role)
+        		$check_exists = UserStaffs::where(['mobile_number'=>$value['mobile_number']])->first(); //To check given subject name is already exists in DB.
+
             if(empty($check_exists) && !in_array($value['mobile_number'],$usermobile_numbers) ) //if no then insert 
             {
 	        	//save staff details
-	            $staffs_details = new UserStaffs;
-	            $staffs_details->first_name= $value['staff_name'];
-	            $staffs_details->mobile_number=$value['mobile_number'];
-	            if($image!='')
-	            	$staffs_details->profile_image = ($image!='')?public_path(env('SAMPLE_CONFIG_URL').'staffs/'.$image):'';
-	            $staffs_details->created_by=$userall_id;
-	        	$staffs_details->created_time=Carbon::now()->timezone('Asia/Kolkata');
-	            $staffs_details->save();
+	        	if(Config::get('app.Management_role') == $role)
+	            	$user_details = new UserManagements;
+	            else if(Config::get('app.Staff_role') == $role)
+	            	$user_details = new UserStaffs;
 
-	            $staff_id =$staffs_details->id; // staff id
+	            $user_details->first_name= $value['name'];
+	            $user_details->mobile_number=$value['mobile_number'];
+	            if($image!='')
+	            	$user_details->profile_image = ($image!='')?$image:'';
+	            if(isset($value['dob']) && $value['dob']!='')
+	        		$user_details->dob = date('Y-m-d',strtotime($value['dob']));
+	        	if(isset($value['doj']) && $value['doj']!='')
+	        		$user_details->doj = date('Y-m-d',strtotime($value['doj']));
+	        	if(isset($value['employee_no']) && $value['employee_no']!='')
+	        		$user_details->employee_no = $value['employee_no'];
+	        	if(isset($value['user_category']) && $value['user_category']!='')
+	        		$user_details->user_category=$value['user_category'];
+
+	            $user_details->created_by=$userall_id;
+	        	$user_details->created_time=Carbon::now()->timezone('Asia/Kolkata');
+	            $user_details->save();
+
+	            $id =$user_details->id; // staff id
 
 	            // generate and update staff id in db 
-	            $userstaff_id = $profile_details['school_code'].substr($profile_details['active_academic_year'], -2).'T'.sprintf("%04s", $staff_id);
-	            $staffs_details->user_id = $userstaff_id;
-	            $staffs_details->save();
+	            if(Config::get('app.Management_role') == $role)
+        			$user_id = $profile_details['school_code'].substr($profile_details['active_academic_year'], -2).'T'.sprintf("%04s", $id);
+        		else if(Config::get('app.Staff_role') == $role)
+	            	$user_id = $profile_details['school_code'].substr($profile_details['active_academic_year'], -2).'M'.sprintf("%04s", $id);
+
+	            $user_details->user_id = $user_id;
+	            $user_details->save();
 
 	            $user_all = new UserAll;
-	            $user_all->user_table_id=$staff_id;
-	            $user_all->user_role=2;
+	            $user_all->user_table_id=$id;
+	            $user_all->user_role=$role;
 	            $user_all->save();
 
 	            $schoolusers = new SchoolUsers;
 	            $schoolusers->school_profile_id=$user_data->school_profile_id;
-	            $schoolusers->user_id=$userstaff_id;
+	            $schoolusers->user_id=$user_id;
 	            $schoolusers->user_mobile_number=$value['mobile_number'];
 	            $schoolusers->user_password=bcrypt($value['mobile_number']);
-	            $schoolusers->user_role=2;
+	            $schoolusers->user_role=$role;
 	            $schoolusers->user_status=1;
 	            $schoolusers->save();
+
+	            if($role == Config::get('app.Staff_role') && $value['class_teacher_class_config']!='')
+	            {
+	            	AcademicClassConfiguration::where('id',$value['class_teacher_class_config'])->update(['class_teacher'=>$id]); //assign class teacher to class.
+
+	            	$class_teacher_group = UserGroups::where('group_status',Config::get('app.Group_Active'))->where('class_config',$value['class_teacher_class_config'])->pluck('id')->first();
+	            	$check_exists = UserGroupsMapping::where(['group_id'=>$class_teacher_group,'user_table_id'=>$id,'user_role'=>Config::get('app.Staff_role'),'user_status'=>1])->pluck('id')->first();
+	             	if($check_exists=='' && $teacher_group!='')
+	            		UserGroupsMapping::insert(['group_id'=>$class_teacher_group,'user_table_id'=>$id,'user_role'=>Config::get('app.Staff_role'),'user_status'=>1,'group_access'=>1]);
+	            }
+	            
+	            if($role == Config::get('app.Staff_role') && !empty($value['teacher_class_config']))
+	            {
+	            	UserGroupsMapping::insert(['group_id'=>2,'user_table_id'=>$id,'user_role'=>Config::get('app.Staff_role'),'user_status'=>1,'group_access'=>1]);
+	            	foreach ($value['teacher_class_config'] as $teacher_key => $teacher_value) {
+	             		AcademicSubjectsMapping::where('class_config',$teacher_value['class_config'])->where('subject',$teacher_value['subject_id'])->update(['staff'=>$id]); //assign staff to class.
+	             		$teacher_group = UserGroups::where('group_status',Config::get('app.Group_Active'))->where('class_config',$teacher_value['class_config'])->pluck('id')->first();
+	             		$check_exists = UserGroupsMapping::where(['group_id'=>$teacher_group,'user_table_id'=>$id,'user_role'=>Config::get('app.Staff_role'),'user_status'=>1])->pluck('id')->first();
+	             		if($check_exists=='' && $teacher_group!='')
+	            			UserGroupsMapping::insert(['group_id'=>$teacher_group,'user_table_id'=>$id,'user_role'=>Config::get('app.Staff_role'),'user_status'=>1,'group_access'=>1]);
+	            	}
+	            }
 	        }
         }
-        Configurations::where('school_profile_id',$user_data->school_profile_id)->update(['staffs'=>1]);
+        if(Config::get('app.Management_role') == $role)
+	        Configurations::where('school_profile_id',$user_data->school_profile_id)->update(['management'=>1]);
+        else if(Config::get('app.Staff_role') == $role)
+			Configurations::where('school_profile_id',$user_data->school_profile_id)->update(['staffs'=>1]);
+
+		return response()->json(['status'=>true,'messgae'=>'Details inserted Successfully!...']);
 	}
 
-	//Staffs Category
-	public function get_allsubjects_list(Request $request)
+    // edit staff details
+    public function onboarding_edit_management(Request $request)
+    {
+    	// Check authenticate user
+        $user = auth()->user();
+
+        $user_details =  app('App\Http\Controllers\APILoginController')->get_user_table_id($user);
+
+        $userall_id = UserAll::where(['user_table_id'=>$user_details->id,'user_role'=>$user->user_role])->pluck('id')->first();//fetch id from user all table to store notification triggered user
+
+        $profile_details = SchoolProfile::where(['id'=>$user->school_profile_id])->first();//Fetch school profile details 
+        $mgnt_details = [];
+        if($request->id!='')// fetch selected mgnt details 
+        	$mgnt_details = UserManagements::where('id',$request->id)->first();
+
+        $schoolcode = $school_profile = SchoolProfile::where(['id'=>$user['school_profile_id']])->first();//get school code from school profile
+    	$image ='';
+    	$target_file = '/management/';
+
+        if(!empty($mgnt_details))
+        {
+        	if($request->photo!='')
+	        {
+	        	$image = app('App\Http\Controllers\WelcomeController')->profile_file_upload($school_profile['school_code'],$request->photo,1,$target_file,$request->ext);
+	        }
+	        //save mgnt details
+	        $mgnt_details->first_name= $request->name;
+	        $mgnt_details->mobile_number=$request->mobile_number;
+	        if($image!='')
+	        	$mgnt_details->profile_image = ($image!='')?$image:'';
+	        $mgnt_details->email_id=$request->email_address;
+	        $mgnt_details->user_category=$request->user_category;
+	        $mgnt_details->dob=date('Y-m-d',strtotime($request->dob));
+	        $mgnt_details->doj=date('Y-m-d',strtotime($request->doj));
+	        $mgnt_details->employee_no=$request->employee_no;
+	        $mgnt_details->updated_by=$userall_id;
+	    	$mgnt_details->updated_time=Carbon::now()->timezone('Asia/Kolkata');
+	        $mgnt_details->save();
+
+
+	        $schoolusers = SchoolUsers::where('user_id',$mgnt_details->user_id)->first(); //update email address in common login table
+
+            $schoolusers->user_email_id=$request->email_address;
+            $schoolusers->save();
+
+            return response()->json(['status'=>true,'messgae'=>'Management details updated Successfully!...']);
+        }
+        else
+        {
+        	if($request->photo!='')
+	        {
+	        	$image = app('App\Http\Controllers\WelcomeController')->profile_file_upload($school_profile['school_code'],$request->photo,1,$target_file,$request->ext);
+	        }
+
+        	//save mgnt details
+            $mgnt_details = new UserManagements;
+            $mgnt_details->first_name= $request->name;
+            $mgnt_details->mobile_number=$request->mobile_number;
+            if($image!='')
+            	$mgnt_details->profile_image = ($image!='')?$image:'';
+            $mgnt_details->email_id=$request->email_address;
+	        $mgnt_details->user_category=$request->user_category;
+	        $mgnt_details->dob=date('Y-m-d',strtotime($request->dob));
+	        $mgnt_details->doj=date('Y-m-d',strtotime($request->doj));
+	        $mgnt_details->employee_no=$request->employee_no;
+            $mgnt_details->created_by=$userall_id;
+        	$mgnt_details->created_time=Carbon::now()->timezone('Asia/Kolkata');
+            $mgnt_details->save();
+
+            $id =$mgnt_details->id; // mgnt id
+
+            // generate and update mgnt id in db 
+            $usermgnt_id = $profile_details['school_code'].substr($profile_details['active_academic_year'], -2).'M'.sprintf("%04s", $id);
+            $mgnt_details->user_id = $usermgnt_id;
+            $mgnt_details->save();
+
+            $user_all = new UserAll;
+            $user_all->user_table_id=$id;
+            $user_all->user_role=Config::get('app.Management_role');
+            $user_all->save();
+
+            $schoolusers = new SchoolUsers;
+            $schoolusers->school_profile_id=$user->school_profile_id;
+            $schoolusers->user_id=$usermgnt_id;
+            $schoolusers->user_mobile_number=$request->mobile_number;
+            $schoolusers->user_password=bcrypt($request->mobile_number);
+            $schoolusers->user_role=Config::get('app.Management_role');
+            $schoolusers->user_status=1;
+            $schoolusers->save();
+        }
+
+        Configurations::where('school_profile_id',$user->school_profile_id)->update(['management'=>1]);
+        return response()->json(['status'=>true,'messgae'=>'Management details inserted Successfully!...']);
+    }
+    
+    // fetch all parent details for onboarding process
+    public function onboarding_parent_list()
+    {
+    	// Check authenticate user
+        $userdata = auth()->user();
+
+        $parent_list = UserParents::select('id','user_id','first_name','mobile_number')->where('user_status',1)->get()->toArray(); //fetch all the staff for listing
+        $index = 0;
+        foreach($parent_list as $key => $value)
+        {
+        	$list[$index] = $value;
+        	$list[$index]['class_config'] = 0;
+        	$list[$index]['division_id'] = 0;        	
+        	$studentid = UserStudentsMapping::where('parent',$value['id'])->pluck('student')->first();
+        	if($studentid!='')
+        	{
+        		$student_details = UserStudents::where('id',$studentid)->first();
+        		$list[$index]['class_config'] = $student_details->class_config;
+        		$list[$index]['division_id'] = $student_details->division_id;
+        	}
+        	$index++;
+        }
+        return response()->json($list);
+    }
+
+    // Onboarding for individual parent view
+    public function onboarding_fetch_single_parent(Request $request)
+    {
+    	$student_list = $parentsdata = $students= [];//empty array declaration
+		$student_list = UserStudentsMapping::select('student')->where('parent',$request->id)->first(); //fetch student details from parent mapped data
+		if(!empty($student_list))
+		{
+			$parent_list = UserStudentsMapping::select('parent')->where('student',$student_list->student)->get()->toArray(); //fetch all parent details from student id
+			$students = UserStudents::where('id',$student_list->student)->first(); //get student related info
+			$parents = array_column($parent_list,'parent'); //pick parent id alone
+			foreach ($parents as $parent_key => $parent_value) { //form array with parent details
+				$parent_data = UserParents::where('id',$parent_value)->first();
+				$parentsdata[$parent_data->user_category] = $parent_data; 
+			}
+		}
+		else if($request->id!='')
+		{
+			$parent_data = UserParents::where('id',$request->id)->first();
+			$parentsdata[$parent_data->user_category] = $parent_data; 
+		}
+
+		$student_list = ([
+			'student_id'=>isset($students->id)?$students->id:0,
+			'student_name'=>isset($students->first_name)?$students->first_name:'',
+			'father_mobile_number'=>isset($parentsdata[1])?$parentsdata[1]->mobile_number:0,
+			'father_email_address'=>isset($parentsdata[1])?$parentsdata[1]->email_id:'',
+			'father_name'=>isset($parentsdata[1])?$parentsdata[1]->first_name:'',
+			'father_id'=>isset($parentsdata[1])?$parentsdata[1]->id:0,
+			'father_image'=>isset($parentsdata[1])?$parentsdata[1]->profile_image:null,
+			'mother_mobile_number'=>isset($parentsdata[2])?$parentsdata[2]->mobile_number:0,
+			'mother_email_address'=>isset($parentsdata[2])?$parentsdata[2]->email_id:'',
+			'mother_name'=>isset($parentsdata[2])?$parentsdata[2]->first_name:'',
+			'mother_id'=>isset($parentsdata[2])?$parentsdata[2]->id:0,
+			'mother_image'=>isset($parentsdata[2])?$parentsdata[2]->profile_image:null,
+			'guardian_mobile_number'=>isset($parentsdata[3])?$parentsdata[3]->mobile_number:0,
+			'guardian_email_address'=>isset($parentsdata[3])?$parentsdata[3]->email_id:'',
+			'guardian_name'=>isset($parentsdata[3])?$parentsdata[3]->first_name:'',
+			'guardian_id'=>isset($parentsdata[3])?$parentsdata[3]->id:0,
+			'guardian_image'=>isset($parentsdata[3])?$parentsdata[3]->profile_image:null,
+			'admission_number'=>isset($students->admission_number)?$students->admission_number:'',
+			'roll_no'=>isset($students->roll_number)?$students->roll_number:0,
+			'dob'=>isset($students->dob)?$students->dob:null,
+			'employee_no'=>isset($students->employee_no)?$students->employee_no:'',
+			'gender'=>isset($students->gender)?(Config::get('app.'.$students->gender)):0,
+			'photo'=>isset($students->profile_image)?$students->profile_image:'',
+			'temporary_student'=>(isset($students->profile_image) && $students->class_config == null)?'yes':'no',
+			'class_section'=>isset($students->class_config)?$students->class_config:0,
+		]);
+		
+
+		return response()->json($student_list); //return student details 
+    }
+
+    // delete parent (onboarding)
+    public function onboarding_delete_parent(Request $request)
+    {
+    	// Check authenticate user
+        $userdata = auth()->user();
+        $studentids = UserStudentsMapping::where('parent',$request->id)->pluck('student')->toArray(); //fetch student id
+        $parentids = UserStudentsMapping::whereIn('student',$studentids)->pluck('parent')->toArray(); //fetch student id
+        if(count($parentids))
+        	UserStudents::whereIn('id',$studentids)->delete();
+        UserStudentsMapping::where('parent',$request->id)->delete(); //delete parent mapping record
+        UserParents::where('id',$request->id)->delete();
+        return response()->json(['status'=>true,'message'=>'Deleted Successfully!...']);
+    }
+
+    // Add students in DB along with parents and guardian details
+	public function onboarding_create_students(Request $request)
 	{
-		$subjects = AcademicSubjects::select('id','subject_name')->where('division_id',$request->division_id)->get()->toArray();
-		return response()->json(compact('subjects'));
+		$user_data = auth()->user();
+		$profile_details = SchoolProfile::where(['id'=>$user_data->school_profile_id])->first();//Fetch school profile details 
+
+		$user_details =  app('App\Http\Controllers\APILoginController')->get_user_table_id($user_data);
+
+		$school_profile = SchoolProfile::where(['id'=>$user_data->school_profile_id])->first();
+
+        $userall_id = UserAll::where(['user_table_id'=>$user_details->id,'user_role'=>$user_data->user_role])->pluck('id')->first();//fetch id from user all table to store notification triggered user
+
+		$inserted_records=0;
+		$data = $request->data;
+		$usermobile_numbers = [];
+        //Process each and every row ,insert all data in db
+        foreach ($data as $row) {
+        	$student_image = $group_id = $password = $gender='';
+        	$student_details = $father_check_exists = $mother_check_exists = $guardian_check_exists= [];
+        	if(isset($row['father_mobile_number']) && $row['father_mobile_number']!='')
+            	$father_check_exists = UserParents::where('mobile_number',$row['father_mobile_number'])->first(); //To check given mobile no is already exists in DB.
+
+            if(isset($row['mother_mobile_number']) && $row['mother_mobile_number']!='')
+            	$mother_check_exists = UserParents::where('mobile_number',$row['mother_mobile_number'])->first(); //To check given mobile no is already exists in DB.
+
+            if(isset($row['guardian_mobile_number']) && $row['guardian_mobile_number']!='')
+            	$guardian_check_exists = UserParents::where('mobile_number',$row['guardian_mobile_number'])->first(); //To check given mobile no is already exists in DB.
+
+            if(isset($request->gender))
+        		$gender = (isset($request->gender) && strtolower($request->gender) == 'male')?1:((isset($request->gender) && strtolower($request->gender) == 'female')?2:3);
+
+        	if(isset($row['student_photo']) && $row['student_photo']!='')
+            {
+	        	$target_file = '/students/';
+	        	if($row['student_photo']!='')
+		        {
+		        	$student_image = app('App\Http\Controllers\WelcomeController')->profile_file_upload($school_profile['school_code'],$row['student_photo'],1,$target_file,$row['student_ext']);
+		        }
+		    }
+		    if($row['admission_no']!='')
+		    {
+	        	$student_details = new UserStudents;
+
+	            $student_details->first_name= $row['student_name'];
+	            $student_details->admission_number=$row['admission_no'];
+	            if(isset($row['roll_no']))
+	            	$student_details->roll_number=$row['roll_no'];
+	            if($student_image!='')
+	            	$student_details->profile_image=$student_image;
+	            $student_details->gender=$gender;
+	            $student_details->class_config=$row['class_config'];
+	            $student_details->dob=date('Y-m-d',strtotime($row['dob']));
+	            $student_details->user_status=(isset($row['temporary_student']) && $request->temporary_student!='' && strtolower($row['temporary_student'])=='yes')?5:1;
+	            $student_details->created_by=$userall_id;
+	        	$student_details->created_time=Carbon::now()->timezone('Asia/Kolkata');
+	            $student_details->save();
+
+	   			$student_id = $student_details->id;
+	   			$password = '';
+	   			// generate and update staff id in db 
+	            $userstudent_id = $profile_details['school_code'].substr($profile_details['active_academic_year'], -2).'S'.sprintf("%04s", $student_id);
+	            $student_details->user_id = $userstudent_id;
+	            $student_details->save();
+	            
+	            if($profile_details->default_password_type == 'admission_number')
+					$password = bcrypt($row['admission_no']);
+				else if($profile_details->default_password_type == 'dob')
+					$password = bcrypt(date('dmY',strtotime($row['dob'])));
+	            
+			}
+			
+            if(empty($father_check_exists) && !in_array($row['father_mobile_number'],$usermobile_numbers) && $row['father_mobile_number']!='') 
+            {
+            	array_push($usermobile_numbers, $row['father_mobile_number']);//check mobile number already exists in array
+            	$father = [];
+	        	$father['student_photo'] = isset($row['father_photo'])?$row['father_photo']:'';
+	        	$father['first_name'] = $row['father_name'];
+	        	$father['mobile_number'] = $row['father_mobile_number'];
+	        	$father['email_address'] = $row['father_email_address'];
+	        	$father['ext'] = isset($row['father_ext'])?$row['father_ext']:'';
+	        	$father['user_category'] = 1;
+
+	        	if($profile_details->default_password_type == 'mobile_number' || $password == '')
+					$password = bcrypt($row['father_mobile_number']);
+				
+	        	$this->insert_parent_details($father,$student_details->id,$userall_id,$group_id,$password);
+            }
+            else
+            {
+            	if(!empty($student_details) && !empty($father_check_exists) && $row['father_mobile_number']!='')
+            		$this->createstudentmapping($student_details->id,$father_check_exists->id,$userall_id);
+            }
+
+
+            if(empty($mother_check_exists) && !in_array($row['mother_mobile_number'],$usermobile_numbers) && $row['mother_mobile_number']!='') 
+            {
+            	array_push($usermobile_numbers, $row['mother_mobile_number']);//check mobile number already exists in array
+            	$mother = [];
+	        	$mother['student_photo'] = isset($row['mother_photo'])?$row['mother_photo']:'';
+	        	$mother['first_name'] = $row['mother_name'];
+	        	$mother['mobile_number'] = $row['mother_mobile_number'];
+	        	$mother['email_address'] = $row['mother_email_address'];
+	        	$mother['ext'] = isset($row['mother_ext'])?$row['mother_ext']:'';
+	        	$mother['user_category'] = 2;
+
+	        	if($profile_details->default_password_type == 'mobile_number' || $password == '')
+					$password = bcrypt($row['mother_mobile_number']);
+				
+	        	$this->insert_parent_details($mother,$student_details->id,$userall_id,$group_id,$password);
+            }
+            else
+            {
+            	if(!empty($student_details) && !empty($mother_check_exists) && $row['mother_mobile_number']!='')	
+            		$this->createstudentmapping($student_details->id,$mother_check_exists->id,$userall_id);
+            }
+
+            if(empty($guardian_check_exists) && !in_array($row['guardian_mobile_number'],$usermobile_numbers) && $row['guardian_mobile_number']!='') 
+            {
+            	array_push($usermobile_numbers, $row['guardian_mobile_number']);//check mobile number already exists in array
+            	$guardian = [];
+	        	$guardian['student_photo'] = isset($row['guardian_photo'])?$row['guardian_photo']:'';
+	        	$guardian['first_name'] = $row['guardian_name'];
+	        	$guardian['mobile_number'] = $row['guardian_mobile_number'];
+	        	$guardian['email_address'] = $row['guardian_email_address'];
+	        	$guardian['ext'] = isset($row['guardian_ext'])?$row['guardian_ext']:'';
+	        	$guardian['user_category'] = 9;
+
+	        	if($profile_details->default_password_type == 'mobile_number' || $password == '')
+					$password = bcrypt($row['guardian_mobile_number']);
+				
+	        	$this->insert_parent_details($guardian,$student_details->id,$userall_id,$group_id,$password);
+            }
+            else
+            {
+            	if(!empty($student_details) && !empty($guardian_check_exists) && $row['guardian_mobile_number']!='')
+            		$this->createstudentmapping($student_details->id,$guardian_check_exists->id,$userall_id);
+            }
+        }   
+        Configurations::where('school_profile_id',$user->school_profile_id)->update(['students'=>1]);
+	   	return response()->json(['status'=>true,'message'=>'Student and parents details inserted Successfully!...']);
 	}
 
-	// Add students in DB along with parents and guardian details
-	public static function students($data,$userall_id,$upload_type,$class_config)
+	public function createstudentmapping($id,$parent_id,$userall_id)
+	{
+		// mapping the student and parent
+        $student_map = new UserStudentsMapping;
+        $student_map->student = $id;  
+        $student_map->parent = $parent_id;
+        $student_map->created_by = $userall_id;
+        $student_map->created_time=Carbon::now()->timezone('Asia/Kolkata');
+        $student_map->save();
+
+        return true;
+	}
+
+	// edit or insert parent (onboarding)
+    public function onboarding_edit_parent(Request $request)
+    {
+    	// Check authenticate user
+        $user = auth()->user();
+		$user_details =  app('App\Http\Controllers\APILoginController')->get_user_table_id($user);
+
+        $userall_id = UserAll::where(['user_table_id'=>$user_details->id,'user_role'=>$user->user_role])->pluck('id')->first();//fetch id from user all table to store notification triggered user
+
+        $profile_details = $school_profile = SchoolProfile::where(['id'=>$user->school_profile_id])->first();//Fetch school profile details 
+        $parent_details = $mother_details = $guardian_details = $student_details = [];
+
+        $class_config_id = null;
+        if(isset($request->gender))
+        	$gender = (isset($request->gender) && strtolower($request->gender) == 'male')?1:((isset($request->gender) && strtolower($request->gender) == 'female')?2:3);
+
+        //check image exists
+   		$image ='';
+   		$profile_image_path ='';
+
+   		$target_file = '/students/';
+    	if($request->student_photo!='')
+        {
+        	$profile_image_path = app('App\Http\Controllers\WelcomeController')->profile_file_upload($school_profile['school_code'],$request->student_photo,1,$target_file,$request->ext);
+        }
+
+        if($request->father_id>0 || $request->mother_id>0 || $request->guardian_id>0 || $request->student_id>0)// fetch check user already exists 
+        {
+        	$group_id =$old_group_id=$new_group_id='';
+
+       		if($request->group_id!='')
+       			$group_id = $request->group_id;
+
+        	if(isset($request->student_id) && $request->student_id>0 && !isset($request->type))//arrange student details in array
+        	{
+
+        		$student_details = UserStudents::where(['id'=>$request->student_id])->first();
+        		if($student_details->class_config != $request->class_config)
+        		{
+        			$old_group_id = UserGroups::where('class_config',$student_details->class_config)->pluck('id')->first();
+        			$new_group_id = UserGroups::where('class_config',$request->class_config)->pluck('id')->first();
+        		}
+
+        	} 
+        	else
+                $student_details = new UserStudents;
+
+            // student details insert or edit into db
+            $student_details->first_name= $request->student_name;
+            $student_details->admission_number=$request->admission_no;
+            $student_details->roll_number=isset($request->roll_no)?$request->roll_no:'';
+            if(!empty($profile_image_path) && !empty($request->student_photo))
+            	$student_details->profile_image=$profile_image_path;
+            if(isset($request->gender))
+            	$student_details->gender=$gender;
+            if(isset($request->dob))
+            	$student_details->dob=date('Y-m-d',strtotime($request->dob));
+
+            if(isset($student_details->class_config) && $student_details->class_config !='' && $request->class_config !='' && $student_details->class_config != $request->class_config && !isset($request->type))
+            {
+            	Attendance::where('user_table_id',$student_details->id)->where('class_config',$student_details->class_config)->update(['class_config'=>$request->class_config]);
+            }
+
+            $student_details->class_config=$request->class_config;
+
+            $student_details->user_status=(isset($request->temporary_student) && $request->temporary_student!='' && strtolower($request->temporary_student)=='yes')?5:1;
+            $student_details->updated_by=$userall_id;
+        	$student_details->updated_time=Carbon::now()->timezone('Asia/Kolkata');
+            $student_details->save();
+
+   			$student_id = $student_details->id;
+
+   			
+
+   			// generate and update student id in db 
+            $userstudent_id = $profile_details['school_code'].substr($profile_details['active_academic_year'], -2).'S'.sprintf("%04s", $student_id);
+            $student_details->user_id = $userstudent_id;
+            $student_details->save(); 
+
+            // add into group
+	        if($new_group_id!='' && ($old_group_id != $new_group_id) && $request->student_id!='' && !isset($request->type))
+	        {
+	        	$parent_ids = UserStudentsMapping::where('student',$request->student_id)->pluck('parent')->toArray();
+	        	UserGroupsMapping::where(['group_id'=>$old_group_id,'user_role'=>Config::get('app.Parent_role')])->whereIn('user_table_id',$parent_ids)->delete();
+	        	foreach ($parent_ids as $key => $parent_value) {
+	        		UserGroupsMapping::insert(['group_id'=>$new_group_id,'user_table_id'=>$parent_value,'user_role'=>Config::get('app.Parent_role'),'user_status'=>1,'group_access'=>2]);
+	        	}
+	        }
+
+            
+            // insert parents details
+            if(isset($request->father_id))
+            {
+	        	$father_details = UserParents::where('id',$request->father_id)->first();
+		        if(!empty($father_details) || $request->father_mobile_number!='')
+		        {
+		        	$data['student_photo'] = isset($data->father_photo)?$data->father_photo:'';
+	        		$data['ext'] = isset($data->father_ext)?$data->father_ext:'';
+		        	$data['first_name'] = $request->father_name;
+		        	$data['mobile_number'] = $request->father_mobile_number;
+		        	$data['email_address'] = $request->father_email_address;
+		        	$data['user_category'] = 1;
+
+		        	$this->edit_parent_details($data,$father_details,$student_id,$userall_id,$old_group_id,$new_group_id);
+		        }
+		    }
+	        // update or insert parents details
+	        if(isset($request->mother_id))
+            {
+		        $mother_details = UserParents::where('id',$request->mother_id)->first();
+		        if(!empty($mother_details) || $request->mother_mobile_number!='' )
+		        {
+		        	$data = [];
+		        	$data['student_photo'] = isset($request->mother_photo)?$data->mother_photo:'';
+	        		$data['ext'] = isset($request->mother_ext)?$data->mother_ext:'';
+		        	$data['first_name'] = $request->mother_name;
+		        	$data['mobile_number'] = $request->mother_mobile_number;
+		        	$data['email_address'] = $request->mother_email_address;
+		        	$data['user_category'] = 2;
+
+		        	$this->edit_parent_details($data,$mother_details,$student_id,$userall_id,$old_group_id,$new_group_id);
+		        }
+		    }
+
+		    if(isset($request->guardian_id))
+            {
+	        // update or insert parents details
+		        $guardian_details = UserParents::where('id',$request->guardian_id)->first();
+		        if(!empty($guardian_details) || $request->guardian_mobile_number!='' )
+		        {
+		        	$data = [];
+		        	$data['student_photo'] = isset($request->guardian_photo)?$data->guardian_photo:'';
+	        		$data['ext'] = isset($request->guardian_ext)?$data->guardian_ext:'';
+		        	$data['first_name'] = $request->guardian_name;
+		        	$data['mobile_number'] = $request->guardian_mobile_number;
+		        	$data['email_address'] = $request->guardian_email_address;
+		        	$data['user_category'] = 3;
+
+		        	$this->edit_parent_details($data,$guardian_details,$student_id,$userall_id,$old_group_id,$new_group_id);
+		        }
+		    }
+	        Configurations::where('school_profile_id',$user->school_profile_id)->update(['students'=>1]);
+	        return response()->json(['status'=>true,'message'=>'Student and parents details updated Successfully!...']);
+	    }
+        else
+       	{  		
+       		$group_id ='';
+
+       		if($request->group_id!='')
+       			$group_id = $request->group_id;
+        	// insert student details
+	        $student_details = new UserStudents;
+
+            $student_details->first_name= $request->student_name;
+            $student_details->admission_number=$request->admission_no;
+            if(isset($request->roll_no))
+            	$student_details->roll_number=isset($request->roll_no)?$request->roll_no:'';
+            if(!empty($profile_image_path) && !empty($request->student_photo))
+            	$student_details->profile_image=$profile_image_path;
+            $student_details->gender=$gender;
+            $student_details->class_config=$request->class_config;
+            $student_details->dob=date('Y-m-d',strtotime($request->dob));
+            $student_details->user_status=(isset($request->temporary_student) && $request->temporary_student!='' && strtolower($request->temporary_student)=='yes')?5:1;
+            $student_details->created_by=$userall_id;
+        	$student_details->created_time=Carbon::now()->timezone('Asia/Kolkata');
+            $student_details->save();
+
+   			$student_id = $student_details->id;
+   			$password = '';
+   			// generate and update staff id in db 
+            $userstudent_id = $profile_details['school_code'].substr($profile_details['active_academic_year'], -2).'S'.sprintf("%04s", $student_id);
+            $student_details->user_id = $userstudent_id;
+            $student_details->save();
+            
+            if($profile_details->default_password_type == 'admission_number')
+				$password = bcrypt($request->admission_no);
+			else if($profile_details->default_password_type == 'dob')
+				$password = bcrypt(date('dmY',strtotime($request->dob)));
+
+            // insert father details
+            if($request->father_mobile_number!='' && $request->father_name!='' && $request->father_mobile_number > 0)
+        	{
+        		$father_id = UserParents::where('mobile_number',$request->father_mobile_number)->pluck('id')->first();
+        		if($father_id == '')
+        		{
+		        	$data = [];
+		        	$data['student_photo'] = isset($request->father_photo)?$data->father_photo:'';
+	        		$data['ext'] = isset($request->father_ext)?$data->father_ext:'';
+		        	$data['first_name'] = $request->father_name;
+		        	$data['mobile_number'] = $request->father_mobile_number;
+		        	$data['email_address'] = $request->father_email_address;
+		        	$data['user_category'] = 1;
+
+		        	if($profile_details->default_password_type == 'mobile_number' || $password == '')
+						$password = bcrypt($request->father_mobile_number);
+					
+		        	$this->insert_parent_details($data,$student_details->id,$userall_id,$group_id,$password);
+        		}
+        		else
+        		{
+        			 // add into group
+			        if($group_id!='')
+			        {
+			        	UserGroupsMapping::insert(['group_id'=>$group_id,'user_table_id'=>$father_id,'user_role'=>Config::get('app.Parent_role'),'user_status'=>1]);
+			        	UserGroupsMapping::insert(['group_id'=>2,'user_table_id'=>$father_id,'user_role'=>Config::get('app.Parent_role'),'user_status'=>1]);
+			        }
+			        
+			        // mapping the student and parent
+			        $student_map = new UserStudentsMapping;
+			        $student_map->student = $student_details->id;  
+			        $student_map->parent = $father_id;
+			        $student_map->created_by = $userall_id;
+			        $student_map->created_time=Carbon::now()->timezone('Asia/Kolkata');
+			        $student_map->save();
+        		}
+	        }
+	        // insert mother details
+	        if($request->mother_mobile_number!='' && $request->mother_name!='' && $request->mother_mobile_number > 0)
+        	{
+        		$mother_id = UserParents::where('mobile_number',$request->mother_mobile_number)->pluck('id')->first();
+        		if($mother_id == '')
+        		{
+		        	$data = [];
+		        	$data['student_photo'] = isset($request->mother_photo)?$data->mother_photo:'';
+	        		$data['ext'] = isset($request->mother_ext)?$data->mother_ext:'';
+		        	$data['first_name'] = $request->mother_name;
+		        	$data['mobile_number'] = $request->mother_mobile_number;
+		        	$data['email_address'] = $request->mother_email_address;
+		        	$data['user_category'] = 2;
+
+		        	if($profile_details->default_password_type == 'mobile_number' || $password == '')
+						$password = bcrypt($request->mother_mobile_number);
+
+		        	$this->insert_parent_details($data,$student_details->id,$userall_id,$group_id,$password);
+
+	        	}
+        		else
+        		{
+        			 // add into group
+			        if($group_id!='')
+			        {
+			        	UserGroupsMapping::insert(['group_id'=>$group_id,'user_table_id'=>$mother_id,'user_role'=>Config::get('app.Parent_role'),'user_status'=>1]);
+			        	UserGroupsMapping::insert(['group_id'=>2,'user_table_id'=>$father_id,'user_role'=>Config::get('app.Parent_role'),'user_status'=>1]);
+			        }
+			        			        
+			        // mapping the student and parent
+			        $student_map = new UserStudentsMapping;
+			        $student_map->student = $student_details->id;  
+			        $student_map->parent = $mother_id;
+			        $student_map->created_by = $userall_id;
+			        $student_map->created_time=Carbon::now()->timezone('Asia/Kolkata');
+			        $student_map->save();
+        		}
+	        }
+
+	        // insert guardian details
+	        if($request->guardian_mobile_number!='' && $request->guardian_name!='' && $request->guardian_mobile_number > 0)
+        	{
+        		$guardian_id = UserParents::where('mobile_number',$request->guardian_mobile_number)->pluck('id')->first();
+        		if($guardian_id == '')
+        		{
+		        	$data = [];
+		        	$data['student_photo'] = isset($request->guardian_photo)?$data->guardian_photo:'';
+	        		$data['ext'] = isset($request->guardian_ext)?$data->guardian_ext:'';
+		        	$data['first_name'] = $request->guardian_name;
+		        	$data['mobile_number'] = $request->guardian_mobile_number;
+		        	$data['email_address'] = $request->guardian_email_address;
+		        	$data['user_category'] = 9;
+
+		        	if($profile_details->default_password_type == 'mobile_number' || $password == '')
+						$password = bcrypt($request->guardian_mobile_number);
+
+		        	$this->insert_parent_details($data,$student_details->id,$userall_id,$group_id,$password);
+	        	}
+        		else
+        		{
+        			 // add into group
+			        if($group_id!='')
+			        {
+			        	UserGroupsMapping::insert(['group_id'=>$group_id,'user_table_id'=>$guardian_id,'user_role'=>Config::get('app.Parent_role'),'user_status'=>1]);
+			        	UserGroupsMapping::insert(['group_id'=>2,'user_table_id'=>$father_id,'user_role'=>Config::get('app.Parent_role'),'user_status'=>1]);
+			        }
+			        
+			        // mapping the student and parent
+			        $student_map = new UserStudentsMapping;
+			        $student_map->student = $student_details->id;  
+			        $student_map->parent = $guardian_id;
+			        $student_map->created_by = $userall_id;
+			        $student_map->created_time=Carbon::now()->timezone('Asia/Kolkata');
+			        $student_map->save();
+        		}
+	        }
+	        Configurations::where('school_profile_id',$user->school_profile_id)->update(['students'=>1]);
+	        return response()->json(['status'=>true,'message'=>'Student and parents details inserted Successfully!...']);
+       	}
+    }
+
+    // Edit parent details dependency function - onboarding
+    public function edit_parent_details($data,$details,$id,$userall_id,$old_group_id,$new_group_id)
+    {
+    	$image =$page='';
+    	$user = auth()->user();
+    	$profile_image_path ='';
+        $profile_details = SchoolProfile::where(['id'=>$user->school_profile_id])->first();//Fetch school profile details 
+        $profile_image_path ='';
+
+   		$target_file = '/students/';
+    	if(isset($request->student_photo) && $request->student_photo!='')
+        {
+        	$profile_image_path = app('App\Http\Controllers\WelcomeController')->profile_file_upload($school_profile['school_code'],$request->student_photo,1,$target_file,$request->ext);
+        }
+
+    	if(empty($details) && !isset($details->mobile_number))
+    	{
+    		$page = 'new';
+    	    $details = new UserParents;
+    	}
+    	
+    	
+
+        //save staff details
+        if($data['first_name']!='')
+        	$details->first_name= $data['first_name'];
+        if($data['mobile_number']!='')
+        	$details->mobile_number=$data['mobile_number'];
+        if($profile_image_path!='')
+        	$details->profile_image = ($profile_image_path!='')?$profile_image_path:'';
+       	if($data['email_address']!='')
+        	$details->email_id=$data['email_address'];
+        if($data['user_category']!='')
+        	$details->user_category = $data['user_category'];
+        $details->updated_by=$userall_id;
+    	$details->updated_time=Carbon::now()->timezone('Asia/Kolkata');
+        $details->save();
+        $parent_id = $details->id;
+        if($page!='')
+	    {
+	    	// generate and update staff id in db 
+            $userparent_id = $profile_details['school_code'].substr($profile_details['active_academic_year'], -2).'P'.sprintf("%04s", $parent_id);
+            $details->user_id = $userparent_id;
+            $details->save();     
+
+            $user_all = new UserAll;
+            $user_all->user_table_id=$parent_id;
+            $user_all->user_role=Config::get('app.Parent_role');
+            $user_all->save(); 
+
+	    }
+	    else
+	    	$userparent_id = $details->user_id;
+
+        if($data['email_address']!='')
+        {
+        	$schoolusers = SchoolUsers::where(['user_id'=>$userparent_id,'school_profile_id'=>$user->school_profile_id])->first();
+
+        	if(empty($schoolusers))
+            	$schoolusers = new SchoolUsers;
+
+            $schoolusers->school_profile_id=$user->school_profile_id;
+            $schoolusers->user_id=$userparent_id;
+            $schoolusers->user_mobile_number=$data['mobile_number'];
+            $schoolusers->user_password=bcrypt($data['mobile_number']);
+            $schoolusers->user_email_id=$data['email_address'];
+            $schoolusers->user_role=Config::get('app.Parent_role');
+            $schoolusers->user_status=1;
+            $schoolusers->save();
+	    }
+	    
+	    if($page!='')
+	    {
+	        // mapping the student and parent
+	        $student_map = new UserStudentsMapping;
+	        $student_map->student = $id;  
+	        $student_map->parent = $details->id;
+	        $student_map->created_by = $userall_id;
+	        $student_map->created_time=Carbon::now()->timezone('Asia/Kolkata');
+	        $student_map->save();
+	    }
+    }
+
+    // create parent details dependency function -onboarding
+    public function insert_parent_details($data,$id,$userall_id,$group_id,$password)
+    {
+    	$user_data = auth()->user();
+    	$profile_details = SchoolProfile::where(['id'=>$user_data->school_profile_id])->first();//Fetch school profile details 
+  		$profile_image_path ='';
+
+   		$target_file = '/parent/';
+    	if(isset($data['student_photo']) && $data['student_photo']!='')
+        {
+        	$profile_image_path = app('App\Http\Controllers\WelcomeController')->profile_file_upload($school_profile['school_code'],$data['student_photo'],1,$target_file,$data['ext']);
+        }
+
+    	// insert parent details in db
+    	$parent=[];
+        $parent_details = new UserParents;
+    	$parent_details->created_by=$userall_id;
+    	if($profile_image_path!='')
+        	$parent_details->profile_image = $profile_image_path;
+    	$parent_details->created_time=Carbon::now()->timezone('Asia/Kolkata');
+        $parent_details->mobile_number= $data['mobile_number'];
+        $parent_details->user_category = $data['user_category'];
+        $parent_details->first_name= $data['first_name'];
+        $parent_details->email_id= $data['email_address'];
+        $parent_details->user_status=1;//active
+            
+            
+        $parent_details->save();
+
+        $parent_id = $parent_details->id;
+
+        // generate and update staff id in db 
+        $userparent_id = $profile_details['school_code'].substr($profile_details['active_academic_year'], -2).'P'.sprintf("%04s", $parent_id);
+        $parent_details->user_id = $userparent_id;
+        $parent_details->save(); 
+
+        // add into group
+        if($group_id!='')
+        {
+        	UserGroupsMapping::insert(['group_id'=>2,'user_table_id'=>$parent_id,'user_role'=>Config::get('app.Parent_role'),'user_status'=>1,'group_access'=>2]);
+        	UserGroupsMapping::insert(['group_id'=>$group_id,'user_table_id'=>$parent_id,'user_role'=>Config::get('app.Parent_role'),'user_status'=>1,'group_access'=>2]);
+        }
+        
+        //make an entry in user all table
+        $user_all = new UserAll;
+        $user_all->user_table_id=$parent_details->id;
+        $user_all->user_role=Config::get('app.Parent_role');
+        $user_all->save(); 
+            	
+        // insert record in school user table
+        $schoolusers = new SchoolUsers;
+
+        $schoolusers->school_profile_id=$user_data->school_profile_id;
+        $schoolusers->user_id=$userparent_id;
+        $schoolusers->user_mobile_number=$data['mobile_number'];
+        $schoolusers->user_password=$password;
+        $schoolusers->user_role=Config::get('app.Parent_role');
+        $schoolusers->user_status=1;
+        $schoolusers->save();
+
+        if($id!='' && $parent_id!='')
+        {
+	        // mapping the student and parent
+	        $student_map = new UserStudentsMapping;
+	        $student_map->student = $id;  
+	        $student_map->parent = $parent_id;
+	        $student_map->created_by = $userall_id;
+	        $student_map->created_time=Carbon::now()->timezone('Asia/Kolkata');
+	        $student_map->save();
+        }
+    }
+
+    //Parent Category
+	public function get_parent_category()
+	{
+		$categories = UserCategories::select('id','category_name')->where('user_role',3)->get()->toArray();
+		return response()->json(compact('categories'));
+	}
+
+	// Configuration page list
+	public function configuration_list()
+	{
+		// Save last login in DB
+        $userdata = auth()->user();
+
+        // Fetch configuration details from DB for corresponding school
+        $configurations = Configurations::where('school_profile_id',$userdata->school_profile_id)->first();
+        
+        // configuration details
+        $configuration = ([
+            'classes'=>($configurations->classes==1)?true:false,
+            'sections'=>($configurations->sections==1)?true:false,            	
+            'map_classes_sections'=>($configurations->map_classes_sections==1)?true:false,            	
+            'subjects'=>($configurations->subjects==1)?true:false,            	
+            'map_subjects'=>($configurations->map_subjects==1)?true:false,
+            'staffs'=>($configurations->staffs==1)?true:false,
+            // 'map_staffs'=>[
+            // 	'config'=>($configurations->map_staffs==1)?true:false,
+            // 	'excel'=>(file_exists(public_path('uploads/M.xlsx'))?env('APP_URL').'uploads/classes_sections.xlsx':''),
+            // ],
+            'management'=>($configurations->management==1)?true:false,          
+            'students'=>($configurations->students==1)?true:false,
+            // 'map_students'=>[
+            // 	'config'=>($configurations->map_students==1)?true:false,
+            // 	'excel'=>(file_exists(public_path('uploads/classes_sections.xlsx'))?env('APP_URL').'uploads/classes_sections.xlsx':''),
+            // ]
+        ]);
+
+        // return token 
+        return response()->json(compact('configuration'));
+	}
+
+    /*----------------------------Onboarding Manual--------------------------------*/    
+
+    // Add students in DB along with parents and guardian details (old need to remove)
+	public static function students_excel_upload($data,$userall_id,$upload_type)
 	{
 		$user_data = auth()->user();
 		$profile_details = SchoolProfile::where(['id'=>$user_data->school_profile_id])->first();//Fetch school profile details 
@@ -946,121 +2344,200 @@ class APIConfigurationsController extends Controller
 		$inserted_records=0;
         //Process each and every row ,insert all data in db
         foreach ($data as $row) {
-             $check_exists = UserParents::where('mobile_number',$row['mobile_number']);
+              
+            $check_exists = UserParents::where('mobile_number',$row['father_mobile_number']);
             $result = $check_exists->first(); //To check given subject name is already exists in DB.
             
-            // array_push($usermobile_numbers, $row['mobile_number']);//check mobile number already exists in array
-            $image ='';
-        	if(!empty($row['photo']))
-        	{
-
-        		$name = explode('.',$row['photo']->getClientOriginalName())[0];
-	        	$image = $name.''.time().'.'.$row['photo']->extension();
-	        	$row['photo']->move(public_path(env('SAMPLE_CONFIG_URL').'students'), $image);
-        	}
         	$class_config_id = null;
 
-        	$parent=[];
-            $parent_details = new UserParents;
-        	$parent_details->created_by=$userall_id;
-        	$parent_details->created_time=Carbon::now()->timezone('Asia/Kolkata');
-            $parent_details->mobile_number= $row['mobile_number'];
-            $parent_details->first_name= $row['father_name'];
-            $parent_details->user_status=1;//active
-            $parent_details->user_category = 1;
+        	if($upload_type == 'import')
+        	{
+                $class_id = AcademicClasses::where('class_name',$row['class_name'])->pluck('id')->first();
+                $section_id = AcademicSections::where('section_name',$row['section_name'])->pluck('id')->first();
+        		if($class_id!='' && $section_id!='')
+                $class_config_id = AcademicClassConfiguration::where(['class_id'=>$class_id,'section_id'=>$section_id])->pluck('id')->first();
+        	}
+        	else
+        		$class_config_id = $row['class_section'];
+
+
+        	if(isset($row['gender']) && strtolower($row['gender']) == 'male')
+        		$gender = 1;
+        	else if(isset($row['gender']) && strtolower($row['gender']) == 'female')
+        		$gender = 2;
+        	else
+        		$gender = 3;
+
+        	if(isset($row['student_id']) && $row['student_id']!='')//arrange student details in array 
+        		$student_details = UserStudents::where(['id'=>$row['student_id']])->first();
+        	else
+                $student_details = new UserStudents;
+
+            $student_details->first_name= $row['student_name'];
+            $student_details->admission_number=$row['admission_no'];
+            $student_details->roll_number=isset($row['roll_no'])?$row['roll_no']:'';
+            // $student_details->profile_image=public_path(env('SAMPLE_CONFIG_URL').'students/'.$image);
+            $student_details->gender=$gender;
+            $student_details->class_config=$class_config_id;
+            $student_details->user_status=(isset($row['temporary_student']) && $row['temporary_student']!='' && strtolower($row['temporary_student'])=='yes')?5:1;
+            $student_details->dob=date('Y-m-d',strtotime($row['dob']));
+            $student_details->created_by=$userall_id;
+        	$student_details->created_time=Carbon::now()->timezone('Asia/Kolkata');
+            $student_details->save();
+
+   			$student_id = $student_details->id; // student id
+
+   			if(isset($row['student_id']) && $row['student_id']!='')//arrange student details in array              
+   			{
+   				$page = 'create';
+            	$userstudent_id = $student_details->user_id;
+   			}
+            else
+            {
+            	$page = 'edit';
+            	 // generate and update staff id in db 
+                $userstudent_id = $profile_details['school_code'].substr($profile_details['active_academic_year'], -2).'S'.sprintf("%04s", $student_id);
+                $student_details->user_id = $userstudent_id;
+                $student_details->save();                  
                 
-                
-            $parent_details->save();
+            }
 
-            $parent_id = $parent_details->id;
 
-            // generate and update staff id in db 
-            $userparent_id = $profile_details['school_code'].substr($profile_details['active_academic_year'], -2).'P'.sprintf("%04s", $parent_id);
-            $parent_details->user_id = $userparent_id;
-            $parent_details->save(); 
+            if((isset($row['father_mobile_number']) || isset($row['father_email_address'])) && ($row['father_mobile_number']!='' || $row['father_email_address']!=''))
+            {
+            	$check_exists = UserParents::where('mobile_number',$row['father_mobile_number'])->first(); //To check given subject name is already exists in DB.
+            	if(!empty($check_exists))
+            	{
+            		$check_exists_mapping = UserStudentsMapping::where('student',$student_id)->where('parent',$check_exists->id)->pluck('id')->first();
+            		if($check_exists_mapping == '')
+            		{
+   	            		$student_map = new UserStudentsMapping;
+	                    $student_map->student = $student_id;  
+	                    $student_map->parent = $check_exists->id;
+	                    $student_map->created_by = $userall_id;
+	                    $student_map->created_time=Carbon::now()->timezone('Asia/Kolkata');
+	                    $student_map->save();
+            		}
+            	}
+            	else
+            	{
+                    $parent=[];
+                    if(isset($row['father_id']) && $row['father_id']!='')
+                    	$parent_details = $parent = UserParents::where(['id'=>$row['father_id']])->first();
+                	if(empty($parent))
+                	{
+                    	$parent_details = new UserParents;
+                    	$parent_details->created_by=$userall_id;
+                    	$parent_details->created_time=Carbon::now()->timezone('Asia/Kolkata');
+                	}
+                	else
+                	{
+                		$parent_details->updated_by=$userall_id;
+                    	$parent_details->updated_time=Carbon::now()->timezone('Asia/Kolkata');
+                    	$userparent_id = $parent_details->user_id;
+                	}
+                    $parent_details->mobile_number= $row['father_mobile_number'];
+                    $parent_details->first_name= $row['father_name'];
+                    $parent_details->email_id= $row['father_email_address'];
+                    $parent_details->user_status=1;//active
+                    $parent_details->user_category = 1;
+                    
+                    
+                    $parent_details->save();
 
-            $user_all = new UserAll;
-            $user_all->user_table_id=$parent_details->id;
-            $user_all->user_role=Config::get('app.Parent_role');
-            $user_all->save(); 
+                    $parent_id = $parent_details->id;
 
-                
-            $schoolusers = new SchoolUsers;
+                    if(empty($parent))
+                    {
+	                    // generate and update staff id in db 
+	                    $userparent_id = $profile_details['school_code'].substr($profile_details['active_academic_year'], -2).'P'.sprintf("%04s", $parent_id);
+	                    $parent_details->user_id = $userparent_id;
+	                    $parent_details->save(); 
 
-            $schoolusers->school_profile_id=$user_data->school_profile_id;
-            $schoolusers->user_id=$userparent_id;
-            $schoolusers->user_mobile_number=$row['mobile_number'];
-            $schoolusers->user_password=bcrypt($row['mobile_number']);
-            $schoolusers->user_role=Config::get('app.Parent_role');
-            $schoolusers->user_status=1;
-            $schoolusers->save();
+	                    if($page == 'edit')
+	                    {
+		                    $user_all = new UserAll;
+			                $user_all->user_table_id=$parent_id;
+			                $user_all->user_role=Config::get('app.Parent_role');
+			                $user_all->save(); 
+	                    }
+
+	                    $check_exists_mapping = UserStudentsMapping::where('student',$student_id)->where('parent',$parent_id)->pluck('id')->first();
+	            		if($check_exists_mapping == '')
+	            		{
+		                    $student_map = new UserStudentsMapping;
+		                    $student_map->student = $student_id;  
+		                    $student_map->parent = $parent_id;
+		                    $student_map->created_by = $userall_id;
+		                    $student_map->created_time=Carbon::now()->timezone('Asia/Kolkata');
+		                    $student_map->save();
+		                }
+	                }
+	                $schoolusers = SchoolUsers::where(['user_id'=>$userparent_id,'school_profile_id'=>$user_data->school_profile_id])->first();
+
+                	if(empty($schoolusers))
+                    	$schoolusers = new SchoolUsers;
+
+                    $schoolusers->school_profile_id=$user_data->school_profile_id;
+                    $schoolusers->user_id=$userparent_id;
+                    $schoolusers->user_mobile_number=$row['father_mobile_number'];
+                    $schoolusers->user_password=bcrypt(date('dmY',strtotime($row['dob'])));
+                    $schoolusers->user_email_id=$row['father_email_address'];
+                    $schoolusers->user_role=Config::get('app.Parent_role');
+                    $schoolusers->user_status=1;
+                    $schoolusers->save();
+            	}
+            }
+            $inserted_records++;          
         }
-            
-	}
 
-	// Add managment person in DB.
-	public function get_management_designation()
-	{
-		$categories = UserCategories::select('id','category_name')->where('user_role',5)->get()->toArray();
-		return response()->json($categories);
+        if($inserted_records>0) //check empty array
+            Configurations::where('school_profile_id',$user_data->school_profile_id)->update(['students'=>1,'map_students'=>1]);
 	}
+    
 
-	// get classes and sections for edit
-	public function get_edit_classes_sections()
+	public static function upload_config_school($data,$userall_id,$upload_type)
 	{
-		$classes = AcademicClasses::select('id','class_name')->get()->toArray();
-		$sections = AcademicSections::select('id','section_name')->get()->toArray();
-		return response()->json(compact('classes','sections'));
-	}
+		$user_data = auth()->user();
+		$profile_details = SchoolProfile::where(['id'=>$user_data->school_profile_id])->first();//Fetch school profile details 
 
-	// get subjects for edit
-	public function get_edit_subjects(Request $request)
-	{
-		$subject_ids = AcademicSubjectsMapping::where('class_config',$request->class_config)->pluck('subject')->toArray();
-		$subjects = AcademicSubjects::select('id','subject_name')->where('division_id',$request->division_id)->whereIn('id',$subject_ids)->get()->toArray();
-		return response()->json($subjects);
-	}
+		foreach ($data as $row) {
+			if((isset($row['father_mobile_number']) || isset($row['father_email_address'])) && ($row['father_mobile_number']!='' || $row['father_email_address']!=''))
+	        {
+	        	$userparent_id=UserParents::where('mobile_number',$row['father_mobile_number'])->pluck('user_id')->first();
+				$schoolusers = SchoolUsers::where(['user_id'=>$userparent_id,'school_profile_id'=>$user_data->school_profile_id])->first();
 
-	// 
-	public function get_staff_details(Request $request)
-	{
-		$subjects = AcademicSubjectsMapping::where('subject',$request->subject_id)->where('class_config',$request->class_config)->pluck('staff')->toArray();
-		$all_staffs = UserStaffs::where('specialized_in',$request->subject_id)->get()->toArray();
-		$staffs = [];
-		if(!empty($all_staffs))
-		{
-			foreach ($all_staffs as $key => $value) {
-				$staffs[] = ([
-					'staff_name'=>$value['first_name'],
-					'staff_id'=>$value['id'],
-					'is_checked'=>(!empty($subjects) && in_array($value['id'],$subjects))?true:false
-				]);
-			}
-		}
-		return response()->json($staffs);
-	}
+		    	if(empty($schoolusers))
+		        	$schoolusers = new SchoolUsers;
 
-	public function get_divisions()
-	{
-		$divisions = AcademicDivisions::select('id','division_name')->get()->toArray();
-		return response()->json(compact('divisions'));
-	}
+		        $schoolusers->school_profile_id=$user_data->school_profile_id;
+		        $schoolusers->user_id=$userparent_id;
+		        $schoolusers->user_mobile_number=$row['father_mobile_number'];
+		        $schoolusers->user_password=bcrypt($row['father_mobile_number']);
+		        $schoolusers->user_email_id=$row['father_email_address'];
+		        $schoolusers->user_role=Config::get('app.Parent_role');
+		        $schoolusers->user_status=1;
+		        $schoolusers->save();
+		    }
+		    if((isset($row['mother_mobile_number']) || isset($row['mother_email_address'])) && ($row['mother_mobile_number']!='' || $row['mother_email_address']!=''))
+	        {
+	        	$userparent_id=UserParents::where('mobile_number',$row['mother_mobile_number'])->pluck('user_id')->first();
+	        	$schoolusers = SchoolUsers::where(['user_id'=>$userparent_id,'school_profile_id'=>$user_data->school_profile_id])->first();
 
-	//Staffs Category
-	public function get_combine_class_section_list(Request $request)
-	{
-		$class_sections = [];
-		$class_sections_list = AcademicClassConfiguration::select('id','class_id','section_id')->where('division_id',$request->division_id)->get();
-		if(!empty($class_sections_list))
-		{
-			foreach ($class_sections_list as $key => $value) {
-				$class_sections[] = ([
-					'class_section'=>$value->classsectionName(),
-					'id'=>$value->id
-				]);
-			}
-		}
-		return response()->json($class_sections);
+	        	if(empty($schoolusers))
+	            	$schoolusers = new SchoolUsers;
+
+	            $schoolusers->school_profile_id=$user_data->school_profile_id;
+	            $schoolusers->user_id=$userparent_id;
+	            $schoolusers->user_mobile_number=$row['mother_mobile_number'];
+	            $schoolusers->user_password=bcrypt($row['mother_mobile_number']);
+	            $schoolusers->user_email_id=$row['mother_email_address'];
+	            $schoolusers->user_role=Config::get('app.Parent_role');
+	            $schoolusers->user_status=1;
+	            $schoolusers->save(); 
+	        }
+	    }
+
 	}
 
 	// To activate or create static groups
@@ -1721,1506 +3198,6 @@ class APIConfigurationsController extends Controller
         ]);
         // return token 
         return response()->json(compact('configuration'));
-	}
-
-	// Delete division
-	public function delete_division(Request $request)
-	{
-		if(isset($request->division_id) && $request->division_id!='') //check input exist
-		{
-			// Delete records 
-	        AcademicSubjects::where('division_id',$request->division_id)->delete();
-	        AcademicSections::where('division_id',$request->division_id)->delete();
-	       	AcademicClasses::where('division_id',$request->division_id)->delete();
-	        AcademicClassConfiguration::where('division_id',$request->division_id)->delete();
-	        AcademicDivisions::where('id',$request->division_id)->delete();
-		}
-		return response()->json(['message'=>'Deleted Successfully!...']);
-	}
-
-	// Delete class
-	public function delete_class(Request $request)
-	{
-		if(isset($request->division_id) && $request->division_id!='' && isset($request->class_id) && $request->class_id!='')
-		{
-			$classconfig = AcademicClassConfiguration::select('id')->where(['class_id'=> $request->class_id,'division_id'=>$request->division_id])->get()->toArray();
-
-	       	AcademicSubjectsMapping::whereIn('class_config',$classconfig)->delete();
-	        CommunicationDistribution::whereIn('class_config_id',$classconfig)->delete();
-			UserStudents::whereIn('class_config',$classconfig)->delete();
-	        AcademicClassConfiguration::whereIn('id',$classconfig)->delete();
-	        AcademicClasses::where('id',$request->class_id)->delete();
-		}
-		return response()->json(['message'=>'Deleted Successfully!...']);
-	}
-
-	// Delete section
-	public function delete_section(Request $request)
-	{
-		if(isset($request->division_id) && $request->division_id!='' && isset($request->section) && $request->section!='')
-		{
-			$classconfig = AcademicClassConfiguration::select('id')->where(['section_id'=> $request->section_id,'division_id'=>$request->division_id])->get()->toArray();
-
-	       	AcademicSubjectsMapping::whereIn('class_config',$classconfig)->delete();
-	        CommunicationDistribution::whereIn('class_config_id',$classconfig)->delete();
-			UserStudents::whereIn('class_config',$classconfig)->delete();
-	        AcademicClassConfiguration::whereIn('id',$classconfig)->delete();
-	        AcademicSections::where('id',$request->section_id)->delete();
-		}
-		return response()->json(['message'=>'Deleted Successfully!...']);
-	}
-
-	// All users list
-	public function all_staff_list(Request $request)
-	{
-		// Save last login in DB
-        $user = auth()->user();
-        $member_staff_list = [];
-        $staff_list = UserStaffs::select('id','first_name','mobile_number','user_category','user_status','dob','doj','employee_no','department','profile_image','user_id','email_id');
-        if(isset($request->search) && $request->search!='')
-        {
-        	$category = (strpos('teaching staff',strtolower($request->search)))?Config::get('app.Teaching_staff'):((strpos('non teaching staff',strtolower($request->search)))?Config::get('app.Non-Teaching_staff'):'');
-        	$staff_list = $staff_list->where('first_name', 'like', '%' . $request->search . '%')->orWhere('mobile_number', 'like', '%' . $request->search . '%')->orWhere('dob', 'like', '%' . $request->search . '%')->orWhere('doj', 'like', '%' . $request->search . '%')->orWhere('employee_no', 'like', '%' . $request->search . '%')->orWhere('department', 'like', '%' . $request->search . '%');
-        	if($category!='')
-        		$staff_list = $staff_list->orWhere('user_category', 'like', '%' . $category . '%');
-        }
-        $staff_list = $staff_list->get()->toArray();
-
-        // $currentPage = LengthAwarePaginator::resolveCurrentPage(); // Get current page form url e.x. &page=1
-        $currentPage = $request->page;
-        $itemCollection = new Collection($staff_list); // Create a new Laravel collection from the array data
-        $perPage = 10;
-        // Slice the collection to get the items to display in current page
-        $sortedCollection = $itemCollection->sortBy('user_category');
-        $currentPageItems = $sortedCollection->values()->slice(($currentPage * $perPage) - $perPage, $perPage)->all();
-        // Create our paginator and pass it to the view
-        $paginatedItems= new LengthAwarePaginator($currentPageItems , count($itemCollection), $perPage);
-
-        $paginatedItems->setPath($request->url()); // set url path for generted links
-        $paginatedItems->appends($request->page);
-
-        $tempdata = $paginatedItems->toArray();
-        $member_staff_list['total'] = $tempdata['total'];
-        $member_staff_list['per_page'] = $tempdata['per_page'];
-        $member_staff_list['current_page'] = $tempdata['current_page'];
-        $member_staff_list['last_page'] = $tempdata['last_page'];
-        $member_staff_list['next_page_url'] = $tempdata['next_page_url'];
-        $member_staff_list['prev_page_url'] = $tempdata['prev_page_url'];
-        $member_staff_list['from'] = $tempdata['from'];
-        $member_staff_list['to'] = $tempdata['to'];
-        $list = ($currentPage <= 0)?$staff_list:$tempdata['data'];
-        	
-        foreach ($list as $key => $value) {
-        	$check_access = SchoolUsers::where('user_id',$value['user_id'])->where('user_role',Config::get('app.Staff_role'))->where('user_status',2)->pluck('id')->first(); //2- full deactivate
-
-        	if($check_access == '')
-        		$check_access = UserGroupsMapping::where('user_table_id',$value['id'])->where('user_role',Config::get('app.Staff_role'))->where('user_status',1)->pluck('id')->first();
-
-    	 	$classessections = AcademicClassConfiguration::select('id','class_id','section_id','division_id','class_teacher')->where('class_teacher',$value['id'])->first();
-
-    	 	$member_staff_list['data'][]=([ 
-    	 		'id' => $value['id'],
-        		'first_name' => $value['first_name'],
-	        	'mobile_number' => $value['mobile_number'],
-	        	'user_id' => $value['user_id'],
-	        	'email_id' => $value['email_id'],
-	        	'user_category' => ($value['user_category'] ==Config::get('app.Teaching_staff'))?'Teaching_staff':'Non_teaching_staff',
-	        	'dob' => $value['dob'],
-	            'doj' => $value['doj'],
-	            'employee_no' => $value['employee_no'],
-	            'department' => $value['department'],
-	            'user_status' => ($check_access == '')?3:$value['user_status'], // 1- active,2-full deactive, 3-partical deactive;
-	            'class' => (!empty($classessections))?$classessections->classsectionName():'',
-	            'designation' => $value['user_category'],
-	            'profile_image' => (isset($value['profile_image']))?$value['profile_image']:'',
-	        ]);
-        }
-        // if($currentPage <= 0)
-        // 	$member_staff_list = $member_staff_list['data'];
-
-	    return response()->json($member_staff_list);
-	}
-
-	// All users list
-	public function all_parent_list(Request $request)
-	{
-		// Save last login in DB
-        $user = auth()->user();
-        $member_parent_list = [];
-        $parent_list = UserStudents::select('user_students.first_name as student_name','p.id','p.user_category','p.mobile_number','p.user_status','p.profile_image as parent_profile_image','user_students.profile_image as student_profile_image','user_students.id as student_id','user_students.dob as dob','user_students.admission_number as admission_number','user_students.class_config as class_config','p.first_name','p.email_id')->join('user_students_mapping as sm','sm.student','=','user_students.id')->join('user_parents as p','p.id','=','sm.parent');
-        if(isset($request->search) && $request->search!='')
-            $parent_list = $parent_list->where('p.first_name', 'like', '%' . $request->search . '%')->orWhere('p.mobile_number', 'like', '%' . $request->search . '%');
-        	
-        $parent_list =$parent_list->get()->toArray();
-
-        // $currentPage = LengthAwarePaginator::resolveCurrentPage(); // Get current page form url e.x. &page=1
-        $currentPage = $request->page;
-        $itemCollection = new Collection($parent_list); // Create a new Laravel collection from the array data
-        $perPage = 10;
-        // Slice the collection to get the items to display in current page
-        $sortedCollection = $itemCollection->sortBy('class_config');
-        $currentPageItems = $sortedCollection->values()->slice(($currentPage * $perPage) - $perPage, $perPage)->all();
-        // Create our paginator and pass it to the view
-        $paginatedItems= new LengthAwarePaginator($currentPageItems , count($itemCollection), $perPage);
-
-        $paginatedItems->setPath($request->url()); // set url path for generted links
-        $paginatedItems->appends($request->page);
-		
-		$tempdata = $paginatedItems->toArray();
-        $member_parent_list['total'] = $tempdata['total'];
-        $member_parent_list['per_page'] = $tempdata['per_page'];
-        $member_parent_list['current_page'] = $tempdata['current_page'];
-        $member_parent_list['last_page'] = $tempdata['last_page'];
-        $member_parent_list['next_page_url'] = $tempdata['next_page_url'];
-        $member_parent_list['prev_page_url'] = $tempdata['prev_page_url'];
-        $member_parent_list['from'] = $tempdata['from'];
-        $member_parent_list['to'] = $tempdata['to'];
-
-        $index = 0;
-        $list = ($currentPage <= 0)?$parent_list:$tempdata['data'];
-        	
-        foreach ($list as $key => $value) {
-        	// $student_id = UserStudentsMapping::where('parent',$value['id'])->pluck('student')->toArray();
-            // $student_details = UserStudents::whereIn('id',$student_id)->first();
-            // echo '<pre>';print_r($student_details);
-            $parent_list_data[$index] = $value;
-        	$user_category = (strtolower($value['user_category']) == 1)?'F/O':'M/O';
-        	$parent_list_data[$index]['student_name'] = ($user_category.' '.((isset($value['student_name']))?$value['student_name']:''));
-        	$classessections =[];
-        	if(isset($value['class_config']))
-        		$classessections = AcademicClassConfiguration::select('id','class_id','section_id','division_id','class_teacher')->where('id',$value['class_config'])->first();
-        	$parent_list_data[$index]['class'] = (!empty($classessections))?$classessections->classsectionName():'';
-        	$parent_list_data[$index]['class_teacher'] = (!empty($classessections))?UserStaffs::where('id',$classessections->class_teacher)->pluck('first_name')->first():'';
-        	$index++;
-        }
-	    // if($currentPage <= 0)
-        // 	$member_parent_list = $parent_list_data;
-        // else
-        // {
-        	$key_values = array_column($parent_list_data, 'class_config'); 
-            array_multisort($key_values, SORT_ASC, $parent_list_data);
-            $member_parent_list['data'] = $parent_list_data;
-        // }
-        return response()->json($member_parent_list);
-	}
-
-	// Store Onesignal device details in DB
-    public function onesignal_store_device_details(Request $request)
-    {
-        // Get authorizated user details
-        $user = auth()->user();
-
-        if($request->player_id !='' && $request->external_user_id!='')
-        {
-
-            if($user->user_role == Config::get('app.Admin_role'))//check role and get current user id
-                $user_table_id = UserAdmin::where(['user_id'=>$user->user_id])->pluck('id')->first();
-            else if($user->user_role == Config::get('app.Management_role'))
-                $user_table_id = UserManagements::where(['user_id'=>$user->user_id])->pluck('id')->first();
-            else if($user->user_role == Config::get('app.Staff_role'))
-                $user_table_id = UserStaffs::where(['user_id'=>$user->user_id])->pluck('id')->first();
-            else if($user->user_role == Config::get('app.Parent_role'))
-                $user_table_id = UserParents::where(['user_id'=>$user->user_id])->pluck('id')->first();//fetch id from user all table to store notification triggered user
-            $userall_id = UserAll::where(['user_table_id'=>$user_table_id,'user_role'=>$user->user_role])->pluck('id')->first();
-
-            $check_exists = Appusers::where('loginid',$userall_id)->get()->toArray();
-            if(empty($check_exists))
-            {
-	            $data = ([
-	                'loginid'=>$userall_id,
-	                'player_id'=>($request->player_id!='')?$request->player_id:'',
-	                'external_user_id'=>($request->external_user_id)?$request->external_user_id:'',
-	                'device_type'=>($request->device_type)?$request->device_type:'',
-	                'device_name'=>($request->device_name)?$request->device_name:'',
-	                'device_version'=>($request->device_version)?$request->device_version:'',
-	                'app_version'=>($request->app_version)?$request->app_version:'',
-	                'login_date'=>Carbon::now()->timezone('Asia/Kolkata'),
-	               	'created_on'=>Carbon::now()->timezone('Asia/Kolkata'),
-	            ]);
-            	Appusers::insert($data);
-	        }
-	        else
-	        {
-	        	Appusers::where(['loginid'=>$userall_id])->update(['player_id'=>($request->player_id!='')?$request->player_id:'','external_user_id'=>$request->external_user_id,'device_type'=>$request->device_type,'device_name'=>$request->device_name,'device_version'=>$request->device_version,'app_version'=>$request->app_version,'login_date'=>Carbon::now()->timezone('Asia/Kolkata'),'created_on'=>Carbon::now()->timezone('Asia/Kolkata')]);
-	        }
-            return response()->json('Device details registered Successfully');
-        }
-        else
-            return response()->json('Player ID is required');
-    }
-
-    // List the subjects for class 
-    public function class_subjects_list(Request $request)
-    {
-    	// Save last login in DB
-        $userdata = auth()->user();
-        $division_id = $request->division_id; //get division id input
-        $class_subjects_review=[];
-        $classessections = AcademicClassConfiguration::select('id','class_id','section_id','division_id')->where('division_id',$division_id)->get(); //fetch class and sections list for input division
-
-        if(!empty($classessections)) //check whether configuration empty or not
-        {
-	        foreach ($classessections as $key => $value) { 
-	        	// arrange necesary details in array
-	        	$classsection_data[$value->id]=([
-	        		'class_section_id'=>$value->id,
-	        		'class_section_name'=>$value->classsectionName(),
-	        		'division_id'=>$value->division_id,
-	        	]);
-	        	// fetch subjects for corresponding config class 
-	        	$subjects_list = AcademicSubjectsMapping::where('class_config',$value->id)->get();
-
-				foreach ($subjects_list as $subject_key => $subject_value) {
-			        $subjects[$value->id][]= ([
-		        		'subject_id'=>$subject_value->id,
-		        		'subject_name'=>$subject_value->subjectName()
-		        	]);
-				}
-	        }
-	        $index = 0;
-	        foreach ($classsection_data as $class_key => $class_value) {//merge class and subject related details
-	        	$class_section_review[$index] = isset($classsection_data[$class_value['class_section_id']])?$classsection_data[$class_value['class_section_id']]:[];
-	        	$class_section_review[$index]['subjects'] = isset($subjects[$class_value['class_section_id']])?$subjects[$class_value['class_section_id']]:[];
-	        	$index++;
-	        }
-	       
-	    }
-	    return response()->json($class_section_review);
-    }
-
-    // fetch all staff details for onboarding process
-    public function onboarding_staff_list()
-    {
-    	// Check authenticate user
-        $userdata = auth()->user();
-
-        $staff_list = UserStaffs::select('id','user_id','first_name','mobile_number','profile_image')->where('user_status',1)->get()->toArray(); //fetch all the staff for listing
-        return response()->json($staff_list);
-    }
-
-    // Get single user details(onboarding)
-    public function onboarding_fetch_single_staff(Request $request)
-    {
-    	// Check authenticate user
-        $userdata = auth()->user();
-
-        $check_class_teacher = AcademicClassConfiguration::where('class_teacher',$request->id)->first(); //check the user is a classteacher.
-		
-        $staff_list = UserStaffs::select('id','user_id','first_name','mobile_number','profile_image','specialized_in','user_category','email_id')->where('user_status',1)->where('id',$request->id)->first(); //fetch all the staff for listing
-        $staff_list->class_teacher = 'no'; //set default values
-        $staff_list->class_config = 0; 
-        $staff_list->specialized_in = (int)$staff_list->specialized_in;
-        if(!empty($staff_list) && isset($check_class_teacher->class_teacher)) //check not empty for class configuration details
-        {
-        	$staff_list->class_teacher = 'yes';
-        	$staff_list->class_config = $check_class_teacher->class_teacher; 
-
-        }
-        return response()->json($staff_list);
-        
-    }
-
-    // delete staff (onboarding)
-    public function onboarding_delete_staff(Request $request)
-    {
-    	// Check authenticate user
-        $userdata = auth()->user();
-        AcademicSubjectsMapping::where('staff',$request->id)->update(['staff'=>null]); //update assigned staff to null.
-        UserStaffs::where('id',$request->id)->delete(); //delete staff record
-        return response()->json('Deleted Successfully!...');
-    }
-
-    // edit staff details
-    public function onboarding_edit_staff(Request $request)
-    {
-    	// Check authenticate user
-        $user = auth()->user();
-
-        if($user->user_role == Config::get('app.Admin_role'))//check role and get current user id
-            $user_table_id = UserAdmin::where(['user_id'=>$user->user_id])->pluck('id')->first();
-
-        $userall_id = UserAll::where(['user_table_id'=>$user_table_id,'user_role'=>$user->user_role])->pluck('id')->first();
-        $profile_details = SchoolProfile::where(['id'=>$user->school_profile_id])->first();//Fetch school profile details 
-        $staffs_details = [];
-        if($request->id!='')// fetch selected staff details 
-        	$staffs_details = UserStaffs::where('id',$request->id)->first();
-
-        if(!empty($staffs_details))
-        {
-        	$image ='';
-        	if(!empty($request->photo))//check upload photo exist or not
-        	{
-        		$name = explode('.',$request->photo->getClientOriginalName())[0];
-	        	$image = $name.''.time().'.'.$request->photo->extension();
-	        	$value['photo']->move(public_path(env('SAMPLE_CONFIG_URL').'staffs'), $image);
-        	}
-	        //save staff details
-	        $staffs_details->first_name= $request->staff_name;
-	        $staffs_details->mobile_number=$request->mobile_number;
-	        if($image!='')
-	        	$staffs_details->profile_image = ($image!='')?public_path(env('SAMPLE_CONFIG_URL').'staffs/'.$image):'';
-	        $staffs_details->email_id=$request->email_address;
-	        $staffs_details->specialized_in=$request->specialized_in;
-	        $staffs_details->user_category=$request->teacher_category;
-	        $staffs_details->dob=$request->dob;
-	        $staffs_details->doj=$request->doj;
-	        $staffs_details->employee_no=$request->employee_no;
-	        $staffs_details->updated_by=$userall_id;
-	    	$staffs_details->updated_time=Carbon::now()->timezone('Asia/Kolkata');
-	        $staffs_details->save();
-
-
-	        $schoolusers = SchoolUsers::where('user_id',$staffs_details->user_id)->first(); //update email address in common login table
-
-            $schoolusers->user_email_id=$request->email_address;
-            $schoolusers->save();
-
-            if($request->class_teacher_class_config!='')
-            {
-            	AcademicClassConfiguration::where('id',$request->class_teacher_class_config)->update(['class_teacher'=>$request->id]); //assign class teacher to class.
-
-            	$class_techer_group = UserGroups::where('group_status',Config::get('app.Group_Active'))->where('class_config',$request->class_teacher_class_config)->pluck('id')->first();
-            	$check_exists = UserGroupsMapping::where(['group_id'=>$class_techer_group,'user_table_id'=>$request->id,'user_role'=>Config::get('app.Staff_role'),'user_status'=>1])->pluck('id')->first();
-             	if($check_exists=='')
-            		UserGroupsMapping::insert(['group_id'=>$class_techer_group,'user_table_id'=>$request->id,'user_role'=>Config::get('app.Staff_role'),'user_status'=>1,'group_access'=>1]);
-            }
-            
-            if(!empty($request->teacher_class_config))
-            {
-            	foreach ($request->teacher_class_config as $teacher_key => $teacher_value) {
-             		AcademicSubjectsMapping::where('class_config',$teacher_value)->update(['staff'=>$request->id]); //assign staff to class.
-             		$techer_group = UserGroups::where('group_status',Config::get('app.Group_Active'))->where('class_config',$teacher_value)->pluck('id')->first();
-             		$check_exists = UserGroupsMapping::where(['group_id'=>$techer_group,'user_table_id'=>$request->id,'user_role'=>Config::get('app.Staff_role'),'user_status'=>1])->pluck('id')->first();
-             		if($check_exists=='')
-            			UserGroupsMapping::insert(['group_id'=>$techer_group,'user_table_id'=>$request->id,'user_role'=>Config::get('app.Staff_role'),'user_status'=>1,'group_access'=>1]);
-            	}
-            }
-
-            return response()->json(['status'=>true,'messgae'=>'Staff details updated Successfully!...']);
-        }
-        else
-        {
-        	$image ='';
-        	if(!empty($request->photo))//check upload photo exist or not
-        	{
-
-        		$name = explode('.',$request->photo->getClientOriginalName())[0];
-	        	$image = $name.''.time().'.'.$request->photo->extension();
-	        	$request->photo->move(public_path(env('SAMPLE_CONFIG_URL').'staffs'), $image);
-        	}
-
-        	//save staff details
-            $staffs_details = new UserStaffs;
-            $staffs_details->first_name= $request->staff_name;
-            $staffs_details->mobile_number=$request->mobile_number;
-            if($image!='')
-            	$staffs_details->profile_image = ($image!='')?public_path(env('SAMPLE_CONFIG_URL').'staffs/'.$image):'';
-            $staffs_details->email_id=$request->email_address;
-	        $staffs_details->specialized_in=$request->specialized_in;
-	        $staffs_details->user_category=$request->teacher_category;
-	        $staffs_details->dob=$request->dob;
-	        $staffs_details->doj=$request->doj;
-	        $staffs_details->employee_no=$request->employee_no;
-            $staffs_details->created_by=$userall_id;
-        	$staffs_details->created_time=Carbon::now()->timezone('Asia/Kolkata');
-            $staffs_details->save();
-
-            $staff_id =$staffs_details->id; // staff id
-
-            // generate and update staff id in db 
-            $userstaff_id = $profile_details['school_code'].substr($profile_details['active_academic_year'], -2).'T'.sprintf("%04s", $staff_id);
-            $staffs_details->user_id = $userstaff_id;
-            $staffs_details->save();
-
-            $user_all = new UserAll;
-            $user_all->user_table_id=$staff_id;
-            $user_all->user_role=2;
-            $user_all->save();
-
-            $schoolusers = new SchoolUsers;
-            $schoolusers->school_profile_id=$user->school_profile_id;
-            $schoolusers->user_id=$userstaff_id;
-            $schoolusers->user_mobile_number=$request->mobile_number;
-            $schoolusers->user_password=bcrypt($request->mobile_number);
-            $schoolusers->user_role=Config::get('app.Staff_role');
-            $schoolusers->user_status=1;
-            $schoolusers->save();
-
-            if($request->class_teacher_class_config!='')
-            {
-            	AcademicClassConfiguration::where('id',$request->class_teacher_class_config)->update(['class_teacher'=>$staff_id]); //assign class teacher to class.
-
-            	$class_teacher_group = UserGroups::where('group_status',Config::get('app.Group_Active'))->where('class_config',$request->class_teacher_class_config)->pluck('id')->first();
-            	$check_exists = UserGroupsMapping::where(['group_id'=>$class_teacher_group,'user_table_id'=>$staff_id,'user_role'=>Config::get('app.Staff_role'),'user_status'=>1])->pluck('id')->first();
-             	if($check_exists=='')
-            		UserGroupsMapping::insert(['group_id'=>$class_teacher_group,'user_table_id'=>$staff_id,'user_role'=>Config::get('app.Staff_role'),'user_status'=>1,'group_access'=>1]);
-            }
-            
-            if(!empty($request->teacher_class_config))
-            {
-            	UserGroupsMapping::insert(['group_id'=>2,'user_table_id'=>$staff_id,'user_role'=>Config::get('app.Staff_role'),'user_status'=>1,'group_access'=>1]);
-            	foreach ($request->teacher_class_config as $teacher_key => $teacher_value) {
-             		AcademicSubjectsMapping::where('class_config',$teacher_value)->update(['staff'=>$staff_id]); //assign staff to class.
-             		$techer_group = UserGroups::where('group_status',Config::get('app.Group_Active'))->where('class_config',$teacher_value)->pluck('id')->first();
-             		$check_exists = UserGroupsMapping::where(['group_id'=>$teacher_group,'user_table_id'=>$staff_id,'user_role'=>Config::get('app.Staff_role'),'user_status'=>1])->pluck('id')->first();
-             		if($check_exists=='')
-            			UserGroupsMapping::insert(['group_id'=>$techer_group,'user_table_id'=>$staff_id,'user_role'=>Config::get('app.Staff_role'),'user_status'=>1,'group_access'=>1]);
-            	}
-            }
-        }
-
-        Configurations::where('school_profile_id',$user->school_profile_id)->update(['map_staffs'=>1]);
-        return response()->json(['status'=>true,'messgae'=>'Staff details inserted Successfully!...']);
-    }
-
-    // Get single user details(onboarding)
-    public function onboarding_fetch_single_management(Request $request)
-    {
-    	// Check authenticate user
-        $userdata = auth()->user();
-
-        $management_list = UserManagements::select('id','user_id','first_name','mobile_number','profile_image','user_category','email_id')->where('user_status',1)->where('id',$request->id)->first(); //fetch all the management for listing
-        return response()->json($management_list);
-        
-    }
-
-    // delete managment (onboarding)
-    public function onboarding_delete_management(Request $request)
-    {
-    	// Check authenticate user
-        $userdata = auth()->user();
-        UserManagements::where('id',$request->id)->delete(); //delete staff record
-        return response()->json('Deleted Successfully!...');
-    }
-
-    // delete subject (onboarding)
-    public function onboarding_delete_subject(Request $request)
-    {
-    	// Check authenticate user
-        $userdata = auth()->user();
-        // reset to null with selected subject staffs
-        UserStaffs::where('specialized_in',$request->id)->update(['specialized_in'=>null]);
-		// Delete the class mapping to the subject record
-        AcademicSubjectsMapping::where('subject',$request->id)->delete();
-        // fetch subject related communication from table
-        $communication_ids = Communications::where('subject_id',$request->id)->get()->toArray();
-        if(!empty($communication_ids))
-        {
-        	// get id from fetched details
-        	$ids_list = array_column($communication_ids,'id');
-        	//delete subject related records from communication recipients table
-        	CommunicationRecipients::whereIn('communication_id',$ids_list)->delete();
-        	CommunicationAttachments::whereIn('communication_id',$ids_list)->delete();
-        	CommunicationDistribution::whereIn('communication_id',$ids_list)->delete();
-        	HomeworkParentStatus::whereIn('notification_id',$ids_list)->delete();
-        	// delete subject related records from communication table
-        	Communications::where('subject_id',$request->id)->delete();
-        }
-        AcademicSubjects::where('id',$request->id)->delete(); //delete staff record
-        return response()->json('Deleted Successfully!...');
-    }
-
-    // Create and update users
-    public function create_update_users(Request $request)
-    {
-    	// Check authenticate user
-        $user = auth()->user();
-
-        // get user details from table
-        $user_details =  app('App\Http\Controllers\APILoginController')->get_user_table_id($user);
-
-        $user_table_id = $user_details->id; //fetch particular id
-
-        $userall_id = $loginid = $user_id = $image = ''; //declaration
-
-        $userall_id = UserAll::where(['user_table_id'=>$user_table_id,'user_role'=>$user->user_role])->pluck('id')->first(); //fetch common id
-
-        $role = $request->user_role;
-
-        if($userall_id!='') //check common id is exists
-        {
-        	//select and Store user details based on user role
-        	if($role == Config::get('app.Admin_role')) 
-        	{
-        		if($request->id!='')
-        			$individual_user_details = UserAdmin::where('id',$request->id)->first();
-        		else
-        			$individual_user_details = new UserAdmin();
-
-        		$target_file = '/admin/';
-        	}
-        	else if($role == Config::get('app.Management_role')) 
-        	{
-        		if($request->id!='')
-        			$individual_user_details = UserManagements::where('id',$request->id)->first();
-        		else
-        			$individual_user_details = new UserManagements();
-
-        		$target_file = '/management/';
-        	}
-        	else if($role == Config::get('app.Staff_role')) 
-        	{
-        		if($request->id!='')
-        			$individual_user_details = UserStaffs::where('id',$request->id)->first();
-        		else
-        			$individual_user_details = new UserStaffs();
-
-        		$target_file = '/staff/';
-        		$user_category = ($request->id!='')?$individual_user_details->user_category:'';
-        	}
-        	else
-        		return response()->json(['status'=>false,'message'=>"You don't have a permission to create user!..."]);
-
-        	if($request->id!='')// fetch selected management user details 
-        	{
-	    		$loginid = $individual_user_details->id;
-				$user_id = $individual_user_details->user_id;
-			}
-
-			if(isset($request->employee_no) && $request->employee_no!='') //check employee no already exists or not
-	        {
-	        	$check_exists = $this->checkEmployeeno($loginid,$role,$request->employee_no);
-	        	if($check_exists)
-	        		 return response()->json(['status'=>false,'message'=>'Given Employee no already exists!...']);
-	        }
-	        if(isset($request->mobile_number) && $request->mobile_number!='') //check mobile no already exists or not
-	        {
-	        	$check_exists = $this->checkmobileno($loginid,$role,$request->mobile_number);
-	        	if($check_exists)
-	        		 return response()->json(['status'=>false,'message'=>'Given Mobile no already exists!...']);
-	        }
-
-			$individual_user_details->updated_by=$userall_id;
-    		$individual_user_details->updated_time=Carbon::now()->timezone('Asia/Kolkata');
-    		$individual_user_details->created_by=$userall_id;
-        	$individual_user_details->created_time=Carbon::now()->timezone('Asia/Kolkata');
-
-        	$schoolcode = $school_profile = SchoolProfile::where(['id'=>$user['school_profile_id']])->first();//get school code from school profile
-
-	    	if(count($_FILES)>0) //upload image
-	        {
-	            if($request->hasfile('photo')) {
-	                $image = app('App\Http\Controllers\WelcomeController')->profile_file_upload($school_profile['school_code'],$request->file('photo'),$request->attachment_type,$target_file);
-	            }           
-	        }
-
-	        $individual_user_details->first_name= $request->name;
-	        $individual_user_details->mobile_number=$request->mobile_number;
-	        if($image!='')
-	        	$individual_user_details->profile_image = $image;
-	        $individual_user_details->email_id=$request->email_address;
-	        if($request->employee_no!='' && $request->employee_no!= null)
-	       		$individual_user_details->employee_no=$request->employee_no;
-	       	if($request->user_category!='' && $request->user_category!= null)
-	       		$individual_user_details->user_category=$request->user_category;
-	        $individual_user_details->dob=date('Y-m-d',strtotime($request->dob));
-	        if($request->doj!='' && $request->doj!= null)
-	        	$individual_user_details->doj=date('Y-m-d',strtotime($request->doj));
-
-	        if($role == Config::get('app.Staff_role'))
-	        {
-	        	// Remove the subject and department related details for non-teaching staffs.
-				if($request->user_category == 4) //4- non teaching
-				{
-					$individual_user_details->specialized_in = null;
-					$individual_user_details->department = null;
-				}
-				
-	        }
-	        $individual_user_details->save();
-
-	        $loginid = $individual_user_details->id;
-
-	        if($request->id=='') //if new user, update user id and insert record in user common table
-        	{
-        		$role_code = ($role == Config::get('app.Admin_role'))?'A':(($role == Config::get('app.Management_role'))?'M':'T');
-	        	// generate and update staff id in db 
-	            $user_id = $school_profile->school_code.substr($school_profile->active_academic_year, -2).$role_code.sprintf("%04s", $loginid);
-
-	            $individual_user_details->user_id = $user_id;
-	            $individual_user_details->save();
-
-	            $user_all = new UserAll;
-	            $user_all->user_table_id=$loginid;
-	            $user_all->user_role=$role;
-	            $user_all->save();
-        	}
-
-        	$schoolusers = SchoolUsers::where('user_id',$user_id)->first(); //update email address in common login table
-
-	        if($request->id=='')
-	        {
-	        	// given access to the groups based on the role  
-	        	$all_group_ids = [];
-	        	if($role == Config::get('app.Admin_role')) 
-	        	{
-	            	$all_group_ids = UserGroups::where('id','!=',1)->pluck('id')->toArray();
-	            	$group_access = Config::get('app.Group_Active');
-	        	}
-	        	else if($role == Config::get('app.Management_role'))
-	        	{
-	        		$all_group_ids = UserGroups::pluck('id')->toArray();
-	        		$group_access = Config::get('app.Group_Active');
-	        	}
-	        	else if($role == Config::get('app.Staff_role'))
-	        	{
-	        		$all_group_ids = ([2,3]);
-	        		$group_access = Config::get('app.Group_Active');
-	        	}
-
-		        foreach($all_group_ids as $group_key => $group_id)
-		        {
-		        	UserGroupsMapping::insert(['group_id'=>$group_id,'user_table_id'=>$loginid,'user_role'=>$role,'group_access'=>$group_access,'user_status'=>Config::get('app.Group_Active')]);
-		        }
-
-		        // update user details in config DB.
-	            $schoolusers = new SchoolUsers;
-	            $schoolusers->school_profile_id=$user->school_profile_id;
-	            $schoolusers->user_id=$user_id;
-	            $schoolusers->user_password=bcrypt($request->mobile_number);
-	        	$schoolusers->user_role=$role;
-	        	$schoolusers->user_status=Config::get('app.Group_Active');
-	        }
-
-	        $schoolusers->user_mobile_number=$request->mobile_number;
-	        $schoolusers->user_email_id=$request->email_address;
-	        $schoolusers->save();
-
-	        if($role == Config::get('app.Staff_role'))
-	        {
-		        if($request->user_category == 3 && $user_category != $request->user_category)
-		        {             
-		        	// remove the "Non-teaching group if user changed their role to teaching staff." 
-		            UserGroupsMapping::where('user_role',Config::get('app.Staff_role'))->where('group_id',5)->where('user_table_id',$individual_user_details->id)->delete();
-		            // checking teaching staff group alreay mapped with the user.
-		            $check_exists_nonteaching = UserGroupsMapping::where('user_role',Config::get('app.Staff_role'))->where('group_id',4)->where('user_table_id',$individual_user_details->id)->first();
-		            if(empty($check_exists_nonteaching)) //if not given access to user
-		                UserGroupsMapping::insert(['user_role'=>Config::get('app.Staff_role'),'group_id'=>4,'user_table_id'=>$individual_user_details->id,'group_access'=>2]);
-		        }
-		        else if($request->user_category == 4 && $user_category != $request->user_category)
-		        {
-		        	// remove the " teaching staff group if user changed their role to Non-teaching." 
-		            UserGroupsMapping::where('user_role',Config::get('app.Staff_role'))->where('group_id',4)->where('user_table_id',$loginid)->delete();
-		            // checking Non-teaching staff group alreay mapped with the user.
-		            $check_exists_nonteaching = UserGroupsMapping::where('user_role',Config::get('app.Staff_role'))->where('group_id',5)->where('user_table_id',$individual_user_details->id)->first();
-		            if(empty($check_exists_nonteaching))//if not given access to user
-		                UserGroupsMapping::insert(['user_role'=>Config::get('app.Staff_role'),'group_id'=>5,'user_table_id'=>$individual_user_details->id,'group_access'=>2]);
-
-		            // remove access from the subject teacher
-		            AcademicSubjectsMapping::where('staff',$individual_user_details->id)->update(['staff'=>null]);
-		            // remove access from the class teacher
-		            AcademicClassConfiguration::where('class_teacher',$individual_user_details->id)->update(['class_teacher'=>null]);
-
-		            // check user have whole group access
-		            $staff_group_list = UserGroups::where('group_type',2)->where('group_status',Config::get('app.Group_Active'))->pluck('id')->toArray();
-
-		            UserGroupsMapping::where('user_role',Config::get('app.Staff_role'))->whereIn('group_id',$staff_group_list)->where('user_table_id',$individual_user_details->id)->delete();
-		        }
-	        }
-			
-			$rolename = (Config::get('app.Admin_role') == $role)?'Admin':((Config::get('app.Management_role') == $role)?'Management':'Staff');
-			if($request->id=='')
-	            return response()->json(['status'=>true,'message'=>$rolename.' user added Successfully!...']);
-	       	else
-	            return response()->json(['status'=>true,'message'=>$rolename.' details updated Successfully!...']);
-        }
-        else
-        	return response()->json(['status'=>false,'message'=>'Invalid Credentails!...']);
-    }
-
-    // Check employee no
-    public function checkEmployeeno($id,$user_role,$employee_no)
-    {
-    	if($user_role == Config::get('app.Admin_role'))
-        	$check_exists = UserAdmin::where('employee_no',$employee_no);
-        else if($user_role == Config::get('app.Staff_role'))
-        	$check_exists = UserStaffs::where('employee_no',$employee_no);
-        else if($user_role == Config::get('app.Management_role'))
-        	$check_exists = UserManagements::where('employee_no',$employee_no);
-        else 
-        	return false;
-
-        if($id!='')
-            $check_exists = $check_exists->where('id','!=',$id);
-
-        $check_exists = $check_exists->first();
-
-        if(!empty($check_exists))
-            return true;
-        else
-            return false;
-    }
-    // Check employee no
-    public function checkmobileno($id,$user_role,$employee_no)
-    {
-    	if($user_role == Config::get('app.Admin_role'))
-        	$check_exists = UserAdmin::where('mobile_number',$employee_no);
-        else if($user_role == Config::get('app.Staff_role'))
-        	$check_exists = UserStaffs::where('mobile_number',$employee_no);
-        else if($user_role == Config::get('app.Management_role'))
-        	$check_exists = UserManagements::where('mobile_number',$employee_no);
-        else 
-        	return false;
-        
-        if($id!='')
-            $check_exists = $check_exists->where('id','!=',$id);
-
-        $check_exists = $check_exists->first();
-
-        if(!empty($check_exists))
-            return true;
-        else
-            return false;
-    }
-
-    // fetch all parent details for onboarding process
-    public function onboarding_parent_list()
-    {
-    	// Check authenticate user
-        $userdata = auth()->user();
-
-        $parent_list = UserParents::select('id','user_id','first_name','mobile_number')->where('user_status',1)->get()->toArray(); //fetch all the staff for listing
-        return response()->json($parent_list);
-    }
-
-    // Onboarding for individual parent view
-    public function onboarding_fetch_single_parent(Request $request)
-    {
-    	$student_list = $parentsdata = $students= [];//empty array declaration
-		$student_list = UserStudentsMapping::select('student')->where('parent',$request->id)->first(); //fetch student details from parent mapped data
-		if(!empty($student_list))
-		{
-			$parent_list = UserStudentsMapping::select('parent')->where('student',$student_list->student)->get()->toArray(); //fetch all parent details from student id
-			$students = UserStudents::where('id',$student_list->student)->first(); //get student related info
-			$parents = array_column($parent_list,'parent'); //pick parent id alone
-			foreach ($parents as $parent_key => $parent_value) { //form array with parent details
-				$parent_data = UserParents::where('id',$parent_value)->first();
-				$parentsdata[$parent_data->user_category] = $parent_data; 
-			}
-		}
-		else if($request->id!='')
-		{
-			$parent_data = UserParents::where('id',$request->id)->first();
-			$parentsdata[$parent_data->user_category] = $parent_data; 
-		}
-
-		$student_list = ([
-			'student_id'=>isset($students->id)?$students->id:0,
-			'student_name'=>isset($students->first_name)?$students->first_name:'',
-			'father_mobile_number'=>isset($parentsdata[1])?$parentsdata[1]->mobile_number:0,
-			'father_email_address'=>isset($parentsdata[1])?$parentsdata[1]->email_id:'',
-			'father_name'=>isset($parentsdata[1])?$parentsdata[1]->first_name:'',
-			'father_id'=>isset($parentsdata[1])?$parentsdata[1]->id:0,
-			'mother_mobile_number'=>isset($parentsdata[2])?$parentsdata[2]->mobile_number:0,
-			'mother_email_address'=>isset($parentsdata[2])?$parentsdata[2]->email_id:'',
-			'mother_name'=>isset($parentsdata[2])?$parentsdata[2]->first_name:'',
-			'mother_id'=>isset($parentsdata[3])?$parentsdata[3]->id:0,
-			'guardian_mobile_number'=>isset($parentsdata[3])?$parentsdata[3]->mobile_number:0,
-			'guardian_email_address'=>isset($parentsdata[3])?$parentsdata[3]->email_id:'',
-			'guardian_name'=>isset($parentsdata[3])?$parentsdata[3]->first_name:'',
-			'guardian_id'=>isset($parentsdata[3])?$parentsdata[3]->id:0,
-			'admission_number'=>isset($students->first_name)?$students->admission_number:'',
-			'roll_no'=>isset($students->roll_number)?$students->roll_number:0,
-			'dob'=>isset($students->dob)?$students->roll_number:null,
-			'doj'=>isset($students->dob)?$students->roll_number:null,
-			'employee_no'=>isset($students->employee_no)?$students->employee_no:'',
-			'gender'=>isset($students->roll_number)?(Config::get('app.'.$students->gender)):0,
-			'photo'=>isset($students->profile_image)?$students->profile_image:'',
-			'temporary_student'=>(isset($students->profile_image) && $students->class_config == null)?'yes':'no',
-			'class_section'=>isset($students->class_config)?$students->class_config:0,
-		]);
-		
-
-		return response()->json($student_list); //return student details 
-    }
-
-    // delete parent (onboarding)
-    public function onboarding_delete_parent(Request $request)
-    {
-    	// Check authenticate user
-        $userdata = auth()->user();
-        $studentids = UserStudentsMapping::where('parent',$request->id)->pluck('student')->toArray(); //fetch student id
-        $parentids = UserStudentsMapping::whereIn('student',$studentids)->pluck('parent')->toArray(); //fetch student id
-        if(count($parentids))
-        	UserStudents::whereIn('id',$studentids)->delete();
-        UserStudentsMapping::where('parent',$request->id)->delete(); //delete parent mapping record
-        UserParents::where('id',$request->id)->delete();
-        return response()->json('Deleted Successfully!...');
-    }
-
-   	// edit or insert parent (onboarding)
-    public function onboarding_edit_parent(Request $request)
-    {
-    	// Check authenticate user
-        $user = auth()->user();
-		if($user->user_role == Config::get('app.Admin_role'))//check role and get current user id
-            $user_table_id = UserAdmin::where(['user_id'=>$user->user_id])->pluck('id')->first();
-        else if($user->user_role == Config::get('app.Management_role'))
-            $user_table_id = UserManagements::where(['user_id'=>$user->user_id])->pluck('id')->first();
-        else if($user->user_role == Config::get('app.Staff_role'))
-            $user_table_id = UserStaffs::where(['user_id'=>$user->user_id])->pluck('id')->first();
-
-        $userall_id = UserAll::where(['user_table_id'=>$user_table_id,'user_role'=>$user->user_role])->pluck('id')->first();
-
-        $profile_details = SchoolProfile::where(['id'=>$user->school_profile_id])->first();//Fetch school profile details 
-        $parent_details = $mother_details = $guardian_details = $student_details = [];
-
-        $class_config_id = null;
-        if(isset($request->gender))
-        	$gender = (isset($request->gender) && strtolower($request->gender) == 'male')?1:((isset($request->gender) && strtolower($request->gender) == 'female')?2:3);
-
-        //check image exists
-   		$image ='';
-   		$profile_image_path ='';
-    	if(!empty($request->student_photo))
-    	{
-            $path = public_path('uploads/'.$profile_details['school_code'].'/students');//
-
-            if(!File::isDirectory($path)){ //check path already exists
-                File::makeDirectory($path, 0777, true, true);
-            }
-    		$name = explode('.',$request->student_photo->getClientOriginalName())[0];
-        	$image = $name.''.time().'.'.$request->student_photo->extension();
-    		$filename = str_replace(["-",","," ","/"], '_', $image);
-        	$request->student_photo->move(public_path().'/uploads/'.$profile_details['school_code'].'/students', $filename);
-        	$profile_image_path =url('/').'/uploads/'.$profile_details['school_code'].'/students/'.$filename;
-    	}
-
-
-        if($request->father_id>0 || $request->mother_id>0 || $request->guardian_id>0 || $request->student_id>0)// fetch check user already exists 
-        {
-        	$group_id =$old_group_id=$new_group_id='';
-
-       		if($request->group_id!='')
-       			$group_id = $request->group_id;
-
-        	if(isset($request->student_id) && $request->student_id>0)//arrange student details in array
-        	{
-
-        		$student_details = UserStudents::where(['id'=>$request->student_id])->first();
-        		if($student_details->class_config != $request->class_config)
-        		{
-        			$old_group_id = UserGroups::where('class_config',$student_details->class_config)->pluck('id')->first();
-        			$new_group_id = UserGroups::where('class_config',$request->class_config)->pluck('id')->first();
-        		}
-
-        	} 
-        	else
-                $student_details = new UserStudents;
-
-            // student details insert or edit into db
-            $student_details->first_name= $request->student_name;
-            $student_details->admission_number=$request->admission_no;
-            $student_details->roll_number=isset($request->roll_no)?$request->roll_no:'';
-            if(!empty($profile_image_path) && !empty($request->student_photo))
-            	$student_details->profile_image=$profile_image_path;
-            if(isset($request->gender))
-            	$student_details->gender=$gender;
-            if(isset($request->dob))
-            	$student_details->dob=date('Y-m-d',strtotime($request->dob));
-
-            if(isset($student_details->class_config) && $student_details->class_config !='' && $request->class_config !='' && $student_details->class_config != $request->class_config)
-            {
-            	Attendance::where('user_table_id',$student_details->id)->where('class_config',$student_details->class_config)->update(['class_config'=>$request->class_config]);
-            }
-
-            $student_details->class_config=$request->class_config;
-
-            $student_details->user_status=(isset($request->temporary_student) && $request->temporary_student!='' && strtolower($request->temporary_student)=='yes')?5:1;
-            $student_details->updated_by=$userall_id;
-        	$student_details->updated_time=Carbon::now()->timezone('Asia/Kolkata');
-            $student_details->save();
-
-   			$student_id = $student_details->id;
-
-   			
-
-   			// generate and update student id in db 
-            $userstudent_id = $profile_details['school_code'].substr($profile_details['active_academic_year'], -2).'S'.sprintf("%04s", $student_id);
-            $student_details->user_id = $userstudent_id;
-            $student_details->save(); 
-
-            // add into group
-	        if($new_group_id!='' && ($old_group_id != $new_group_id) && $request->student_id!='')
-	        {
-	        	$parent_ids = UserStudentsMapping::where('student',$request->student_id)->pluck('parent')->toArray();
-	        	UserGroupsMapping::where(['group_id'=>$old_group_id,'user_role'=>Config::get('app.Parent_role')])->whereIn('user_table_id',$parent_ids)->delete();
-	        	foreach ($parent_ids as $key => $parent_value) {
-	        		UserGroupsMapping::insert(['group_id'=>$new_group_id,'user_table_id'=>$parent_value,'user_role'=>Config::get('app.Parent_role'),'user_status'=>1,'group_access'=>2]);
-	        	}
-	        }
-
-            
-            // insert parents details
-            if(isset($request->father_id))
-            {
-	        	$father_details = UserParents::where('id',$request->father_id)->first();
-		        if(!empty($father_details) || $request->father_mobile_number!='')
-		        {
-		        	$data['photo'] = $request->father_photo;
-		        	$data['first_name'] = $request->father_name;
-		        	$data['mobile_number'] = $request->father_mobile_number;
-		        	$data['email_address'] = $request->father_email_address;
-		        	$data['user_category'] = 1;
-
-		        	$this->edit_parent_details($data,$father_details,$student_id,$userall_id,$old_group_id,$new_group_id);
-		        }
-		    }
-	        // update or insert parents details
-	        if(isset($request->mother_id))
-            {
-		        $mother_details = UserParents::where('id',$request->mother_id)->first();
-		        if(!empty($mother_details) || $request->mother_mobile_number!='' )
-		        {
-		        	$data = [];
-		        	$data['photo'] = $request->mother_photo;
-		        	$data['first_name'] = $request->mother_name;
-		        	$data['mobile_number'] = $request->mother_mobile_number;
-		        	$data['email_address'] = $request->mother_email_address;
-		        	$data['user_category'] = 2;
-
-		        	$this->edit_parent_details($data,$mother_details,$student_id,$userall_id,$old_group_id,$new_group_id);
-		        }
-		    }
-
-		    if(isset($request->guardian_id))
-            {
-	        // update or insert parents details
-		        $guardian_details = UserParents::where('id',$request->guardian_id)->first();
-		        if(!empty($guardian_details) || $request->guardian_mobile_number!='' )
-		        {
-		        	$data = [];
-		        	$data['photo'] = $request->guardian_photo;
-		        	$data['first_name'] = $request->guardian_name;
-		        	$data['mobile_number'] = $request->guardian_mobile_number;
-		        	$data['email_address'] = $request->guardian_email_address;
-		        	$data['user_category'] = 3;
-
-		        	$this->edit_parent_details($data,$guardian_details,$student_id,$userall_id,$old_group_id,$new_group_id);
-		        }
-		    }
-	        Configurations::where('school_profile_id',$user->school_profile_id)->update(['students'=>1]);
-	        return response()->json(['status'=>true,'message'=>'Student and parents details updated Successfully!...']);
-	    }
-        else
-       	{  		
-       		$group_id ='';
-
-       		if($request->group_id!='')
-       			$group_id = $request->group_id;
-        	// insert student details
-	        $student_details = new UserStudents;
-
-            $student_details->first_name= $request->student_name;
-            $student_details->admission_number=$request->admission_no;
-            if(isset($request->roll_no))
-            	$student_details->roll_number=isset($request->roll_no)?$request->roll_no:'';
-            if(!empty($profile_image_path) && !empty($request->student_photo))
-            	$student_details->profile_image=$profile_image_path;
-            $student_details->gender=$gender;
-            $student_details->class_config=$request->class_config;
-            $student_details->dob=date('Y-m-d',strtotime($request->dob));
-            $student_details->user_status=(isset($request->temporary_student) && $request->temporary_student!='' && strtolower($request->temporary_student)=='yes')?5:1;
-            $student_details->created_by=$userall_id;
-        	$student_details->created_time=Carbon::now()->timezone('Asia/Kolkata');
-            $student_details->save();
-
-   			$student_id = $student_details->id;
-   			$password = '';
-   			// generate and update staff id in db 
-            $userstudent_id = $profile_details['school_code'].substr($profile_details['active_academic_year'], -2).'S'.sprintf("%04s", $student_id);
-            $student_details->user_id = $userstudent_id;
-            $student_details->save();
-            
-            if($profile_details->default_password_type == 'admission_number')
-				$password = bcrypt($request->admission_no);
-			else if($profile_details->default_password_type == 'dob')
-				$password = bcrypt(date('dmY',strtotime($request->dob)));
-
-            // insert father details
-            if($request->father_mobile_number!='' && $request->father_name!='')
-        	{
-        		$father_id = UserParents::where('mobile_number',$request->father_mobile_number)->pluck('id')->first();
-        		if($father_id == '')
-        		{
-		        	$data = [];
-		        	$data['photo'] = $request->father_photo;
-		        	$data['first_name'] = $request->father_name;
-		        	$data['mobile_number'] = $request->father_mobile_number;
-		        	$data['email_address'] = $request->father_email_address;
-		        	$data['user_category'] = 1;
-
-		        	if($profile_details->default_password_type == 'mobile_number' || $password == '')
-						$password = bcrypt($request->father_mobile_number);
-					
-		        	$this->insert_parent_details($data,$student_details->id,$userall_id,$group_id,$password);
-        		}
-        		else
-        		{
-        			 // add into group
-			        if($group_id!='')
-			        {
-			        	UserGroupsMapping::insert(['group_id'=>$group_id,'user_table_id'=>$father_id,'user_role'=>Config::get('app.Parent_role'),'user_status'=>1]);
-			        	UserGroupsMapping::insert(['group_id'=>2,'user_table_id'=>$father_id,'user_role'=>Config::get('app.Parent_role'),'user_status'=>1]);
-			        }
-			        
-			        // mapping the student and parent
-			        $student_map = new UserStudentsMapping;
-			        $student_map->student = $student_details->id;  
-			        $student_map->parent = $father_id;
-			        $student_map->created_by = $userall_id;
-			        $student_map->created_time=Carbon::now()->timezone('Asia/Kolkata');
-			        $student_map->save();
-        		}
-	        }
-	        // insert mother details
-	        if($request->mother_mobile_number!='' && $request->mother_name!='')
-        	{
-        		$mother_id = UserParents::where('mobile_number',$request->mother_mobile_number)->pluck('id')->first();
-        		if($mother_id == '')
-        		{
-		        	$data = [];
-		        	$data['photo'] = $request->mother_photo;
-		        	$data['first_name'] = $request->mother_name;
-		        	$data['mobile_number'] = $request->mother_mobile_number;
-		        	$data['email_address'] = $request->mother_email_address;
-		        	$data['user_category'] = 2;
-
-		        	if($profile_details->default_password_type == 'mobile_number' || $password == '')
-						$password = bcrypt($request->mother_mobile_number);
-
-		        	$this->insert_parent_details($data,$student_details->id,$userall_id,$group_id,$password);
-
-	        	}
-        		else
-        		{
-        			 // add into group
-			        if($group_id!='')
-			        {
-			        	UserGroupsMapping::insert(['group_id'=>$group_id,'user_table_id'=>$mother_id,'user_role'=>Config::get('app.Parent_role'),'user_status'=>1]);
-			        	UserGroupsMapping::insert(['group_id'=>2,'user_table_id'=>$father_id,'user_role'=>Config::get('app.Parent_role'),'user_status'=>1]);
-			        }
-			        			        
-			        // mapping the student and parent
-			        $student_map = new UserStudentsMapping;
-			        $student_map->student = $student_details->id;  
-			        $student_map->parent = $mother_id;
-			        $student_map->created_by = $userall_id;
-			        $student_map->created_time=Carbon::now()->timezone('Asia/Kolkata');
-			        $student_map->save();
-        		}
-	        }
-
-	        // insert guardian details
-	        if($request->guardian_mobile_number!='' && $request->guardian_name!='')
-        	{
-        		$guardian_id = UserParents::where('mobile_number',$request->guardian_mobile_number)->pluck('id')->first();
-        		if($guardian_id == '')
-        		{
-		        	$data = [];
-		        	$data['photo'] = $request->guardian_photo;
-		        	$data['first_name'] = $request->guardian_name;
-		        	$data['mobile_number'] = $request->guardian_mobile_number;
-		        	$data['email_address'] = $request->guardian_email_address;
-		        	$data['user_category'] = 9;
-
-		        	if($profile_details->default_password_type == 'mobile_number' || $password == '')
-						$password = bcrypt($request->guardian_mobile_number);
-
-		        	$this->insert_parent_details($data,$student_details->id,$userall_id,$group_id,$password);
-	        	}
-        		else
-        		{
-        			 // add into group
-			        if($group_id!='')
-			        {
-			        	UserGroupsMapping::insert(['group_id'=>$group_id,'user_table_id'=>$guardian_id,'user_role'=>Config::get('app.Parent_role'),'user_status'=>1]);
-			        	UserGroupsMapping::insert(['group_id'=>2,'user_table_id'=>$father_id,'user_role'=>Config::get('app.Parent_role'),'user_status'=>1]);
-			        }
-			        
-			        // mapping the student and parent
-			        $student_map = new UserStudentsMapping;
-			        $student_map->student = $student_details->id;  
-			        $student_map->parent = $guardian_id;
-			        $student_map->created_by = $userall_id;
-			        $student_map->created_time=Carbon::now()->timezone('Asia/Kolkata');
-			        $student_map->save();
-        		}
-	        }
-	        Configurations::where('school_profile_id',$user->school_profile_id)->update(['students'=>1]);
-	        return response()->json(['status'=>true,'message'=>'Student and parents details inserted Successfully!...']);
-       	}
-    }
-
-    // Edit parent details dependency function - onboarding
-    public function edit_parent_details($data,$details,$id,$userall_id,$old_group_id,$new_group_id)
-    {
-    	$image =$page='';
-    	$user = auth()->user();
-    	$profile_image_path ='';
-        $profile_details = SchoolProfile::where(['id'=>$user->school_profile_id])->first();//Fetch school profile details 
-    	if(!empty($data['photo']))//check upload photo exist or not
-    	{
-    		$path = public_path('uploads/'.$profile_details['school_code'].'/students');//
-
-            if(!File::isDirectory($path)){ //check path already exists
-                File::makeDirectory($path, 0777, true, true);
-            }
-    		$name = explode('.',$data['photo']->getClientOriginalName())[0];
-        	$image = $name.''.time().'.'.$data['photo']->extension();
-    		$filename = str_replace(["-",","," ","/"], '_', $image);
-        	$data['photo']->move(public_path().'/uploads/'.$profile_details['school_code'].'/students', $filename);
-        	$profile_image_path =url('/').'/uploads/'.$profile_details['school_code'].'/students/'.$filename;
-    	}
-    	if(empty($details) && !isset($details->mobile_number))
-    	{
-    		$page = 'new';
-    	    $details = new UserParents;
-    	}
-    	
-    	
-
-        //save staff details
-        if($data['first_name']!='')
-        	$details->first_name= $data['first_name'];
-        if($data['mobile_number']!='')
-        	$details->mobile_number=$data['mobile_number'];
-        if($profile_image_path!='')
-        	$details->profile_image = ($profile_image_path!='')?$profile_image_path:'';
-       	if($data['email_address']!='')
-        	$details->email_id=$data['email_address'];
-        if($data['user_category']!='')
-        	$details->user_category = $data['user_category'];
-        $details->updated_by=$userall_id;
-    	$details->updated_time=Carbon::now()->timezone('Asia/Kolkata');
-        $details->save();
-        $parent_id = $details->id;
-        if($page!='')
-	    {
-	    	// generate and update staff id in db 
-            $userparent_id = $profile_details['school_code'].substr($profile_details['active_academic_year'], -2).'P'.sprintf("%04s", $parent_id);
-            $details->user_id = $userparent_id;
-            $details->save();     
-
-            $user_all = new UserAll;
-            $user_all->user_table_id=$parent_id;
-            $user_all->user_role=Config::get('app.Parent_role');
-            $user_all->save(); 
-
-	    }
-	    else
-	    	$userparent_id = $details->user_id;
-
-        if($data['email_address']!='')
-        {
-        	$schoolusers = SchoolUsers::where(['user_id'=>$userparent_id,'school_profile_id'=>$user->school_profile_id])->first();
-
-        	if(empty($schoolusers))
-            	$schoolusers = new SchoolUsers;
-
-            $schoolusers->school_profile_id=$user->school_profile_id;
-            $schoolusers->user_id=$userparent_id;
-            $schoolusers->user_mobile_number=$data['mobile_number'];
-            $schoolusers->user_password=bcrypt($data['mobile_number']);
-            $schoolusers->user_email_id=$data['email_address'];
-            $schoolusers->user_role=Config::get('app.Parent_role');
-            $schoolusers->user_status=1;
-            $schoolusers->save();
-	    }
-	    
-	    if($page!='')
-	    {
-	        // mapping the student and parent
-	        $student_map = new UserStudentsMapping;
-	        $student_map->student = $id;  
-	        $student_map->parent = $details->id;
-	        $student_map->created_by = $userall_id;
-	        $student_map->created_time=Carbon::now()->timezone('Asia/Kolkata');
-	        $student_map->save();
-	    }
-    }
-
-    // create parent details dependency function -onboarding
-    public function insert_parent_details($data,$id,$userall_id,$group_id,$password)
-    {
-    	$user_data = auth()->user();
-    	$profile_details = SchoolProfile::where(['id'=>$user_data->school_profile_id])->first();//Fetch school profile details 
-  		$profile_image_path ='';
-    	if(!empty($data['photo']))//check upload photo exist or not
-    	{
-    		$path = public_path('uploads/'.$profile_details['school_code'].'/students');//
-
-            if(!File::isDirectory($path)){ //check path already exists
-                File::makeDirectory($path, 0777, true, true);
-            }
-    		$name = explode('.',$data['photo']->getClientOriginalName())[0];
-        	$image = $name.''.time().'.'.$data['photo']->extension();
-    		$filename = str_replace(["-",","," ","/"], '_', $image);
-        	$data['photo']->move(public_path().'/uploads/'.$profile_details['school_code'].'/students', $filename);
-        	$profile_image_path =url('/').'/uploads/'.$profile_details['school_code'].'/students/'.$filename;
-    	}
-
-    	// insert parent details in db
-    	$parent=[];
-        $parent_details = new UserParents;
-    	$parent_details->created_by=$userall_id;
-    	if($profile_image_path!='')
-        	$parent_details->profile_image = ($profile_image_path!='')?$profile_image_path:'';
-    	$parent_details->created_time=Carbon::now()->timezone('Asia/Kolkata');
-        $parent_details->mobile_number= $data['mobile_number'];
-        $parent_details->user_category = $data['user_category'];
-        $parent_details->first_name= $data['first_name'];
-        $parent_details->email_id= $data['email_address'];
-        $parent_details->user_status=1;//active
-            
-            
-        $parent_details->save();
-
-        $parent_id = $parent_details->id;
-
-        // generate and update staff id in db 
-        $userparent_id = $profile_details['school_code'].substr($profile_details['active_academic_year'], -2).'P'.sprintf("%04s", $parent_id);
-        $parent_details->user_id = $userparent_id;
-        $parent_details->save(); 
-
-        // add into group
-        if($group_id!='')
-        {
-        	UserGroupsMapping::insert(['group_id'=>2,'user_table_id'=>$parent_id,'user_role'=>Config::get('app.Parent_role'),'user_status'=>1,'group_access'=>2]);
-        	UserGroupsMapping::insert(['group_id'=>$group_id,'user_table_id'=>$parent_id,'user_role'=>Config::get('app.Parent_role'),'user_status'=>1,'group_access'=>2]);
-        }
-        
-        //make an entry in user all table
-        $user_all = new UserAll;
-        $user_all->user_table_id=$parent_details->id;
-        $user_all->user_role=Config::get('app.Parent_role');
-        $user_all->save(); 
-            	
-        // insert record in school user table
-        $schoolusers = new SchoolUsers;
-
-        $schoolusers->school_profile_id=$user_data->school_profile_id;
-        $schoolusers->user_id=$userparent_id;
-        $schoolusers->user_mobile_number=$data['mobile_number'];
-        $schoolusers->user_password=$password;
-        $schoolusers->user_role=Config::get('app.Parent_role');
-        $schoolusers->user_status=1;
-        $schoolusers->save();
-
-        // mapping the student and parent
-        $student_map = new UserStudentsMapping;
-        $student_map->student = $id;  
-        $student_map->parent = $parent_id;
-        $student_map->created_by = $userall_id;
-        $student_map->created_time=Carbon::now()->timezone('Asia/Kolkata');
-        $student_map->save();
-    }
-
-
-
-    // Add students in DB along with parents and guardian details (old need to remove)
-	public static function students_excel_upload($data,$userall_id,$upload_type)
-	{
-		$user_data = auth()->user();
-		$profile_details = SchoolProfile::where(['id'=>$user_data->school_profile_id])->first();//Fetch school profile details 
-
-		$inserted_records=0;
-        //Process each and every row ,insert all data in db
-        foreach ($data as $row) {
-              
-            $check_exists = UserParents::where('mobile_number',$row['father_mobile_number']);
-            $result = $check_exists->first(); //To check given subject name is already exists in DB.
-            
-        	$class_config_id = null;
-
-        	if($upload_type == 'import')
-        	{
-                $class_id = AcademicClasses::where('class_name',$row['class_name'])->pluck('id')->first();
-                $section_id = AcademicSections::where('section_name',$row['section_name'])->pluck('id')->first();
-        		if($class_id!='' && $section_id!='')
-                $class_config_id = AcademicClassConfiguration::where(['class_id'=>$class_id,'section_id'=>$section_id])->pluck('id')->first();
-        	}
-        	else
-        		$class_config_id = $row['class_section'];
-
-
-        	if(isset($row['gender']) && strtolower($row['gender']) == 'male')
-        		$gender = 1;
-        	else if(isset($row['gender']) && strtolower($row['gender']) == 'female')
-        		$gender = 2;
-        	else
-        		$gender = 3;
-
-        	if(isset($row['student_id']) && $row['student_id']!='')//arrange student details in array 
-        		$student_details = UserStudents::where(['id'=>$row['student_id']])->first();
-        	else
-                $student_details = new UserStudents;
-
-            $student_details->first_name= $row['student_name'];
-            $student_details->admission_number=$row['admission_no'];
-            $student_details->roll_number=isset($row['roll_no'])?$row['roll_no']:'';
-            // $student_details->profile_image=public_path(env('SAMPLE_CONFIG_URL').'students/'.$image);
-            $student_details->gender=$gender;
-            $student_details->class_config=$class_config_id;
-            $student_details->user_status=(isset($row['temporary_student']) && $row['temporary_student']!='' && strtolower($row['temporary_student'])=='yes')?5:1;
-            $student_details->dob=date('Y-m-d',strtotime($row['dob']));
-            $student_details->created_by=$userall_id;
-        	$student_details->created_time=Carbon::now()->timezone('Asia/Kolkata');
-            $student_details->save();
-
-   			$student_id = $student_details->id; // student id
-
-   			if(isset($row['student_id']) && $row['student_id']!='')//arrange student details in array              
-   			{
-   				$page = 'create';
-            	$userstudent_id = $student_details->user_id;
-   			}
-            else
-            {
-            	$page = 'edit';
-            	 // generate and update staff id in db 
-                $userstudent_id = $profile_details['school_code'].substr($profile_details['active_academic_year'], -2).'S'.sprintf("%04s", $student_id);
-                $student_details->user_id = $userstudent_id;
-                $student_details->save();                  
-                
-            }
-
-
-            if((isset($row['father_mobile_number']) || isset($row['father_email_address'])) && ($row['father_mobile_number']!='' || $row['father_email_address']!=''))
-            {
-            	$check_exists = UserParents::where('mobile_number',$row['father_mobile_number'])->first(); //To check given subject name is already exists in DB.
-            	if(!empty($check_exists))
-            	{
-            		$check_exists_mapping = UserStudentsMapping::where('student',$student_id)->where('parent',$check_exists->id)->pluck('id')->first();
-            		if($check_exists_mapping == '')
-            		{
-   	            		$student_map = new UserStudentsMapping;
-	                    $student_map->student = $student_id;  
-	                    $student_map->parent = $check_exists->id;
-	                    $student_map->created_by = $userall_id;
-	                    $student_map->created_time=Carbon::now()->timezone('Asia/Kolkata');
-	                    $student_map->save();
-            		}
-            	}
-            	else
-            	{
-                    $parent=[];
-                    if(isset($row['father_id']) && $row['father_id']!='')
-                    	$parent_details = $parent = UserParents::where(['id'=>$row['father_id']])->first();
-                	if(empty($parent))
-                	{
-                    	$parent_details = new UserParents;
-                    	$parent_details->created_by=$userall_id;
-                    	$parent_details->created_time=Carbon::now()->timezone('Asia/Kolkata');
-                	}
-                	else
-                	{
-                		$parent_details->updated_by=$userall_id;
-                    	$parent_details->updated_time=Carbon::now()->timezone('Asia/Kolkata');
-                    	$userparent_id = $parent_details->user_id;
-                	}
-                    $parent_details->mobile_number= $row['father_mobile_number'];
-                    $parent_details->first_name= $row['father_name'];
-                    $parent_details->email_id= $row['father_email_address'];
-                    $parent_details->user_status=1;//active
-                    $parent_details->user_category = 1;
-                    
-                    
-                    $parent_details->save();
-
-                    $parent_id = $parent_details->id;
-
-                    if(empty($parent))
-                    {
-	                    // generate and update staff id in db 
-	                    $userparent_id = $profile_details['school_code'].substr($profile_details['active_academic_year'], -2).'P'.sprintf("%04s", $parent_id);
-	                    $parent_details->user_id = $userparent_id;
-	                    $parent_details->save(); 
-
-	                    if($page == 'edit')
-	                    {
-		                    $user_all = new UserAll;
-			                $user_all->user_table_id=$parent_id;
-			                $user_all->user_role=Config::get('app.Parent_role');
-			                $user_all->save(); 
-	                    }
-
-	                    $check_exists_mapping = UserStudentsMapping::where('student',$student_id)->where('parent',$parent_id)->pluck('id')->first();
-	            		if($check_exists_mapping == '')
-	            		{
-		                    $student_map = new UserStudentsMapping;
-		                    $student_map->student = $student_id;  
-		                    $student_map->parent = $parent_id;
-		                    $student_map->created_by = $userall_id;
-		                    $student_map->created_time=Carbon::now()->timezone('Asia/Kolkata');
-		                    $student_map->save();
-		                }
-	                }
-	                $schoolusers = SchoolUsers::where(['user_id'=>$userparent_id,'school_profile_id'=>$user_data->school_profile_id])->first();
-
-                	if(empty($schoolusers))
-                    	$schoolusers = new SchoolUsers;
-
-                    $schoolusers->school_profile_id=$user_data->school_profile_id;
-                    $schoolusers->user_id=$userparent_id;
-                    $schoolusers->user_mobile_number=$row['father_mobile_number'];
-                    $schoolusers->user_password=bcrypt(date('dmY',strtotime($row['dob'])));
-                    $schoolusers->user_email_id=$row['father_email_address'];
-                    $schoolusers->user_role=Config::get('app.Parent_role');
-                    $schoolusers->user_status=1;
-                    $schoolusers->save();
-            	}
-            }
-            $inserted_records++;          
-        }
-
-        if($inserted_records>0) //check empty array
-            Configurations::where('school_profile_id',$user_data->school_profile_id)->update(['students'=>1,'map_students'=>1]);
-	}
-    
-
-	public static function upload_config_school($data,$userall_id,$upload_type)
-	{
-		$user_data = auth()->user();
-		$profile_details = SchoolProfile::where(['id'=>$user_data->school_profile_id])->first();//Fetch school profile details 
-
-		foreach ($data as $row) {
-			if((isset($row['father_mobile_number']) || isset($row['father_email_address'])) && ($row['father_mobile_number']!='' || $row['father_email_address']!=''))
-	        {
-	        	$userparent_id=UserParents::where('mobile_number',$row['father_mobile_number'])->pluck('user_id')->first();
-				$schoolusers = SchoolUsers::where(['user_id'=>$userparent_id,'school_profile_id'=>$user_data->school_profile_id])->first();
-
-		    	if(empty($schoolusers))
-		        	$schoolusers = new SchoolUsers;
-
-		        $schoolusers->school_profile_id=$user_data->school_profile_id;
-		        $schoolusers->user_id=$userparent_id;
-		        $schoolusers->user_mobile_number=$row['father_mobile_number'];
-		        $schoolusers->user_password=bcrypt($row['father_mobile_number']);
-		        $schoolusers->user_email_id=$row['father_email_address'];
-		        $schoolusers->user_role=Config::get('app.Parent_role');
-		        $schoolusers->user_status=1;
-		        $schoolusers->save();
-		    }
-		    if((isset($row['mother_mobile_number']) || isset($row['mother_email_address'])) && ($row['mother_mobile_number']!='' || $row['mother_email_address']!=''))
-	        {
-	        	$userparent_id=UserParents::where('mobile_number',$row['mother_mobile_number'])->pluck('user_id')->first();
-	        	$schoolusers = SchoolUsers::where(['user_id'=>$userparent_id,'school_profile_id'=>$user_data->school_profile_id])->first();
-
-	        	if(empty($schoolusers))
-	            	$schoolusers = new SchoolUsers;
-
-	            $schoolusers->school_profile_id=$user_data->school_profile_id;
-	            $schoolusers->user_id=$userparent_id;
-	            $schoolusers->user_mobile_number=$row['mother_mobile_number'];
-	            $schoolusers->user_password=bcrypt($row['mother_mobile_number']);
-	            $schoolusers->user_email_id=$row['mother_email_address'];
-	            $schoolusers->user_role=Config::get('app.Parent_role');
-	            $schoolusers->user_status=1;
-	            $schoolusers->save(); 
-	        }
-	    }
-
 	}
 
 	// send welcome message to all users
@@ -4134,12 +4111,17 @@ class APIConfigurationsController extends Controller
         {
         	// upload profile image
         	$target_file = '/parent/';
-        	if(count($_FILES)>0)
+	    	if($request->photo!='')
 	        {
-	            if($request->hasfile('photo')) {
-	                $image = app('App\Http\Controllers\WelcomeController')->profile_file_upload($school_profile['school_code'],$request->file('photo'),1,$target_file);
-	            }           
+	        	$image = app('App\Http\Controllers\WelcomeController')->profile_file_upload($school_profile['school_code'],$request->photo,1,$target_file,$request->ext);
 	        }
+
+        	// if(count($_FILES)>0)
+	        // {
+	        //     if($request->hasfile('photo')) {
+	        //         $image = app('App\Http\Controllers\WelcomeController')->profile_file_upload($school_profile['school_code'],$request->file('photo'),1,$target_file);
+	        //     }           
+	        // }
 
 	        // check mobile no already exist in table.
 	        $check_exists = UserParents::where('mobile_number',$request->mobile_number);
@@ -4214,13 +4196,6 @@ class APIConfigurationsController extends Controller
         	return response()->json(['status'=>true,'message'=>'Parent details updated Successfully!...']);
         }
         return response()->json(['status'=>false,'message'=>'Failed to updated parent details!...']);
-	}
-
-	//Parent Category
-	public function get_parent_category()
-	{
-		$categories = UserCategories::select('id','category_name')->where('user_role',3)->get()->toArray();
-		return response()->json(compact('categories'));
 	}
 
 	// check mobile number exists

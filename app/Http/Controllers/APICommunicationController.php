@@ -1426,9 +1426,9 @@ class APICommunicationController extends Controller
 
         $user_details = [];
         if($request->first_name!='')
-            $user_details = $request->first_name;
+            $user_details['first_name'] = $request->first_name;
         if($request->profile_image!='')
-            $user_details = $profile_image;
+            $user_details['profile_image'] = $profile_image;
         
         if($user->user_role == Config::get('app.Management_role'))
             UserManagements::where('user_id',$user->user_id)->update($user_details);

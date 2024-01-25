@@ -1694,6 +1694,8 @@ class APIConfigurationsController extends Controller
 
 		$user_details =  app('App\Http\Controllers\APILoginController')->get_user_table_id($user_data);
 
+		$school_profile = SchoolProfile::where(['id'=>$user_data->school_profile_id])->first();
+
         $userall_id = UserAll::where(['user_table_id'=>$user_details->id,'user_role'=>$user_data->user_role])->pluck('id')->first();//fetch id from user all table to store notification triggered user
 
 		$inserted_records=0;
@@ -1848,7 +1850,7 @@ class APIConfigurationsController extends Controller
 
         $userall_id = UserAll::where(['user_table_id'=>$user_details->id,'user_role'=>$user->user_role])->pluck('id')->first();//fetch id from user all table to store notification triggered user
 
-        $profile_details = $school_profile =  SchoolProfile::where(['id'=>$user->school_profile_id])->first();//Fetch school profile details 
+        $profile_details = $school_profile = SchoolProfile::where(['id'=>$user->school_profile_id])->first();//Fetch school profile details 
         $parent_details = $mother_details = $guardian_details = $student_details = [];
 
         $class_config_id = null;

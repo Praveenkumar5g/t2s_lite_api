@@ -1935,7 +1935,8 @@ class APIConfigurationsController extends Controller
 	        	$father_details = UserParents::where('id',$request->father_id)->first();
 		        if(!empty($father_details) || $request->father_mobile_number!='')
 		        {
-		        	$data['photo'] = $request->father_photo;
+		        	$data['student_photo'] = isset($data->father_photo)?$data->father_photo:'';
+	        		$data['ext'] = isset($data->father_ext)?$data->father_ext:'';
 		        	$data['first_name'] = $request->father_name;
 		        	$data['mobile_number'] = $request->father_mobile_number;
 		        	$data['email_address'] = $request->father_email_address;
@@ -1951,7 +1952,8 @@ class APIConfigurationsController extends Controller
 		        if(!empty($mother_details) || $request->mother_mobile_number!='' )
 		        {
 		        	$data = [];
-		        	$data['photo'] = $request->mother_photo;
+		        	$data['student_photo'] = isset($request->mother_photo)?$data->mother_photo:'';
+	        		$data['ext'] = isset($request->mother_ext)?$data->mother_ext:'';
 		        	$data['first_name'] = $request->mother_name;
 		        	$data['mobile_number'] = $request->mother_mobile_number;
 		        	$data['email_address'] = $request->mother_email_address;
@@ -1968,7 +1970,8 @@ class APIConfigurationsController extends Controller
 		        if(!empty($guardian_details) || $request->guardian_mobile_number!='' )
 		        {
 		        	$data = [];
-		        	$data['photo'] = $request->guardian_photo;
+		        	$data['student_photo'] = isset($request->guardian_photo)?$data->guardian_photo:'';
+	        		$data['ext'] = isset($request->guardian_ext)?$data->guardian_ext:'';
 		        	$data['first_name'] = $request->guardian_name;
 		        	$data['mobile_number'] = $request->guardian_mobile_number;
 		        	$data['email_address'] = $request->guardian_email_address;
@@ -2022,7 +2025,8 @@ class APIConfigurationsController extends Controller
         		if($father_id == '')
         		{
 		        	$data = [];
-		        	$data['photo'] = $request->father_photo;
+		        	$data['student_photo'] = isset($request->father_photo)?$data->father_photo:'';
+	        		$data['ext'] = isset($request->father_ext)?$data->father_ext:'';
 		        	$data['first_name'] = $request->father_name;
 		        	$data['mobile_number'] = $request->father_mobile_number;
 		        	$data['email_address'] = $request->father_email_address;
@@ -2058,7 +2062,8 @@ class APIConfigurationsController extends Controller
         		if($mother_id == '')
         		{
 		        	$data = [];
-		        	$data['photo'] = $request->mother_photo;
+		        	$data['student_photo'] = isset($request->mother_photo)?$data->mother_photo:'';
+	        		$data['ext'] = isset($request->mother_ext)?$data->mother_ext:'';
 		        	$data['first_name'] = $request->mother_name;
 		        	$data['mobile_number'] = $request->mother_mobile_number;
 		        	$data['email_address'] = $request->mother_email_address;
@@ -2096,7 +2101,8 @@ class APIConfigurationsController extends Controller
         		if($guardian_id == '')
         		{
 		        	$data = [];
-		        	$data['photo'] = $request->guardian_photo;
+		        	$data['student_photo'] = isset($request->guardian_photo)?$data->guardian_photo:'';
+	        		$data['ext'] = isset($request->guardian_ext)?$data->guardian_ext:'';
 		        	$data['first_name'] = $request->guardian_name;
 		        	$data['mobile_number'] = $request->guardian_mobile_number;
 		        	$data['email_address'] = $request->guardian_email_address;

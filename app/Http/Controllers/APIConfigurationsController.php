@@ -76,39 +76,6 @@ use DB;
 
 class APIConfigurationsController extends Controller
 {
-	// Configuration page list
-	public function configuration_list()
-	{
-		// Save last login in DB
-        $userdata = auth()->user();
-
-        // Fetch configuration details from DB for corresponding school
-        $configurations = Configurations::where('school_profile_id',$userdata->school_profile_id)->first();
-        
-        // configuration details
-        $configuration = ([
-            'classes'=>($configurations->classes==1)?true:false,
-            'sections'=>($configurations->sections==1)?true:false,            	
-            'map_classes_sections'=>($configurations->map_classes_sections==1)?true:false,            	
-            'subjects'=>($configurations->subjects==1)?true:false,            	
-            'map_subjects'=>($configurations->map_subjects==1)?true:false,
-            'staffs'=>($configurations->staffs==1)?true:false,
-            // 'map_staffs'=>[
-            // 	'config'=>($configurations->map_staffs==1)?true:false,
-            // 	'excel'=>(file_exists(public_path('uploads/M.xlsx'))?env('APP_URL').'uploads/classes_sections.xlsx':''),
-            // ],
-            'management'=>($configurations->management==1)?true:false,          
-            'students'=>($configurations->students==1)?true:false,
-            // 'map_students'=>[
-            // 	'config'=>($configurations->map_students==1)?true:false,
-            // 	'excel'=>(file_exists(public_path('uploads/classes_sections.xlsx'))?env('APP_URL').'uploads/classes_sections.xlsx':''),
-            // ]
-        ]);
-
-        // return token 
-        return response()->json(compact('configuration'));
-	}
-
 	// Fetch classes ,sections,subjects list
 	public function get_classes_sections_subjects_list()
 	{
@@ -1464,9 +1431,9 @@ class APIConfigurationsController extends Controller
 	            if($image!='')
 	            	$user_details->profile_image = ($image!='')?$image:'';
 	            if(isset($value['dob']) && $value['dob']!='')
-	        		$user_details->dob = $value['dob'];
+	        		$user_details->dob = date('Y-m-d',strtotime($value['dob']));
 	        	if(isset($value['doj']) && $value['doj']!='')
-	        		$user_details->doj = $value['doj'];
+	        		$user_details->doj = date('Y-m-d',strtotime($value['doj']));
 	        	if(isset($value['employee_no']) && $value['employee_no']!='')
 	        		$user_details->employee_no = $value['employee_no'];
 	        	if(isset($value['user_category']) && $value['user_category']!='')
@@ -1564,8 +1531,8 @@ class APIConfigurationsController extends Controller
 	        	$mgnt_details->profile_image = ($image!='')?$image:'';
 	        $mgnt_details->email_id=$request->email_address;
 	        $mgnt_details->user_category=$request->user_category;
-	        $mgnt_details->dob=$request->dob;
-	        $mgnt_details->doj=$request->doj;
+	        $mgnt_details->dob=date('Y-m-d',strtotime($request->dob));
+	        $mgnt_details->doj=date('Y-m-d',strtotime($request->doj));
 	        $mgnt_details->employee_no=$request->employee_no;
 	        $mgnt_details->updated_by=$userall_id;
 	    	$mgnt_details->updated_time=Carbon::now()->timezone('Asia/Kolkata');
@@ -1594,8 +1561,8 @@ class APIConfigurationsController extends Controller
             	$mgnt_details->profile_image = ($image!='')?$image:'';
             $mgnt_details->email_id=$request->email_address;
 	        $mgnt_details->user_category=$request->user_category;
-	        $mgnt_details->dob=$request->dob;
-	        $mgnt_details->doj=$request->doj;
+	        $mgnt_details->dob=date('Y-m-d',strtotime($request->dob));
+	        $mgnt_details->doj=date('Y-m-d',strtotime($request->doj));
 	        $mgnt_details->employee_no=$request->employee_no;
             $mgnt_details->created_by=$userall_id;
         	$mgnt_details->created_time=Carbon::now()->timezone('Asia/Kolkata');
@@ -2323,6 +2290,39 @@ class APIConfigurationsController extends Controller
 	{
 		$categories = UserCategories::select('id','category_name')->where('user_role',3)->get()->toArray();
 		return response()->json(compact('categories'));
+	}
+
+	// Configuration page list
+	public function configuration_list()
+	{
+		// Save last login in DB
+        $userdata = auth()->user();
+
+        // Fetch configuration details from DB for corresponding school
+        $configurations = Configurations::where('school_profile_id',$userdata->school_profile_id)->first();
+        
+        // configuration details
+        $configuration = ([
+            'classes'=>($configurations->classes==1)?true:false,
+            'sections'=>($configurations->sections==1)?true:false,            	
+            'map_classes_sections'=>($configurations->map_classes_sections==1)?true:false,            	
+            'subjects'=>($configurations->subjects==1)?true:false,            	
+            'map_subjects'=>($configurations->map_subjects==1)?true:false,
+            'staffs'=>($configurations->staffs==1)?true:false,
+            // 'map_staffs'=>[
+            // 	'config'=>($configurations->map_staffs==1)?true:false,
+            // 	'excel'=>(file_exists(public_path('uploads/M.xlsx'))?env('APP_URL').'uploads/classes_sections.xlsx':''),
+            // ],
+            'management'=>($configurations->management==1)?true:false,          
+            'students'=>($configurations->students==1)?true:false,
+            // 'map_students'=>[
+            // 	'config'=>($configurations->map_students==1)?true:false,
+            // 	'excel'=>(file_exists(public_path('uploads/classes_sections.xlsx'))?env('APP_URL').'uploads/classes_sections.xlsx':''),
+            // ]
+        ]);
+
+        // return token 
+        return response()->json(compact('configuration'));
 	}
 
     /*----------------------------Onboarding Manual--------------------------------*/    

@@ -43,7 +43,6 @@ class WelcomeController extends Controller
             $attachment->attachment_location = url('/').'/uploads/'.$school_code.'/';
             $attachment->save();
         }
-       
     }
 
     public function newsevents_file_upload($school_code,$files,$newsevents_id,$attachment_type)

@@ -34,7 +34,6 @@ use File;
 use URL;
 use DB;
 
-
 class APINewsEventsController extends Controller
 {
     // Store or update news and events

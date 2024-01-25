@@ -52,7 +52,6 @@ class WelcomeController extends Controller
             $attachment->save();
             $index++;
         }
-       
     }
 
     public function newsevents_file_upload($school_code,$files,$newsevents_id,$attachment_type,$target_file,$ext)

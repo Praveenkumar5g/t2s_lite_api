@@ -40,7 +40,7 @@ class APIHomeworkController extends Controller
     public function homework(Request $request)
     {
         if($request->homework_date!= '')
-        {
+        { 
             // Get authorizated user details
             $user = auth()->user();
 

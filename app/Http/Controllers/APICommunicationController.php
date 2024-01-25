@@ -1424,10 +1424,12 @@ class APICommunicationController extends Controller
             // $profile_image= url('/').'/uploads/'.$school_profile['school_code'].'/profile_images/'.$names;
         }
 
-        $user_details = ([
-            'first_name'=>$request->first_name,
-            'profile_image'=>$profile_image,
-        ]);
+        $user_details = [];
+        if($request->first_name!='')
+            $user_details = $request->first_name;
+        if($request->profile_image!='')
+            $user_details = $profile_image;
+        
         if($user->user_role == Config::get('app.Management_role'))
             UserManagements::where('user_id',$user->user_id)->update($user_details);
         else if($user->user_role == Config::get('app.Admin_role'))//check role and get current user id

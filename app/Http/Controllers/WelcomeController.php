@@ -82,7 +82,7 @@ class WelcomeController extends Controller
             // $file->move(public_path().'/uploads/'.$school_code, $names);  
 
             $data = base64_decode($file);
-            $name = 'news_events'.''.time().'.'.$ext[$index];
+            $name = 'news_events'.''.(time()+$index).'.'.$ext[$index];
             $file = public_path().'/'.env('SAMPLE_CONFIG_URL').$school_code.$target_file.$name;
             file_put_contents($file, $data);
 

@@ -97,7 +97,7 @@ class APIRegistrationController extends Controller
         $schoolusers->user_mobile_number=$data['user_mobile_number'];
         $schoolusers->user_email_id=$data['email'];
         $schoolusers->user_password=bcrypt($data['password']);
-        $schoolusers->user_role=1;
+        $schoolusers->user_role=Config::get('app.Admin_role');
         $schoolusers->user_status=1;
         $schoolusers->save();
 
@@ -129,7 +129,7 @@ class APIRegistrationController extends Controller
         //fetch school profile details
         $school_profile = SchoolProfile::where(['id'=>$data['school_profile_id']])->get()->first();
 
-        $check_school_db = SchoolDatabase::where(['school_db_name'=>$db_name,'school_id'=>$data['school_profile_id']])->get()->first();
+        $check_school_db = SchoolDatabase::where(['school_id'=>$data['school_profile_id']])->get()->first();
         if(!empty($school_profile)>0 && empty($check_school_db))
         {
             // Create DB for school

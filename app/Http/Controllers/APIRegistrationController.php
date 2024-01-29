@@ -44,7 +44,7 @@ class APIRegistrationController extends Controller
             $mobile_exist = $mobile_exist->orWhere('user_email_id',$request->email);
         $mobile_exist = $mobile_exist->get()->toArray();
         if(count($mobile_exist)>0)
-            return response()->json(['error' => 'Mobile Number/ Email already exist'], 401);
+            return response()->json(['error' => 'Mobile Number/ Email already exist']);
 
         // Get all the input details and stored in variable 'data'
         $data = $request->all();

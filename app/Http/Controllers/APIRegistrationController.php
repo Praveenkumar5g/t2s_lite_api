@@ -133,7 +133,7 @@ class APIRegistrationController extends Controller
         if(!empty($school_profile)>0 && empty($check_school_db))
         {
             // Create DB for school
-            $db_name = 'lite_t2s_'.$school_profile['school_code'].'_'.$school_profile['active_academic_year'];
+            $db_name = 'liteqa_t2s_'.$school_profile['school_code'].'_'.$school_profile['active_academic_year'];
             $check_school_db_exists = SchoolDatabase::where(['school_db_name'=>$db_name])->get()->first();
             if(!empty($check_school_db_exists))
             {
@@ -141,7 +141,7 @@ class APIRegistrationController extends Controller
                 shuffle($seed); // probably optional since array_is randomized; this may be redundant
                 $rand = '';
                 foreach (array_rand($seed, 4) as $k) $rand .= $seed[$k];
-                $db_name = 'lite_t2s_'.$rand.'_'.$school_profile['active_academic_year'];
+                $db_name = 'liteqa_t2s_'.$rand.'_'.$school_profile['active_academic_year'];
                 SchoolProfile::where(['id'=>$data['school_profile_id']])->update(['school_code',$rand]);
                 $check_school_db_exists = SchoolDatabase::where(['school_db_name'=>$db_name])->get()->first();
             }

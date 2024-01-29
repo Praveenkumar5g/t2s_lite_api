@@ -111,10 +111,10 @@ class APIRegistrationController extends Controller
         $credentials = $request->only('user_mobile_number', 'password');
         try {
             if (! $token = Auth::attempt($credentials)) {
-                return response()->json(['error' => 'Invalid Credentails'], 401);
+                return response()->json(['error' => 'Invalid Credentails']);
             }
         } catch (JWTException $e) {
-            return response()->json(['error' => 'Unable to generate token'], 500);
+            return response()->json(['error' => 'Unable to generate token']);
         }
 
         return response()->json(compact('token','configurations'));
@@ -128,7 +128,9 @@ class APIRegistrationController extends Controller
 
         //fetch school profile details
         $school_profile = SchoolProfile::where(['id'=>$data['school_profile_id']])->get()->first();
-        if(!empty($school_profile)>0)
+
+        $check_school_db = SchoolDatabase::where(['school_db_name'=>$db_name,'school_id'=>$data['school_profile_id']])->get()->first();
+        if(!empty($school_profile)>0 && empty($check_school_db))
         {
             // Create DB for school
             $db_name = 'lite_t2s_'.$school_profile['school_code'].'_'.$school_profile['active_academic_year'];
@@ -196,6 +198,9 @@ class APIRegistrationController extends Controller
 
             return response()->json(['message'=>'Profile Created Successfully!...']);
         }
+        else if(!empty($check_school_db))
+            return response()->json(['status'=>true,'error' => 'Profile already created.']);
+
         return response()->json(['message'=>'No school data']);
     }
 

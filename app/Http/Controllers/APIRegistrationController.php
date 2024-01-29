@@ -164,10 +164,10 @@ class APIRegistrationController extends Controller
             else// For live
             {
 
-                $config_model->school_db_user='t2sliteeditor';
-                $config_model->school_db_pass='T2S#2023@editxxLMADES##';
-                $command = 'mysqldump -h localhost -P 3306 --skip-triggers --set-gtid-purged=OFF --no-tablespaces -u t2sliteeditor -pT2S#2023@editxxLMADES## lite_t2s_empty | mysql -h localhost -P 3306 -u t2sliteeditor -pT2S#2023@editxxLMADES## '.$db_name;
-                // $command = 'mysqldump -h t2slive-rds.c2j0o56fpven.ap-south-1.rds.amazonaws.com -P 3306 -u t2sliteeditor -pT2S#2023@editxxLMADES## lite_t2s_empty | mysql -h t2slive-rds.c2j0o56fpven.ap-south-1.rds.amazonaws.com -P 3306 -u t2sliteeditor -pT2S#2023@editxxLMADES## '.$db_name;
+                $config_model->school_db_user='t2sliteqaeditor';
+                $config_model->school_db_pass='t7n10u9X46Xdw14z';
+                $command = 'mysqldump -h localhost -P 3306 --skip-triggers --set-gtid-purged=OFF --no-tablespaces -u t2sliteqaeditor -pt7n10u9X46Xdw14z liteqa_t2s_empty | mysql -h localhost -P 3306 -u t2sliteqaeditor -pt7n10u9X46Xdw14z '.$db_name;
+                // $command = 'mysqldump -h t2slive-rds.c2j0o56fpven.ap-south-1.rds.amazonaws.com -P 3306 -u t2sliteqaeditor -pT2S#2023@editxxLMADES## lite_t2s_empty | mysql -h t2slive-rds.c2j0o56fpven.ap-south-1.rds.amazonaws.com -P 3306 -u t2sliteqaeditor -pT2S#2023@editxxLMADES## '.$db_name;
             }
 
             $config_model->school_db_name=$db_name;

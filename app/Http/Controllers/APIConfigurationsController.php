@@ -2329,8 +2329,10 @@ class APIConfigurationsController extends Controller
             // ]
         ]);
 
+        $profile = SchoolDatabase::where(['school_id'=>$data['school_profile_id']])->get()->first();
+
         // return token 
-        return response()->json(compact('configuration'));
+        return response()->json(compact('configuration','profile'));
 	}
 
     /*----------------------------Onboarding Manual--------------------------------*/    

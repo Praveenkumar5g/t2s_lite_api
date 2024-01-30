@@ -2331,6 +2331,7 @@ class APIConfigurationsController extends Controller
         ]);
 
         $profile = SchoolDatabase::where(['school_id'=>$userdata->school_profile_id])->get()->first();
+        echo public_path('/public/uploads/Onboarding.xlsx');exit;
        	$excel =(file_exists(public_path('/public/uploads/Onboarding.xlsx'))?public_path('/public/uploads/Onboarding.xlsx'):'');
         // return token 
         return response()->json(['configuration'=>$configuration,'profile'=>$profile,'excel'=>$excel]);

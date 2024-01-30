@@ -2331,9 +2331,9 @@ class APIConfigurationsController extends Controller
         ]);
 
         $profile = SchoolDatabase::where(['school_id'=>$userdata->school_profile_id])->get()->first();
-
+       	$excel =(file_exists(public_path('uploads/Onboarding.xlsx'))?env('APP_URL').'uploads/Onboarding.xlsx':'');
         // return token 
-        return response()->json(compact('configuration','profile'));
+        return response()->json(['configuration'=>$configuration,'profile'=>$profile,'excel'=>$excel]);
 	}
 
     /*----------------------------Onboarding Manual--------------------------------*/    

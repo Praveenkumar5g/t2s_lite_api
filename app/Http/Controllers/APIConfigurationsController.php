@@ -2331,7 +2331,11 @@ class APIConfigurationsController extends Controller
         ]);
 
         $profile = SchoolDatabase::where(['school_id'=>$userdata->school_profile_id])->get()->first();
-       	$excel =(file_exists(public_path('/uploads/Onboarding.xlsx'))?Config::get('app.QA_URL').'uploads/Onboarding.xlsx':'');
+       	if($_SERVER['SERVER_NAME'] == 'qaliteapi.timetoschool.com')
+       		$excel =(file_exists(public_path('/public/uploads/Onboarding.xlsx'))?Config::get('app.QA_URL').'public/uploads/Onboarding.xlsx':'');
+       	else
+       		$excel =(file_exists(public_path('/public/uploads/Onboarding.xlsx'))?Config::get('app.LIVE_URL').'public/uploads/Onboarding.xlsx':'');
+
         // return token 
         return response()->json(['configuration'=>$configuration,'profile'=>$profile,'excel'=>$excel]);
 	}

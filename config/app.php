@@ -223,6 +223,8 @@ return [
     'Father'=>1,
     'Mother'=>2,
     'Guardian'=>9,
+    'QA_URL'=>'https://qaliteapi.timetoschool.com/',
+    'LIVE_URL'=>'https://liteapi.timetoschool.com/',
     'MessageCategories' => [
         1=>'Text',
         2=>'Images With Caption',

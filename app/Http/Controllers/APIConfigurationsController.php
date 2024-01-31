@@ -3767,6 +3767,7 @@ class APIConfigurationsController extends Controller
         	
         foreach ($list as $key => $value) {
         	$schoolcheck_access = SchoolUsers::select('id','new_user')->where('user_id',$value['user_id'])->where('user_role',Config::get('app.Management_role'))->where('user_status',2)->first(); //2- full deactivate
+        	echo '<pre>';print_r($schoolcheck_access);exit;
 
         	if($schoolcheck_access->id == '')
         		$check_access = UserGroupsMapping::where('user_table_id',$value['id'])->where('user_role',Config::get('app.Management_role'))->where('user_status',1)->pluck('id')->first();

@@ -3766,9 +3766,9 @@ class APIConfigurationsController extends Controller
         $list = ($currentPage <= 0)?$management_list:$tempdata['data'];
         	
         foreach ($list as $key => $value) {
-        	$check_access = SchoolUsers::where('user_id',$value['user_id'])->where('user_role',Config::get('app.Management_role'))->where('user_status',2)->pluck('id')->first(); //2- full deactivate
+        	$schoolcheck_access = SchoolUsers::where('user_id',$value['user_id'])->where('user_role',Config::get('app.Management_role'))->where('user_status',2)->pluck('id')->first(); //2- full deactivate
 
-        	if($check_access == '')
+        	if($schoolcheck_access == '')
         		$check_access = UserGroupsMapping::where('user_table_id',$value['id'])->where('user_role',Config::get('app.Management_role'))->where('user_status',1)->pluck('id')->first();
 
         	$designation = ($value['user_category']!='')? UserCategories::where('id',$value['user_category'])->pluck('category_name')->first():'';
@@ -3783,7 +3783,7 @@ class APIConfigurationsController extends Controller
 	        	'dob' => $value['dob'],
 	            'doj' => $value['doj'],
 	            'employee_no' => $value['employee_no'],
-	            'user_status' => ($check_access == '')?3:$value['user_status'], // 1- active,2-full deactive,,3-partical deactive
+	            'user_status' => ($check_access == '' && $schoolcheck_access->new_user == 0)?3:$value['user_status'], // 1- active,2-full deactive,,3-partical deactive
 	            'designation' => $designation,
 	            'profile_image' => (isset($value['profile_image']))?$value['profile_image']:'',
 	        ]);

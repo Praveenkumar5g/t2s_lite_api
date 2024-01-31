@@ -3766,10 +3766,9 @@ class APIConfigurationsController extends Controller
         $list = ($currentPage <= 0)?$management_list:$tempdata['data'];
         	
         foreach ($list as $key => $value) {
-        	$schoolcheck_access = SchoolUsers::select('id','new_user')->where('user_id',$value['user_id'])->where('user_role',Config::get('app.Management_role'))->where('user_status',2)->first(); //2- full deactivate
-        	echo '<pre>';print_r($schoolcheck_access);exit;
-
-        	if($schoolcheck_access->id == '')
+        	$schoolcheck_access = SchoolUsers::select('id','new_user','user_status')->where('user_id',$value['user_id'])->where('user_role',Config::get('app.Management_role'))->first(); //2- full deactivate
+			$check_access =='';        	
+        	if($schoolcheck_access->id == '' && $schoolcheck_access->user_status == 2)
         		$check_access = UserGroupsMapping::where('user_table_id',$value['id'])->where('user_role',Config::get('app.Management_role'))->where('user_status',1)->pluck('id')->first();
 
         	$designation = ($value['user_category']!='')? UserCategories::where('id',$value['user_category'])->pluck('category_name')->first():'';

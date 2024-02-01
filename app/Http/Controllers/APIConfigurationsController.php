@@ -3621,6 +3621,9 @@ class APIConfigurationsController extends Controller
 	        	'father_mobile' => 0,
 		        'mother_mobile'=>0,
 		        'guardian_mobile' => 0,
+		        'father_id' => 0,
+		        'mother_id'=>0,
+		        'guardian_id' => 0,
 	        	'student_name' => $value['first_name'],
         		// $parent_list[$key]['mobile_number'] = $value['mobile_number'];
 	        	'dob' => (isset($value['dob']))?$value['dob']:'',
@@ -3641,18 +3644,21 @@ class APIConfigurationsController extends Controller
 		        	{
 		        		$member_student_list['data'][$index]['father_name'] = $parent_details->first_name;
 		        		$member_student_list['data'][$index]['father_mobile'] = $parent_details->mobile_number;
+		        		$member_student_list['data'][$index]['father_id'] = $parent_details->id;
 
 		        	}
 		        	else if($parent_details->user_category == 2)
 		        	{
 		        		$member_student_list['data'][$index]['mother_name'] = $parent_details->first_name;
 		        		$member_student_list['data'][$index]['mother_mobile'] = $parent_details->mobile_number;
+		        		$member_student_list['data'][$index]['mother_id'] = $parent_details->id;
 
 		        	}
 		        	else if($parent_details->user_category == 9)
 		        	{
 		        		$member_student_list['data'][$index]['guardian_name'] = $parent_details->first_name;
 		        		$member_student_list['data'][$index]['guardian_mobile'] = $parent_details->mobile_number;
+		        		$member_student_list['data'][$index]['guardian_id'] = $parent_details->id;
 
 		        	}
 		        }

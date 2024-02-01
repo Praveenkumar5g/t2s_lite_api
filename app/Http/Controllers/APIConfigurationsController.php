@@ -1941,7 +1941,7 @@ class APIConfigurationsController extends Controller
             if(isset($request->father_id))
             {
 	        	$father_details = UserParents::where('id',$request->father_id)->first();
-		        if(!empty($father_details) || $request->father_mobile_number!='')
+		        if(!empty($father_details) || $request->father_mobile_number>0)
 		        {
 		        	$data['student_photo'] = isset($data->father_photo)?$data->father_photo:'';
 	        		$data['ext'] = isset($data->father_ext)?$data->father_ext:'';
@@ -1957,7 +1957,7 @@ class APIConfigurationsController extends Controller
 	        if(isset($request->mother_id))
             {
 		        $mother_details = UserParents::where('id',$request->mother_id)->first();
-		        if(!empty($mother_details) || $request->mother_mobile_number!='' )
+		        if(!empty($mother_details) || $request->mother_mobile_number>0 )
 		        {
 		        	$data = [];
 		        	$data['student_photo'] = isset($request->mother_photo)?$data->mother_photo:'';
@@ -1975,7 +1975,7 @@ class APIConfigurationsController extends Controller
             {
 	        // update or insert parents details
 		        $guardian_details = UserParents::where('id',$request->guardian_id)->first();
-		        if(!empty($guardian_details) || $request->guardian_mobile_number!='' )
+		        if(!empty($guardian_details) || $request->guardian_mobile_number>0 )
 		        {
 		        	$data = [];
 		        	$data['student_photo'] = isset($request->guardian_photo)?$data->guardian_photo:'';

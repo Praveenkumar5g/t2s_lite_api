@@ -1607,12 +1607,16 @@ class APIConfigurationsController extends Controller
         {
         	$list[$index] = $value;
         	$list[$index]['class_config'] = 0;
-        	$list[$index]['division_id'] = 0;        	
+        	$list[$index]['division_id'] = 0;  
+        	$list[$index]['student_id'] =0;      	
+        	$list[$index]['profile_image'] = '';        	
         	$studentid = UserStudentsMapping::where('parent',$value['id'])->pluck('student')->first();
         	if($studentid!='')
         	{
         		$student_details = UserStudents::where('id',$studentid)->first();
         		$list[$index]['class_config'] = $student_details->class_config;
+        		$list[$index]['student_id'] = $studentid;
+        		$list[$index]['profile_image'] = $student_details->profile_image;
         		$list[$index]['division_id'] = $student_details->division_id;
         	}
         	$index++;
@@ -1624,11 +1628,11 @@ class APIConfigurationsController extends Controller
     public function onboarding_fetch_single_parent(Request $request)
     {
     	$student_list = $parentsdata = $students= [];//empty array declaration
-		$student_list = UserStudentsMapping::select('student')->where('parent',$request->id)->first(); //fetch student details from parent mapped data
-		if(!empty($student_list))
+		$student = $request->id;//UserStudentsMapping::select('student')->where('parent',$request->id)->first(); //fetch student details from parent mapped data
+		if($student!='')
 		{
-			$parent_list = UserStudentsMapping::select('parent')->where('student',$student_list->student)->get()->toArray(); //fetch all parent details from student id
-			$students = UserStudents::where('id',$student_list->student)->first(); //get student related info
+			$parent_list = UserStudentsMapping::select('parent')->where('student',$student)->get()->toArray(); //fetch all parent details from student id
+			$students = UserStudents::where('id',$student)->first(); //get student related info
 			$parents = array_column($parent_list,'parent'); //pick parent id alone
 			foreach ($parents as $parent_key => $parent_value) { //form array with parent details
 				$parent_data = UserParents::where('id',$parent_value)->first();

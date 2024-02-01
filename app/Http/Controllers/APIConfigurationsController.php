@@ -1636,13 +1636,13 @@ class APIConfigurationsController extends Controller
 			$parents = array_column($parent_list,'parent'); //pick parent id alone
 			foreach ($parents as $parent_key => $parent_value) { //form array with parent details
 				$parent_data = UserParents::where('id',$parent_value)->first();
-				echo '<pre>';print_r($parent_data);exit;
 				$parentsdata[$parent_data->user_category] = $parent_data; 
 			}
 		}
 		else if($request->id!='')
 		{
-			$parent_data = UserParents::where('id',$request->id)->first();
+			$parent_id = UserStudentsMapping::where('student',$student)->pluck('parent')->first();
+			$parent_data = UserParents::where('id',$parent_id)->first();
 			$parentsdata[$parent_data->user_category] = $parent_data; 
 		}
 

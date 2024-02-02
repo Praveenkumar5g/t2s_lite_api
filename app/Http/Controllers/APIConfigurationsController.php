@@ -3794,6 +3794,7 @@ class APIConfigurationsController extends Controller
 	            'user_status' => (isset($check_access) && $check_access == '')?3:$value['user_status'], // 1- active,2-full deactive,,3-partical deactive
 	            'designation' => $designation,
 	            'profile_image' => (isset($value['profile_image']))?$value['profile_image']:'',
+	            'check_access'=>$check_access
 	        ]);
         }
         // if($currentPage <= 0)

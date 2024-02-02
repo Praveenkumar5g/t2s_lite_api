@@ -3791,7 +3791,7 @@ class APIConfigurationsController extends Controller
 	        	'dob' => $value['dob'],
 	            'doj' => $value['doj'],
 	            'employee_no' => $value['employee_no'],
-	            'user_status' => (isset($check_access) && $check_access == null)?3:$value['user_status'], // 1- active,2-full deactive,,3-partical deactive
+	            'user_status' => ($check_access == null)?3:$value['user_status'], // 1- active,2-full deactive,,3-partical deactive
 	            'designation' => $designation,
 	            'profile_image' => (isset($value['profile_image']))?$value['profile_image']:'',
 	            'check_access'=>$check_access

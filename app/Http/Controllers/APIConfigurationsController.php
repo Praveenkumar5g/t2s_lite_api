@@ -3777,7 +3777,13 @@ class APIConfigurationsController extends Controller
         foreach ($list as $key => $value) {
         	$schoolcheck_access = SchoolUsers::select('id','new_user','user_status')->where('user_id',$value['user_id'])->where('user_role',Config::get('app.Management_role'))->first(); //2- full deactivate
         	if($schoolcheck_access->user_status == 1)
-        		$check_access = UserGroupsMapping::where('user_table_id',$value['id'])->where('user_role',Config::get('app.Management_role'))->where('user_status',1)->pluck('id')->first();
+        	{
+        		$check_group_access = UserGroupsMapping::where('user_table_id',$value['id'])->where('user_role',Config::get('app.Management_role'))->pluck('id')->first();
+        		if($check_group_access!='')
+        			$check_access = UserGroupsMapping::where('user_table_id',$value['id'])->where('user_role',Config::get('app.Management_role'))->where('user_status',1)->pluck('id')->first();
+        		else
+        			$check_access = 'flag';
+        	}
 
         	$designation = ($value['user_category']!='')? UserCategories::where('id',$value['user_category'])->pluck('category_name')->first():'';
 

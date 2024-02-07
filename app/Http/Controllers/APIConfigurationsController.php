@@ -456,7 +456,7 @@ class APIConfigurationsController extends Controller
 
 	    	if($request->photo!='')
 	        {
-	        	$image = app('App\Http\Controllers\WelcomeController')->profile_file_upload($school_profile['school_code'],$request->photo,$request->attachment_type,$target_file,$request->ext);
+	        	$image = app('App\Http\Controllers\WelcomeController')->profile_file_upload($school_profile['school_code'],$request->photo,$request->attachment_type,$target_file,$request->ext,$request->file_name);
 	        }
 
 	    	// if(count($_FILES)>0) //upload image
@@ -1205,7 +1205,7 @@ class APIConfigurationsController extends Controller
         {
         	if($request->photo!='')
 	        {
-	        	$image = app('App\Http\Controllers\WelcomeController')->profile_file_upload($school_profile['school_code'],$request->photo,1,$target_file,$request->ext);
+	        	$image = app('App\Http\Controllers\WelcomeController')->profile_file_upload($school_profile['school_code'],$request->photo,1,$target_file,$request->ext,$request->file_name);
 	        }
 
 	        if(isset($request->employee_no) && $request->employee_no!='') //check employee no already exists or not
@@ -1270,7 +1270,7 @@ class APIConfigurationsController extends Controller
         {
         	if($request->photo!='')
 	        {
-	        	$image = app('App\Http\Controllers\WelcomeController')->profile_file_upload($school_profile['school_code'],$request->photo,1,$target_file,$request->ext);
+	        	$image = app('App\Http\Controllers\WelcomeController')->profile_file_upload($school_profile['school_code'],$request->photo,1,$target_file,$request->ext,$request->file_name);
 	        }
 
         	//save staff details
@@ -1412,7 +1412,7 @@ class APIConfigurationsController extends Controller
 
         	if(isset($value['photo']) && $value['photo']!='')
 	        {
-	        	$image = app('App\Http\Controllers\WelcomeController')->profile_file_upload($school_profile['school_code'],$value['photo'],1,$target_file,$value['ext']);
+	        	$image = app('App\Http\Controllers\WelcomeController')->profile_file_upload($school_profile['school_code'],$value['photo'],1,$target_file,$value['ext'],$value['file_name']);
 	        }
 	        if(Config::get('app.Management_role') == $role)
         		$check_exists = UserManagements::where(['mobile_number'=>$value['mobile_number']])->first(); //To check given subject name is already exists in DB.
@@ -1523,7 +1523,7 @@ class APIConfigurationsController extends Controller
         {
         	if($request->photo!='')
 	        {
-	        	$image = app('App\Http\Controllers\WelcomeController')->profile_file_upload($school_profile['school_code'],$request->photo,1,$target_file,$request->ext);
+	        	$image = app('App\Http\Controllers\WelcomeController')->profile_file_upload($school_profile['school_code'],$request->photo,1,$target_file,$request->ext,$request->file_name);
 	        }
 	        //save mgnt details
 	        $mgnt_details->first_name= $request->name;
@@ -1551,7 +1551,7 @@ class APIConfigurationsController extends Controller
         {
         	if($request->photo!='')
 	        {
-	        	$image = app('App\Http\Controllers\WelcomeController')->profile_file_upload($school_profile['school_code'],$request->photo,1,$target_file,$request->ext);
+	        	$image = app('App\Http\Controllers\WelcomeController')->profile_file_upload($school_profile['school_code'],$request->photo,1,$target_file,$request->ext,$request->file_name);
 	        }
 
         	//save mgnt details
@@ -1728,7 +1728,7 @@ class APIConfigurationsController extends Controller
 	        	$target_file = '/students/';
 	        	if($row['student_photo']!='')
 		        {
-		        	$student_image = app('App\Http\Controllers\WelcomeController')->profile_file_upload($school_profile['school_code'],$row['student_photo'],1,$target_file,$row['student_ext']);
+		        	$student_image = app('App\Http\Controllers\WelcomeController')->profile_file_upload($school_profile['school_code'],$row['student_photo'],1,$target_file,$row['student_ext'],$row['student_file_name']);
 		        }
 		    }
 		    if($row['admission_no']!='')
@@ -1772,6 +1772,7 @@ class APIConfigurationsController extends Controller
 	        	$father['mobile_number'] = $row['father_mobile_number'];
 	        	$father['email_address'] = $row['father_email_address'];
 	        	$father['ext'] = isset($row['father_ext'])?$row['father_ext']:'';
+	        	$father['file_name'] = isset($row['father_file_name'])?$row['father_file_name']:'';
 	        	$father['user_category'] = 1;
 
 	        	if($profile_details->default_password_type == 'mobile_number' || $password == '')
@@ -1795,6 +1796,7 @@ class APIConfigurationsController extends Controller
 	        	$mother['mobile_number'] = $row['mother_mobile_number'];
 	        	$mother['email_address'] = $row['mother_email_address'];
 	        	$mother['ext'] = isset($row['mother_ext'])?$row['mother_ext']:'';
+	        	$mother['file_name'] = isset($row['mother_file_name'])?$row['mother_file_name']:'';
 	        	$mother['user_category'] = 2;
 
 	        	if($profile_details->default_password_type == 'mobile_number' || $password == '')
@@ -1817,6 +1819,7 @@ class APIConfigurationsController extends Controller
 	        	$guardian['mobile_number'] = $row['guardian_mobile_number'];
 	        	$guardian['email_address'] = $row['guardian_email_address'];
 	        	$guardian['ext'] = isset($row['guardian_ext'])?$row['guardian_ext']:'';
+	        	$guardian['file_name'] = isset($row['guardian_file_name'])?$row['guardian_file_name']:'';
 	        	$guardian['user_category'] = 9;
 
 	        	if($profile_details->default_password_type == 'mobile_number' || $password == '')
@@ -1870,7 +1873,7 @@ class APIConfigurationsController extends Controller
    		$target_file = '/students/';
     	if($request->student_photo!='')
         {
-        	$profile_image_path = app('App\Http\Controllers\WelcomeController')->profile_file_upload($school_profile['school_code'],$request->student_photo,1,$target_file,$request->ext);
+        	$profile_image_path = app('App\Http\Controllers\WelcomeController')->profile_file_upload($school_profile['school_code'],$request->student_photo,1,$target_file,$request->ext,$request->file_name);
         }
 
         if($request->father_id>0 || $request->mother_id>0 || $request->guardian_id>0 || $request->student_id>0)// fetch check user already exists 
@@ -1948,6 +1951,7 @@ class APIConfigurationsController extends Controller
 		        	$data['first_name'] = $request->father_name;
 		        	$data['mobile_number'] = $request->father_mobile_number;
 		        	$data['email_address'] = $request->father_email_address;
+		        	$data['file_name'] = isset($request->father_file_name)?$request->father_file_name:'';
 		        	$data['user_category'] = 1;
 
 		        	$this->edit_parent_details($data,$father_details,$student_id,$userall_id,$old_group_id,$new_group_id);
@@ -1965,6 +1969,7 @@ class APIConfigurationsController extends Controller
 		        	$data['first_name'] = $request->mother_name;
 		        	$data['mobile_number'] = $request->mother_mobile_number;
 		        	$data['email_address'] = $request->mother_email_address;
+		        	$data['file_name'] = isset($request->mother_file_name)?$request->mother_file_name:'';
 		        	$data['user_category'] = 2;
 
 		        	$this->edit_parent_details($data,$mother_details,$student_id,$userall_id,$old_group_id,$new_group_id);
@@ -1983,6 +1988,7 @@ class APIConfigurationsController extends Controller
 		        	$data['first_name'] = $request->guardian_name;
 		        	$data['mobile_number'] = $request->guardian_mobile_number;
 		        	$data['email_address'] = $request->guardian_email_address;
+		        	$data['file_name'] = isset($request->guardian_file_name)?$request->guardian_file_name:'';
 		        	$data['user_category'] = 3;
 
 		        	$this->edit_parent_details($data,$guardian_details,$student_id,$userall_id,$old_group_id,$new_group_id);
@@ -2038,6 +2044,7 @@ class APIConfigurationsController extends Controller
 		        	$data['first_name'] = $request->father_name;
 		        	$data['mobile_number'] = $request->father_mobile_number;
 		        	$data['email_address'] = $request->father_email_address;
+		        	$data['file_name'] = isset($request->father_file_name)?$request->father_file_name:'';
 		        	$data['user_category'] = 1;
 
 		        	if($profile_details->default_password_type == 'mobile_number' || $password == '')
@@ -2075,6 +2082,7 @@ class APIConfigurationsController extends Controller
 		        	$data['first_name'] = $request->mother_name;
 		        	$data['mobile_number'] = $request->mother_mobile_number;
 		        	$data['email_address'] = $request->mother_email_address;
+		        	$data['file_name'] = isset($request->mother_file_name)?$request->mother_file_name:'';
 		        	$data['user_category'] = 2;
 
 		        	if($profile_details->default_password_type == 'mobile_number' || $password == '')
@@ -2114,6 +2122,7 @@ class APIConfigurationsController extends Controller
 		        	$data['first_name'] = $request->guardian_name;
 		        	$data['mobile_number'] = $request->guardian_mobile_number;
 		        	$data['email_address'] = $request->guardian_email_address;
+		        	$data['file_name'] = isset($request->guardian_file_name)?$request->guardian_file_name:'';
 		        	$data['user_category'] = 9;
 
 		        	if($profile_details->default_password_type == 'mobile_number' || $password == '')
@@ -2156,7 +2165,7 @@ class APIConfigurationsController extends Controller
    		$target_file = '/students/';
     	if(isset($request->student_photo) && $request->student_photo!='')
         {
-        	$profile_image_path = app('App\Http\Controllers\WelcomeController')->profile_file_upload($school_profile['school_code'],$request->student_photo,1,$target_file,$request->ext);
+        	$profile_image_path = app('App\Http\Controllers\WelcomeController')->profile_file_upload($school_profile['school_code'],$request->student_photo,1,$target_file,$request->ext,$request->file_name);
         }
 
     	if(empty($details) && !isset($details->mobile_number))
@@ -2237,7 +2246,7 @@ class APIConfigurationsController extends Controller
    		$target_file = '/parent/';
     	if(isset($data['student_photo']) && $data['student_photo']!='')
         {
-        	$profile_image_path = app('App\Http\Controllers\WelcomeController')->profile_file_upload($school_profile['school_code'],$data['student_photo'],1,$target_file,$data['ext']);
+        	$profile_image_path = app('App\Http\Controllers\WelcomeController')->profile_file_upload($school_profile['school_code'],$data['student_photo'],1,$target_file,$data['ext'],$data['file_name']);
         }
 
     	// insert parent details in db
@@ -4130,7 +4139,7 @@ class APIConfigurationsController extends Controller
         	$target_file = '/parent/';
 	    	if($request->photo!='')
 	        {
-	        	$image = app('App\Http\Controllers\WelcomeController')->profile_file_upload($school_profile['school_code'],$request->photo,1,$target_file,$request->ext);
+	        	$image = app('App\Http\Controllers\WelcomeController')->profile_file_upload($school_profile['school_code'],$request->photo,1,$target_file,$request->ext,$request->file_name);
 	        }
 
         	// if(count($_FILES)>0)

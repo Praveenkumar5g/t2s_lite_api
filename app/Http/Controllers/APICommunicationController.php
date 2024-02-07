@@ -162,7 +162,7 @@ class APICommunicationController extends Controller
         {
             $schoolcode = $school_profile = SchoolProfile::where(['id'=>$user['school_profile_id']])->first();//get school code from school profile
 
-            app('App\Http\Controllers\WelcomeController')->file_upload($school_profile['school_code'],$request->attachment,$notification_id,$request->attachment_type,$target_file,$request->ext);
+            app('App\Http\Controllers\WelcomeController')->file_upload($school_profile['school_code'],$request->attachment,$notification_id,$request->attachment_type,$target_file,$request->ext,$request->file_name);
         }
 
         if($user->user_role != 3) //check user role and 3-parent goes under approval process if approval flow 'yes'
@@ -1410,7 +1410,7 @@ class APICommunicationController extends Controller
             else
                 $target_file = '/parent/';
 
-            $profile_image = app('App\Http\Controllers\WelcomeController')->profile_file_upload($school_profile['school_code'],$request->profile_image,1,$target_file,$request->ext);
+            $profile_image = app('App\Http\Controllers\WelcomeController')->profile_file_upload($school_profile['school_code'],$request->profile_image,1,$target_file,$request->ext,$request->file_name);
 
             // $path = public_path('uploads/'.$school_profile['school_code'].'');//
 

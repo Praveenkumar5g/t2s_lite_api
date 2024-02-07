@@ -21,7 +21,7 @@ class WelcomeController extends Controller
         return view('login');
     }
 
-    public function file_upload($school_code,$files,$notification_id,$attachment_type,$target_file,$ext)
+    public function file_upload($school_code,$files,$notification_id,$attachment_type,$target_file,$ext,$file_name)
     {
         $path = public_path('uploads/'.$school_code.$target_file);//
 
@@ -42,7 +42,7 @@ class WelcomeController extends Controller
             // $file->move(public_path().'/uploads/'.$school_code, $names);
 
             $data = base64_decode($file);
-            $name = 'file'.''.(time()+$index).'.'.$ext[$index];
+            $name = $file_name.''.(time()+$index).'.'.$ext[$index];
             $file = public_path().'/'.env('SAMPLE_CONFIG_URL').$school_code.$target_file.$name;
             file_put_contents($file, $data);
 
@@ -54,7 +54,7 @@ class WelcomeController extends Controller
         }
     }
 
-    public function newsevents_file_upload($school_code,$files,$newsevents_id,$attachment_type,$target_file,$ext)
+    public function newsevents_file_upload($school_code,$files,$newsevents_id,$attachment_type,$target_file,$ext,$file_name)
     {
         $path = public_path('uploads/'.$school_code.$target_file);//
 
@@ -82,7 +82,7 @@ class WelcomeController extends Controller
             // $file->move(public_path().'/uploads/'.$school_code, $names);  
 
             $data = base64_decode($file);
-            $name = 'news_events'.''.(time()+$index).'.'.$ext[$index];
+            $name = $file_name.''.(time()+$index).'.'.$ext[$index];
             $file = public_path().'/'.env('SAMPLE_CONFIG_URL').$school_code.$target_file.$name;
             file_put_contents($file, $data);
 
@@ -96,7 +96,7 @@ class WelcomeController extends Controller
         return $attachment_id;
     }
 
-    public function profile_file_upload($school_code,$files,$attachment_type,$target_file,$ext)
+    public function profile_file_upload($school_code,$files,$attachment_type,$target_file,$ext,$file_name)
     {
         $path = public_path('/'.env('SAMPLE_CONFIG_URL').$school_code.$target_file);//
 
@@ -109,7 +109,7 @@ class WelcomeController extends Controller
         // return url('/').'/'.env('SAMPLE_CONFIG_URL').$school_code.$target_file.$image;
 
         $data = base64_decode($files);
-        $name = 'profile_image'.''.time().'.'.$ext;
+        $name = $file_name.''.time().'.'.$ext;
         $file = public_path().'/'.env('SAMPLE_CONFIG_URL').$school_code.$target_file.$name;
         file_put_contents($file, $data);
         return url('/').'/'.env('SAMPLE_CONFIG_URL').$school_code.$target_file.$name;

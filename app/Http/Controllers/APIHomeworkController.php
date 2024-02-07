@@ -327,7 +327,7 @@ class APIHomeworkController extends Controller
             // Insert attachment details in attachment table
             $schoolcode = $school_profile = SchoolProfile::where(['id'=>$user['school_profile_id']])->get()->first();//get school code from school profile
 
-            app('App\Http\Controllers\WelcomeController')->file_upload($school_profile['school_code'],$request->attachment,$notification_id,$request->attachment_type,$target_file,$request->ext);
+            app('App\Http\Controllers\WelcomeController')->file_upload($school_profile['school_code'],$request->attachment,$notification_id,$request->attachment_type,$target_file,$request->ext,$request->file_name);
         }
 
         // $user_list= $user_ids = [];

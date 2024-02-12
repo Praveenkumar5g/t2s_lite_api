@@ -2326,6 +2326,7 @@ class APIConfigurationsController extends Controller
         
         // configuration details
         $configuration = ([
+        	'division'=>($configurations->division==1)?true:false,
             'classes'=>($configurations->classes==1)?true:false,
             'sections'=>($configurations->sections==1)?true:false,            	
             'map_classes_sections'=>($configurations->map_classes_sections==1)?true:false,            	

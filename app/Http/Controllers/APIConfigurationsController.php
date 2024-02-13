@@ -770,7 +770,6 @@ class APIConfigurationsController extends Controller
         $user_details =  app('App\Http\Controllers\APILoginController')->get_user_table_id($user_data);
 
         $userall_id = UserAll::where(['user_table_id'=>$user_details->id,'user_role'=>$user_data->user_role])->pluck('id')->first();//fetch id from user all table to store notification triggered user
-        echo $userall_id;exit;
         $status = 'insert';
 		$classes = $request->classes;
         $division_id = $request->division_id;
@@ -789,8 +788,8 @@ class APIConfigurationsController extends Controller
 
     		$class_details->class_name = $value['class_name'];
     		$class_details->division_id= $division_id;
-            $academicclasses->created_by = $userall_id;
-            $academicclasses->created_time = Carbon::now()->timezone('Asia/Kolkata');
+            $class_details->created_by = $userall_id;
+            $class_details->created_time = Carbon::now()->timezone('Asia/Kolkata');
             $class_details->save();
 
             if(!isset($value['class_id']) && $class_id !='')

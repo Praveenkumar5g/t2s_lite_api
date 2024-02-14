@@ -1152,6 +1152,9 @@ class APIConfigurationsController extends Controller
         $staff_list->class_teacher = 'no'; //set default values
         $staff_list->class_config = 0; 
         $staff_list->specialized_in = (int)$staff_list->specialized_in;
+        $staff_list->dob = date('d-M-Y',$staff->dob);
+        $staff_list->doj = date('d-M-Y',$staff->doj);
+
         if(!empty($staff_list) && isset($check_class_teacher->class_teacher)) //check not empty for class configuration details
         {
         	$staff_list->class_teacher = 'yes';
@@ -1371,6 +1374,8 @@ class APIConfigurationsController extends Controller
         $userdata = auth()->user();
 
         $management_list = UserManagements::select('id','user_id','first_name','mobile_number','profile_image','user_category','email_id','dob','doj','employee_no')->where('user_status',1)->where('id',$request->id)->first(); //fetch all the management for listing
+        $management_list->dob = date('d-M-Y',$management_list->dob);
+        $management_list->doj = date('d-M-Y',$management_list->doj);
         return response()->json($management_list);
         
     }
@@ -1666,7 +1671,7 @@ class APIConfigurationsController extends Controller
 			'guardian_image'=>isset($parentsdata[3])?$parentsdata[3]->profile_image:null,
 			'admission_number'=>isset($students->admission_number)?$students->admission_number:'',
 			'roll_no'=>isset($students->roll_number)?$students->roll_number:0,
-			'dob'=>isset($students->dob)?$students->dob:null,
+			'dob'=>isset($students->dob)?date('d-m-Y',$students->dob):null,
 			'employee_no'=>isset($students->employee_no)?$students->employee_no:'',
 			'gender'=>isset($students->gender)?(Config::get('app.'.$students->gender)):0,
 			'photo'=>isset($students->profile_image)?$students->profile_image:'',

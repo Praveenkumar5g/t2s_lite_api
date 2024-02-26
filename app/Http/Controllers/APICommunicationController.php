@@ -1226,10 +1226,10 @@ class APICommunicationController extends Controller
                         $category = 'Management';
                     else if($value['user_role'] == Config::get('app.Staff_role'))
                     {
-                        $user_table_id = UserStaffs::where(['id'=>$value['user_table_id']])->pluck('user_category')->first();
-                        echo '<pre>';print_r($user_table_id);
-                        if($user_table_id!='')
-                            $category = UserCategories::where(['id'=>$user_table_id->user_category])->pluck('category_name')->first();
+                        $user_category = UserStaffs::where(['id'=>$value['user_table_id']])->pluck('user_category')->first();
+                        echo '<pre>';print_r($user_category);
+                        if($user_category!='')
+                            $category = UserCategories::where(['id'=>$user_category])->pluck('category_name')->first();
                     }
                     else if($value['user_role'] == Config::get('app.Parent_role'))
                     {

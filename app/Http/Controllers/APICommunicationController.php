@@ -1217,9 +1217,9 @@ class APICommunicationController extends Controller
             {
                 $delivered_users=[];
                 $index=0;
-                $all_categories_list = UserCategories::select('id','user_category')->first();
+                $all_categories_list = UserCategories::select('id','category_name')->first();
 
-                $all_categories = array_column($all_categories_list,'user_category','id');
+                $all_categories = array_column($all_categories_list,'category_name','id');
                 foreach ($delivery_details as $key => $value) {
                     $class=$class_name = $section_name= $category ='';
                     $data= $this->user_details($value);

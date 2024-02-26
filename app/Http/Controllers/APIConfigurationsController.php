@@ -707,6 +707,7 @@ class APIConfigurationsController extends Controller
 
 		$sections = $request->sections;
 		$division_id = $request->division_id;
+		$status = 'insert';
 		foreach ($sections as $key => $value) {
 			$section_id = AcademicSections::where(['section_name'=>$value['section_name'],'division_id'=>$division_id])->pluck('id')->first(); //check given section name is already exists or not
 

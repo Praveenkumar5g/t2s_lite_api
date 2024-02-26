@@ -714,7 +714,7 @@ class APIConfigurationsController extends Controller
                 $academicsections = new AcademicSections;// updated sections along with sub-division
             else
             {
-                $academicsections = AcademicSections::where(['id'=>$value['section_id'],'division_id'=>$division_id])->first();// insert sections along with sub-division details
+                $academicsections = AcademicSections::where(['id'=>$section_id,'division_id'=>$division_id])->first();// insert sections along with sub-division details
 	            $academicsections->updated_by = $userall_id;
 	            $academicsections->updated_time = Carbon::now()->timezone('Asia/Kolkata');
             }

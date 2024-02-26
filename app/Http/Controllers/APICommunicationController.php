@@ -1217,6 +1217,9 @@ class APICommunicationController extends Controller
             {
                 $delivered_users=[];
                 $index=0;
+                $all_categories_list = UserCategories::select('id','user_category')->where(['id'=>$user_category])->first();
+
+                $all_categories = array_column($all_categories_list,'user_category','id');
                 foreach ($delivery_details as $key => $value) {
                     $class=$class_name = $section_name= $category ='';
                     $data= $this->user_details($value);
@@ -1227,9 +1230,9 @@ class APICommunicationController extends Controller
                     else if($value['user_role'] == Config::get('app.Staff_role'))
                     {
                         $user_category = UserStaffs::where(['id'=>$value['user_table_id']])->pluck('user_category')->first();
-                        echo '<pre>';print_r($user_category);
                         if($user_category!='')
-                            $category = UserCategories::where(['id'=>$user_category])->pluck('category_name')->first();
+                            $category = $all_categories[$user_category];
+                        echo $category.'<br/>';
                     }
                     else if($value['user_role'] == Config::get('app.Parent_role'))
                     {

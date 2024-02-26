@@ -1210,15 +1210,15 @@ class APICommunicationController extends Controller
                 $delivery_details=$delivery_details->where('communication_type',2);
             else
                 $delivery_details=$delivery_details->where('communication_type',1);
-            $delivery_details=$delivery_details->where('user_role',2)get();
+            $delivery_details=$delivery_details->where('user_role',2)->get();
 
-            echo '<pre>';print_r($delivery_details);exit;
+            
             if(!empty($delivery_details))
             {
                 $delivered_users=[];
                 $index=0;
                 foreach ($delivery_details as $key => $value) {
-                    $class=$class_name = $section_name='';
+                    $class=$class_name = $section_name= $category ='';
                     $data= $this->user_details($value);
                     if($value['user_role'] == Config::get('app.Admin_role'))//check role and get current user id
                         $category = 'Admin';
@@ -1227,6 +1227,7 @@ class APICommunicationController extends Controller
                     else if($value['user_role'] == Config::get('app.Staff_role'))
                     {
                         $user_table_id = UserStaffs::where(['id'=>$value['user_table_id']])->first();
+                        echo '<pre>';print_r($user_table_id);
                         if(!empty($user_table_id))
                             $category = UserCategories::where(['id'=>$user_table_id->user_category])->pluck('category_name')->first();
                     }
@@ -1259,19 +1260,21 @@ class APICommunicationController extends Controller
                             }
                         }
                     }
-                    if(!empty($data['user_details']) && isset($data['user_details']->user_id))
-                    {
-                        $delivered_users[$index]=([
-                            'name'=>$data['user_details']->first_name,
-                            'designation'=>$category,
-                            'mobile_no'=>$data['user_details']->mobile_number,
-                            'message_status'=>$value['message_status'],//1-delivered,2-Read,3-Actioned,
-                            'view_time'=>$value['actioned_time'],
-                            'class'=>$class
-                        ]);
-                        $index++;
-                    }
+
+                    // if(!empty($data['user_details']) && isset($data['user_details']->user_id))
+                    // {
+                    //     $delivered_users[$index]=([
+                    //         'name'=>$data['user_details']->first_name,
+                    //         'designation'=>$category,
+                    //         'mobile_no'=>$data['user_details']->mobile_number,
+                    //         'message_status'=>$value['message_status'],//1-delivered,2-Read,3-Actioned,
+                    //         'view_time'=>$value['actioned_time'],
+                    //         'class'=>$class
+                    //     ]);
+                    //     $index++;
+                    // }
                 }
+                exit;
                 echo json_encode(["delivered_users"=>$delivered_users]);exit();  
             }
             return response()->json(['status'=>false,'message'=>'No Recipients']);exit();

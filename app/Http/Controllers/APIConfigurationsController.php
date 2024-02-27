@@ -1008,7 +1008,7 @@ class APIConfigurationsController extends Controller
 		            {
 		            	$status = 'edit';
 
-	        			$subject_data = $check_exists;
+	        			$subject_data = AcademicSubjects::where(DB::raw('lower(subject_name)'), strtolower($value['subject_name']))->where('division_id',$division_id)->first();
 	        			$subject_data->updated_by=$userall_id;
 	            		$subject_data->updated_time=Carbon::now()->timezone('Asia/Kolkata');
 		            }

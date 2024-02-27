@@ -809,7 +809,7 @@ class APIConfigurationsController extends Controller
 	{
 		$user_data = auth()->user(); //check authentication
 		$academicyear = SchoolAcademicYears::where(['school_profile_id'=>$user_data->school_profile_id])->pluck('academic_year')->first();//fetch academic year
-		$classes = AcademicClasses::select('id','division_id')->get()->toArray(); //get all classes id and division 
+		$classes = AcademicClasses::select('id','division_id')->whereNotNull('division_id')->get()->toArray(); //get all classes id and division 
 		if(!empty($classes)) //check empty
 		{
 			foreach ($classes as $key => $value) {
@@ -1005,6 +1005,7 @@ class APIConfigurationsController extends Controller
             			$subject_data->created_time=Carbon::now()->timezone('Asia/Kolkata');
 		            }
 		        }
+		        echo $value['subject_name'];exit;
 		        // Prepare subjects array
                 $subject_data->subject_name = $value['subject_name'];
                 $subject_data->short_name = isset($value['short_name'])?$value['short_name']:'';
@@ -1839,7 +1840,7 @@ class APIConfigurationsController extends Controller
             		$this->createstudentmapping($student_details->id,$guardian_check_exists->id,$userall_id);
             }
         }   
-        Configurations::where('school_profile_id',$user->school_profile_id)->update(['students'=>1]);
+        Configurations::where('school_profile_id',$user_data->school_profile_id)->update(['students'=>1]);
 	   	return response()->json(['status'=>true,'message'=>'Student and parents details inserted Successfully!...']);
 	}
 

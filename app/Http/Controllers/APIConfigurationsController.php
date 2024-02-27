@@ -794,7 +794,7 @@ class APIConfigurationsController extends Controller
             $class_details->save();
 
             if(!isset($value['class_id']) && $class_id !='')
-            	$status = $this->map_classes_sections($userall_id); //Map classes and sections
+            	$this->map_classes_sections($userall_id); //Map classes and sections
             if(isset($value['class_id']) && $value['class_id']!='')
             	$status = 'edit';
         }
@@ -1005,9 +1005,9 @@ class APIConfigurationsController extends Controller
             			$subject_data->created_time=Carbon::now()->timezone('Asia/Kolkata');
 		            }
 		        }
-		        echo $value['subject_name'];exit;
 		        // Prepare subjects array
                 $subject_data->subject_name = $value['subject_name'];
+		        echo '<pre>';print_r($subject_data);exit;
                 $subject_data->short_name = isset($value['short_name'])?$value['short_name']:'';
                 $subject_data->division_id = $division_id;
             	$subject_data->save();

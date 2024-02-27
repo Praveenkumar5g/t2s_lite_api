@@ -1004,12 +1004,17 @@ class APIConfigurationsController extends Controller
 		                $subject_data->created_by=$userall_id;
             			$subject_data->created_time=Carbon::now()->timezone('Asia/Kolkata');
 		            }
+		            else
+		            {
+		            	$status = 'edit';
+
+	        			$subject_data = $check_exists;
+	        			$subject_data->updated_by=$userall_id;
+	            		$subject_data->updated_time=Carbon::now()->timezone('Asia/Kolkata');
+		            }
 		        }
 		        // Prepare subjects array
-		        echo '<pre>';print_r($subject_data);
-		        echo $value['subject_name'];
                 $subject_data->subject_name = $value['subject_name'];
-		        echo '<pre>';print_r($subject_data);exit;
                 $subject_data->short_name = isset($value['short_name'])?$value['short_name']:'';
                 $subject_data->division_id = $division_id;
             	$subject_data->save();

@@ -979,7 +979,7 @@ class APIConfigurationsController extends Controller
         $userall_id = UserAll::where(['user_table_id'=>$user_details->id,'user_role'=>$user_data->user_role])->pluck('id')->first();//fetch id from user all table to store notification triggered user
         foreach ($subjects as $row=>$value) {
 
-        	if($value['subject_name']!='')
+        	if($value['subject_name']!='' && $value['subject_name']!= null)
         	{
         		if(isset($value['subject_id']) && $value['subject_id']!='')
         		{
@@ -1006,6 +1006,8 @@ class APIConfigurationsController extends Controller
 		            }
 		        }
 		        // Prepare subjects array
+		        echo '<pre>';print_r($subject_data);
+		        echo $value['subject_name'];
                 $subject_data->subject_name = $value['subject_name'];
 		        echo '<pre>';print_r($subject_data);exit;
                 $subject_data->short_name = isset($value['short_name'])?$value['short_name']:'';

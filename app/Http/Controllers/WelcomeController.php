@@ -43,6 +43,8 @@ class WelcomeController extends Controller
 
             $data = base64_decode($file);
             $name = $file_name[$index].''.(time()+$index).'.'.$ext[$index];
+            echo $name;exit;
+            
             $file = public_path().'/'.env('SAMPLE_CONFIG_URL').$school_code.$target_file.$name;
             file_put_contents($file, $data);
 

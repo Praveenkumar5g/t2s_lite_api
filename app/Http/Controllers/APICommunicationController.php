@@ -1210,7 +1210,7 @@ class APICommunicationController extends Controller
                 $delivery_details=$delivery_details->where('communication_type',2);
             else
                 $delivery_details=$delivery_details->where('communication_type',1);
-            $delivery_details=$delivery_details->where('user_role',2)->get();
+            $delivery_details=$delivery_details->get();
 
             
             if(!empty($delivery_details))

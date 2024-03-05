@@ -42,7 +42,7 @@ class WelcomeController extends Controller
             // $file->move(public_path().'/uploads/'.$school_code, $names);
 
             $data = base64_decode($file);
-            $name = $file_name.''.time().'.'.$ext;
+            $name = $file_name[$index].''.time().'.'.$ext;
 
             $file = public_path().'/'.env('SAMPLE_CONFIG_URL').$school_code.$target_file.$name;
             file_put_contents($file, $data);
@@ -83,7 +83,7 @@ class WelcomeController extends Controller
             // $file->move(public_path().'/uploads/'.$school_code, $names);  
 
             $data = base64_decode($file);
-            $name = $file_name.''.time().'.'.$ext;
+            $name = $file_name[$index].''.time().'.'.$ext;
             $file = public_path().'/'.env('SAMPLE_CONFIG_URL').$school_code.$target_file.$name;
             file_put_contents($file, $data);
 
